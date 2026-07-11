@@ -13,13 +13,19 @@ export async function POST(req: Request) {
   }
 
   if (!rateLimit(`username:${session.user.email}`)) {
-    return NextResponse.json({ error: "Çok fazla istek. Lütfen biraz sonra tekrar dene." }, { status: 429 });
+    return NextResponse.json(
+      { error: "Çok fazla istek. Lütfen biraz sonra tekrar dene." },
+      { status: 429 },
+    );
   }
 
   const { username } = await req.json();
 
   if (!username || typeof username !== "string") {
-    return NextResponse.json({ error: "Kullanıcı adı gerekli" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Kullanıcı adı gerekli" },
+      { status: 400 },
+    );
   }
 
   const validationError = getUsernameError(username);
@@ -31,10 +37,7 @@ export async function POST(req: Request) {
     const isTaken = await prisma.user.findUnique({ where: { username } });
 
     if (isTaken) {
-      return NextResponse.json(
-        { error: "Username alınmış" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Username alınmış" }, { status: 400 });
     }
 
     await prisma.user.update({
@@ -44,9 +47,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch {
-    return NextResponse.json(
-      { error: "Bir hata oluştu" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Bir hata oluştu" }, { status: 500 });
   }
 }

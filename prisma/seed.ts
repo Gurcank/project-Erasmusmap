@@ -26,7 +26,12 @@ async function main() {
   const raw = fs.readFileSync(filePath, "utf-8");
   const geo = JSON.parse(raw);
 
-  const cities: { name: string; slug: string; regionSlug: string; country: string }[] = [];
+  const cities: {
+    name: string;
+    slug: string;
+    regionSlug: string;
+    country: string;
+  }[] = [];
 
   for (const feature of geo.features) {
     const props = feature.properties;

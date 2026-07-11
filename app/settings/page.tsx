@@ -21,13 +21,17 @@ export default async function SettingsPage() {
     if (!session?.user?.email) throw new Error("Giriş yapmalısın");
     const email = session.user.email;
 
-    if (!rateLimit(`username:${email}`)) throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+    if (!rateLimit(`username:${email}`))
+      throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
 
-    const username = String(formData.get("username") ?? "").toLowerCase().trim();
+    const username = String(formData.get("username") ?? "")
+      .toLowerCase()
+      .trim();
     const validationError = getUsernameError(username);
     if (validationError) throw new Error(validationError);
     const exists = await prisma.user.findUnique({ where: { username } });
-    if (exists && exists.email !== email) throw new Error("Bu kullanıcı adı zaten alınmış");
+    if (exists && exists.email !== email)
+      throw new Error("Bu kullanıcı adı zaten alınmış");
     await prisma.user.update({ where: { email }, data: { username } });
     revalidatePath(`/u/${username}`);
     revalidatePath("/settings");

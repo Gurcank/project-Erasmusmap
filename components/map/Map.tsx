@@ -15,15 +15,42 @@ type MapProps = {
 const NUTS_LEVEL_2_COUNTRIES = ["DE", "UK"];
 
 const COUNTRY_COLORS: Record<string, string> = {
-  TR: "#dc2626", EL: "#06b6d4", BG: "#16a34a", RO: "#facc15",
-  HU: "#6b8e23", AT: "#7f1d1d", SK: "#0ea5e9", CZ: "#1e40af",
-  PL: "#dc2626", DE: "#7c3aed", FR: "#2563eb", ES: "#f97316",
-  PT: "#166534", IT: "#84cc16", CH: "#b91c1c", BE: "#f59e0b",
-  NL: "#ff7a00", LU: "#7dd3fc", UK: "#ec4899", IE: "#059669",
-  DK: "#be123c", NO: "#991b1b", SE: "#fde047", FI: "#166534",
-  EE: "#0f52ba", LV: "#7f1d1d", LT: "#d4a017", SI: "#a855f7",
-  HR: "#724916", RS: "#6b21a8", BA: "#0284c7", ME: "#f59e0b",
-  XK: "#1e3a8a", MK: "#fb7185", AL: "#b45309", CY: "#b45309",
+  TR: "#dc2626",
+  EL: "#06b6d4",
+  BG: "#16a34a",
+  RO: "#facc15",
+  HU: "#6b8e23",
+  AT: "#7f1d1d",
+  SK: "#0ea5e9",
+  CZ: "#1e40af",
+  PL: "#dc2626",
+  DE: "#7c3aed",
+  FR: "#2563eb",
+  ES: "#f97316",
+  PT: "#166534",
+  IT: "#84cc16",
+  CH: "#b91c1c",
+  BE: "#f59e0b",
+  NL: "#ff7a00",
+  LU: "#7dd3fc",
+  UK: "#ec4899",
+  IE: "#059669",
+  DK: "#be123c",
+  NO: "#991b1b",
+  SE: "#fde047",
+  FI: "#166534",
+  EE: "#0f52ba",
+  LV: "#7f1d1d",
+  LT: "#d4a017",
+  SI: "#a855f7",
+  HR: "#724916",
+  RS: "#6b21a8",
+  BA: "#0284c7",
+  ME: "#f59e0b",
+  XK: "#1e3a8a",
+  MK: "#fb7185",
+  AL: "#b45309",
+  CY: "#b45309",
 };
 
 const FALLBACK_REGION_COLOR = "#e5e7eb";
@@ -43,7 +70,10 @@ function resolveFeatureName(properties: Record<string, unknown>): string {
 }
 
 function buildCountryColorExpression(fallback: string): unknown[] {
-  const entries = Object.entries(COUNTRY_COLORS).flatMap(([code, color]) => [code, color]);
+  const entries = Object.entries(COUNTRY_COLORS).flatMap(([code, color]) => [
+    code,
+    color,
+  ]);
   return ["match", ["slice", ["get", "NUTS_ID"], 0, 2], ...entries, fallback];
 }
 
@@ -88,13 +118,22 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
         map.setPaintProperty("water-shadow", "fill-color", "#0ea5e9");
       }
 
-      const HIDDEN_LABEL_KEYWORDS = ["settlement", "place", "town", "village", "region"];
+      const HIDDEN_LABEL_KEYWORDS = [
+        "settlement",
+        "place",
+        "town",
+        "village",
+        "region",
+      ];
       map.getStyle().layers?.forEach((layer) => {
         if (layer.type !== "symbol") return;
-        const isPlaceLabel = HIDDEN_LABEL_KEYWORDS.some((kw) => layer.id.includes(kw));
+        const isPlaceLabel = HIDDEN_LABEL_KEYWORDS.some((kw) =>
+          layer.id.includes(kw),
+        );
         const isCountryLabel = layer.id.includes("country-label");
         if (isPlaceLabel) map.setLayoutProperty(layer.id, "visibility", "none");
-        if (isCountryLabel) map.setLayoutProperty(layer.id, "visibility", "visible");
+        if (isCountryLabel)
+          map.setLayoutProperty(layer.id, "visibility", "visible");
       });
 
       popupRef.current = new mapboxgl.Popup({
@@ -104,14 +143,37 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
         offset: 15,
       });
 
-      map.addSource("nuts", { type: "geojson", data: "/eu-cities/europe.geojson", generateId: true });
-      map.addSource("bosnia", { type: "geojson", data: "/eu-cities/bosnia.json", generateId: true });
-      map.addSource("kosovo", { type: "geojson", data: "/eu-cities/kosovo.json", generateId: true });
+      map.addSource("nuts", {
+        type: "geojson",
+        data: "/eu-cities/europe.geojson",
+        generateId: true,
+      });
+      map.addSource("bosnia", {
+        type: "geojson",
+        data: "/eu-cities/bosnia.json",
+        generateId: true,
+      });
+      map.addSource("kosovo", {
+        type: "geojson",
+        data: "/eu-cities/kosovo.json",
+        generateId: true,
+      });
 
       const cityFilter = [
         "any",
-        ["all", ["in", ["get", "CNTR_CODE"], ["literal", NUTS_LEVEL_2_COUNTRIES]], ["==", ["get", "LEVL_CODE"], 2]],
-        ["all", ["!", ["in", ["get", "CNTR_CODE"], ["literal", NUTS_LEVEL_2_COUNTRIES]]], ["==", ["get", "LEVL_CODE"], 3]],
+        [
+          "all",
+          ["in", ["get", "CNTR_CODE"], ["literal", NUTS_LEVEL_2_COUNTRIES]],
+          ["==", ["get", "LEVL_CODE"], 2],
+        ],
+        [
+          "all",
+          [
+            "!",
+            ["in", ["get", "CNTR_CODE"], ["literal", NUTS_LEVEL_2_COUNTRIES]],
+          ],
+          ["==", ["get", "LEVL_CODE"], 3],
+        ],
       ];
 
       map.addLayer({
@@ -128,19 +190,40 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
         source: "nuts",
         filter: cityFilter as mapboxgl.FilterSpecification,
         paint: {
-          "fill-color": buildCountryColorExpression(FALLBACK_REGION_COLOR) as mapboxgl.DataDrivenPropertyValueSpecification<string>,
-          "fill-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.9, 0.6],
+          "fill-color": buildCountryColorExpression(
+            FALLBACK_REGION_COLOR,
+          ) as mapboxgl.DataDrivenPropertyValueSpecification<string>,
+          "fill-opacity": [
+            "case",
+            ["boolean", ["feature-state", "hover"], false],
+            0.9,
+            0.6,
+          ],
         },
       });
 
-      const staticRegionLayers: Array<{ id: string; source: string; fillColor: string }> = [
+      const staticRegionLayers: Array<{
+        id: string;
+        source: string;
+        fillColor: string;
+      }> = [
         { id: "bosnia", source: "bosnia", fillColor: "#6ee7b7" },
         { id: "kosovo", source: "kosovo", fillColor: "#fde68a" },
       ];
 
       staticRegionLayers.forEach(({ id, source, fillColor }) => {
-        map.addLayer({ id: `${id}-fill`, type: "fill", source, paint: { "fill-color": fillColor, "fill-opacity": 0.6 } });
-        map.addLayer({ id: `${id}-outline`, type: "line", source, paint: { "line-color": "#ffffff", "line-width": 0.5 } });
+        map.addLayer({
+          id: `${id}-fill`,
+          type: "fill",
+          source,
+          paint: { "fill-color": fillColor, "fill-opacity": 0.6 },
+        });
+        map.addLayer({
+          id: `${id}-outline`,
+          type: "line",
+          source,
+          paint: { "line-color": "#ffffff", "line-width": 0.5 },
+        });
       });
 
       map.addLayer({
@@ -158,15 +241,25 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
         filter: cityFilter as mapboxgl.FilterSpecification,
         paint: {
           "line-color": "#000",
-          "line-width": ["case", ["boolean", ["feature-state", "hover"], false], 3, 0],
+          "line-width": [
+            "case",
+            ["boolean", ["feature-state", "hover"], false],
+            3,
+            0,
+          ],
         },
       });
 
-      function showRegionPopup(e: mapboxgl.MapMouseEvent & { features?: mapboxgl.GeoJSONFeature[] }) {
+      function showRegionPopup(
+        e: mapboxgl.MapMouseEvent & { features?: mapboxgl.GeoJSONFeature[] },
+      ) {
         if (!e.features?.length) return;
         const name = resolveFeatureName(e.features[0].properties ?? {});
         if (name && popupRef.current) {
-          popupRef.current.setLngLat(e.lngLat).setHTML(`<strong>${name}</strong>`).addTo(map);
+          popupRef.current
+            .setLngLat(e.lngLat)
+            .setHTML(`<strong>${name}</strong>`)
+            .addTo(map);
         }
         map.getCanvas().style.cursor = "pointer";
       }
@@ -186,7 +279,10 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
 
         const featureId = e.features[0].id as number;
         if (hoveredRegionId !== null) {
-          map.setFeatureState({ source: "nuts", id: hoveredRegionId }, { hover: false });
+          map.setFeatureState(
+            { source: "nuts", id: hoveredRegionId },
+            { hover: false },
+          );
         }
         hoveredRegionId = featureId;
         map.setFeatureState({ source: "nuts", id: featureId }, { hover: true });
@@ -196,11 +292,16 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
 
         const rawName = resolveFeatureName(properties);
         const matchedCity = citiesRef.current.find(
-          (c) => normalizeRegionName(c.name) === normalizeRegionName(rawName)
+          (c) => normalizeRegionName(c.name) === normalizeRegionName(rawName),
         );
 
-        const displayName = matchedCity ? latinize(matchedCity.name) : latinize(rawName);
-        popupRef.current?.setLngLat(e.lngLat).setHTML(`<strong>${displayName}</strong>`).addTo(map);
+        const displayName = matchedCity
+          ? latinize(matchedCity.name)
+          : latinize(rawName);
+        popupRef.current
+          ?.setLngLat(e.lngLat)
+          .setHTML(`<strong>${displayName}</strong>`)
+          .addTo(map);
         map.getCanvas().style.cursor = "pointer";
       });
 
@@ -210,7 +311,7 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
         if (!rawName) return;
 
         const matchedCity = citiesRef.current.find(
-          (c) => normalizeRegionName(c.name) === normalizeRegionName(rawName)
+          (c) => normalizeRegionName(c.name) === normalizeRegionName(rawName),
         );
 
         const slug = matchedCity
@@ -222,7 +323,10 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
 
       map.on("mouseleave", "city-fill", () => {
         if (hoveredRegionId !== null) {
-          map.setFeatureState({ source: "nuts", id: hoveredRegionId }, { hover: false });
+          map.setFeatureState(
+            { source: "nuts", id: hoveredRegionId },
+            { hover: false },
+          );
         }
         hoveredRegionId = null;
         hidePopup();

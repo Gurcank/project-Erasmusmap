@@ -10,7 +10,11 @@ const hits = new Map<string, number[]>();
  * instance rather than globally — use a shared store (Upstash Redis, Vercel KV)
  * for a hard guarantee under that deployment model.
  */
-export function rateLimit(key: string, limit = MAX_REQUESTS_PER_WINDOW, windowMs = WINDOW_MS): boolean {
+export function rateLimit(
+  key: string,
+  limit = MAX_REQUESTS_PER_WINDOW,
+  windowMs = WINDOW_MS,
+): boolean {
   const now = Date.now();
   const timestamps = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
 

@@ -30,7 +30,10 @@ export default function ThemeToggle() {
     setDark(!dark);
   };
 
-  if (!mounted) return <div className="w-14 h-7 rounded-full bg-gray-200 dark:bg-zinc-700 animate-pulse" />;
+  if (!mounted)
+    return (
+      <div className="w-14 h-7 rounded-full bg-gray-200 dark:bg-zinc-700 animate-pulse" />
+    );
 
   return (
     <button

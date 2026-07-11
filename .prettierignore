@@ -1,0 +1,6 @@
+node_modules
+.next
+public/eu-cities
+package-lock.json
+prisma/migrations
+CLEANUP.md

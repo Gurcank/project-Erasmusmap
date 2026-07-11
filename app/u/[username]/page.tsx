@@ -7,7 +7,11 @@ import ProfileContent from "@/components/ui/ProfileContent";
 import { MAX_BIO_LENGTH } from "@/lib/profile";
 import { rateLimit } from "@/lib/rate-limit";
 
-export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
+export default async function ProfilePage({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}) {
   const session = await getServerSession(authOptions);
   const { username } = await params;
 
@@ -20,11 +24,18 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         orderBy: { createdAt: "desc" },
         include: { city: { select: { name: true, slug: true } } },
       },
-      visitedCities: { select: { id: true, name: true, slug: true, country: true } },
+      visitedCities: {
+        select: { id: true, name: true, slug: true, country: true },
+      },
     },
   });
 
-  if (!user) return <div className="text-gray-900 dark:text-white pt-32 text-center">Kullanıcı bulunamadı</div>;
+  if (!user)
+    return (
+      <div className="text-gray-900 dark:text-white pt-32 text-center">
+        Kullanıcı bulunamadı
+      </div>
+    );
 
   const isOwnProfile = session?.user?.email === user.email;
 
@@ -32,10 +43,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     "use server";
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) throw new Error("Giriş yapmalısın");
-    if (!rateLimit(`bio:${session.user.email}`)) throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+    if (!rateLimit(`bio:${session.user.email}`))
+      throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
     const bio = String(formData.get("bio") ?? "").trim();
-    if (bio.length > MAX_BIO_LENGTH) throw new Error(`Bio en fazla ${MAX_BIO_LENGTH} karakter olabilir`);
-    const updatedUser = await prisma.user.update({ where: { email: session.user.email }, data: { bio } });
+    if (bio.length > MAX_BIO_LENGTH)
+      throw new Error(`Bio en fazla ${MAX_BIO_LENGTH} karakter olabilir`);
+    const updatedUser = await prisma.user.update({
+      where: { email: session.user.email },
+      data: { bio },
+    });
     revalidatePath(`/u/${updatedUser.username}`);
   }
 

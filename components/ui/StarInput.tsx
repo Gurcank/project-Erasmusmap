@@ -27,7 +27,9 @@ export default function StarInput({ label, name }: Props) {
               onMouseEnter={() => setHovered(star)}
               onMouseLeave={() => setHovered(0)}
               className={`text-2xl transition-all duration-200 ${
-                active ? "text-yellow-400 scale-110" : "text-gray-300 dark:text-zinc-600 hover:text-yellow-300"
+                active
+                  ? "text-yellow-400 scale-110"
+                  : "text-gray-300 dark:text-zinc-600 hover:text-yellow-300"
               }`}
             >
               ★

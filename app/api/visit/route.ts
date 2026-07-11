@@ -12,7 +12,10 @@ export async function POST(req: Request) {
   }
 
   if (!rateLimit(`visit:${session.user.email}`, 20)) {
-    return NextResponse.json({ error: "Çok fazla istek. Lütfen biraz sonra tekrar dene." }, { status: 429 });
+    return NextResponse.json(
+      { error: "Çok fazla istek. Lütfen biraz sonra tekrar dene." },
+      { status: 429 },
+    );
   }
 
   const { cityId } = await req.json();
@@ -45,11 +48,10 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json(isAlreadyVisited ? { removed: true } : { added: true });
-  } catch {
     return NextResponse.json(
-      { error: "Bir hata oluştu" },
-      { status: 500 }
+      isAlreadyVisited ? { removed: true } : { added: true },
     );
+  } catch {
+    return NextResponse.json({ error: "Bir hata oluştu" }, { status: 500 });
   }
 }

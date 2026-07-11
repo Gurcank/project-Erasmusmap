@@ -51,7 +51,6 @@ export default function ChooseUsernamePage() {
 
       <div className="flex items-center justify-center min-h-screen px-4">
         <div className="w-full max-w-md backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl rounded-2xl p-8">
-
           <h1 className="text-3xl font-bold text-center text-white mb-2">
             Kullanıcı Adı Seç
           </h1>
@@ -61,7 +60,9 @@ export default function ChooseUsernamePage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 select-none">@</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 select-none">
+                @
+              </span>
               <input
                 type="text"
                 placeholder="kullanici-adi"
@@ -77,9 +78,7 @@ export default function ChooseUsernamePage() {
               <p className="text-amber-300 text-sm">{validationError}</p>
             )}
 
-            {error && (
-              <p className="text-red-300 text-sm">{error}</p>
-            )}
+            {error && <p className="text-red-300 text-sm">{error}</p>}
 
             <button
               type="submit"
@@ -89,7 +88,6 @@ export default function ChooseUsernamePage() {
               {isLoading ? "Kaydediliyor..." : "Kaydet"}
             </button>
           </form>
-
         </div>
       </div>
     </div>

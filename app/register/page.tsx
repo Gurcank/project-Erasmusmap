@@ -22,27 +22,30 @@ export default function RegisterPage() {
       return;
     }
 
-    const res = await fetch("/api/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name, email, password }),
-    });
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      setError(data.error);
-      return;
+      if (!res.ok) {
+        setError(data.error);
+        return;
+      }
+
+      router.push("/login");
+    } catch {
+      setError("Bağlantı hatası. Lütfen tekrar dene.");
     }
-
-    router.push("/login");
   };
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
-
       {/* 🌍 ARKA PLAN MAP */}
       <div className="absolute inset-0 -z-10">
         <Map isStatic />
@@ -54,7 +57,6 @@ export default function RegisterPage() {
       {/* 💎 REGISTER CARD */}
       <div className="flex items-center justify-center min-h-screen px-4">
         <div className="w-full max-w-md backdrop-blur-2xl bg-white/10 border border-white/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] rounded-3xl p-10 transition-all duration-500">
-
           <h1 className="text-3xl font-bold text-center text-white mb-8">
             Kayıt Ol
           </h1>
@@ -94,17 +96,16 @@ export default function RegisterPage() {
               required
             />
 
-            {error && (
-              <p className="text-red-300 text-sm">{error}</p>
-            )}
+            {error && <p className="text-red-300 text-sm">{error}</p>}
 
             <button
               type="submit"
               disabled={password !== confirmPassword}
-              className={`py-3 font-semibold rounded-xl transition ${password === confirmPassword
-                ? "bg-black/80 hover:bg-black text-white"
-                : "bg-gray-500 text-gray-300 cursor-not-allowed"
-                }`}
+              className={`py-3 font-semibold rounded-xl transition ${
+                password === confirmPassword
+                  ? "bg-black/80 hover:bg-black text-white"
+                  : "bg-gray-500 text-gray-300 cursor-not-allowed"
+              }`}
             >
               Kayıt Ol
             </button>
@@ -115,9 +116,7 @@ export default function RegisterPage() {
                 Giriş Yap
               </Link>
             </p>
-
           </form>
-
         </div>
       </div>
     </div>

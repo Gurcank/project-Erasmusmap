@@ -19,17 +19,17 @@ Erasmus öğrencileri için Avrupa şehirlerini keşfetme ve değerlendirme plat
 
 ## Teknolojiler
 
-| Katman | Teknoloji |
-|---|---|
-| Framework | Next.js 16 (App Router) |
-| Dil | TypeScript |
-| Stil | Tailwind CSS v4 |
-| Harita | Mapbox GL |
-| Auth | NextAuth.js v4 |
-| ORM | Prisma |
-| Veritabanı | PostgreSQL (Supabase) |
-| Deploy | Vercel |
-| Fotoğraf | Unsplash API |
+| Katman     | Teknoloji               |
+| ---------- | ----------------------- |
+| Framework  | Next.js 16 (App Router) |
+| Dil        | TypeScript              |
+| Stil       | Tailwind CSS v4         |
+| Harita     | Mapbox GL               |
+| Auth       | NextAuth.js v4          |
+| ORM        | Prisma                  |
+| Veritabanı | PostgreSQL (Supabase)   |
+| Deploy     | Vercel                  |
+| Fotoğraf   | Unsplash API            |
 
 ---
 
@@ -41,6 +41,7 @@ Erasmus öğrencileri için Avrupa şehirlerini keşfetme ve değerlendirme plat
 - PostgreSQL veritabanı (Supabase önerilir)
 
 ### Adımlar
+
 ```bash
 # Repoyu klonla
 git clone https://github.com/Gurcank/project-erasmus.git
@@ -51,6 +52,7 @@ npm install
 ```
 
 `.env.local` dosyası oluştur:
+
 ```env
 DATABASE_URL=postgresql://...
 NEXTAUTH_SECRET=...
@@ -60,6 +62,7 @@ UNSPLASH_ACCESS_KEY=...
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 ```
+
 ```bash
 # Veritabanı migration
 npx prisma migrate deploy

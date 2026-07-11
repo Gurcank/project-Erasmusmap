@@ -20,13 +20,28 @@ function parseRating(formData: FormData, field: string): number {
 }
 
 export function parseRatings(formData: FormData): CategoryRatings {
-  const entries = RATING_FIELDS.map((field) => [field, parseRating(formData, field)] as const);
+  const entries = RATING_FIELDS.map(
+    (field) => [field, parseRating(formData, field)] as const,
+  );
   return Object.fromEntries(entries) as unknown as CategoryRatings;
 }
 
 export function parseReviewContent(formData: FormData): string {
   const content = String(formData.get("content") ?? "").trim();
   if (!content) throw new Error("Yorum boş olamaz");
-  if (content.length > MAX_REVIEW_LENGTH) throw new Error(`Yorum en fazla ${MAX_REVIEW_LENGTH} karakter olabilir`);
+  if (content.length > MAX_REVIEW_LENGTH)
+    throw new Error(`Yorum en fazla ${MAX_REVIEW_LENGTH} karakter olabilir`);
   return content;
+}
+
+export function averageRating(ratings: CategoryRatings): number {
+  return (
+    (ratings.culture +
+      ratings.gastronomy +
+      ratings.safety +
+      ratings.socialLife +
+      ratings.transport +
+      ratings.costOfLiving) /
+    6
+  );
 }

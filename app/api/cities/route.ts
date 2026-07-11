@@ -12,7 +12,7 @@ export async function GET() {
   } catch {
     return NextResponse.json(
       { error: "Cities could not be fetched" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
