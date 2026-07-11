@@ -26,7 +26,6 @@ export default function SettingsContent({
 
   return (
     <>
-      {/* Başlık */}
       <div className="mb-8">
         <div className="mb-1">
           <Link
@@ -44,7 +43,6 @@ export default function SettingsContent({
         </p>
       </div>
 
-      {/* HESAP */}
       <section>
         <p className="text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-widest mb-3 px-1">
           {t.accountSection}
@@ -108,7 +106,6 @@ export default function SettingsContent({
         </div>
       </section>
 
-      {/* GÖRÜNÜM */}
       <section>
         <p className="text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-widest mb-3 px-1">
           {t.appearanceSection}

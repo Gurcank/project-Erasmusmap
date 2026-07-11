@@ -94,7 +94,6 @@ export default function Navbar() {
             🌍 Erasmus<span className="text-neutral-500">Map</span>
           </Link>
 
-          {/* Desktop Search */}
           <div
             ref={searchRef}
             className="hidden md:flex flex-1 mx-10 max-w-xl relative"

@@ -42,7 +42,6 @@ export default function ThemeToggle() {
       style={{ backgroundColor: dark ? "#6366f1" : "#d1d5db" }}
       aria-label="Tema değiştir"
     >
-      {/* Kaydırıcı top */}
       <span
         className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center text-sm transition-all duration-300 ${
           dark ? "left-7" : "left-0.5"

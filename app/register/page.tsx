@@ -46,15 +46,12 @@ export default function RegisterPage() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
-      {/* 🌍 ARKA PLAN MAP */}
       <div className="absolute inset-0 -z-10">
         <Map isStatic />
       </div>
 
-      {/* 🌌 OVERLAY */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80 backdrop-blur-[2px] -z-10" />
 
-      {/* 💎 REGISTER CARD */}
       <div className="flex items-center justify-center min-h-screen px-4">
         <div className="w-full max-w-md backdrop-blur-2xl bg-white/10 border border-white/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] rounded-3xl p-10 transition-all duration-500">
           <h1 className="text-3xl font-bold text-center text-white mb-8">
