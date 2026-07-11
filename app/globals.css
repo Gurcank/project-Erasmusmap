@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #f9fafb;
+  --foreground: #111827;
+}
+
+.dark {
+  --background: #030712;
+  --foreground: #f9fafb;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Map Tooltip Container */
+.mapboxgl-popup.city-tooltip .mapboxgl-popup-content {
+  background: rgba(24, 24, 27, 0.85);
+  backdrop-filter: blur(12px);
+  color: white;
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+.mapboxgl-popup.city-tooltip .mapboxgl-popup-tip {
+  border-top-color: rgba(24, 24, 27, 0.85);
+}
+
+.mapboxgl-popup-content {
+  padding: 0;
+}

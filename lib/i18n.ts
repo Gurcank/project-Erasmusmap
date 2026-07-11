@@ -1,0 +1,118 @@
+export const translations = {
+  tr: {
+    // Navbar
+    searchPlaceholder: "Şehir ara",
+    login: "Giriş Yap",
+    profile: "Profil",
+    settings: "⚙️ Ayarlar",
+    logout: "Çıkış Yap",
+
+    // City Page
+    cityRatings: "Şehir Puanları",
+    cost: "Pahalılık",
+    safety: "Güvenlik",
+    social: "Sosyal Hayat",
+    culture: "Kültür",
+    gastronomy: "Gastronomi",
+    transport: "Ulaşım",
+    reviews: "değerlendirme",
+    rateCity: "Şehri Değerlendir",
+    writeReview: "Yorumunu yaz...",
+    submitReview: "Yorumu Gönder",
+    allReviews: "Yapılan Yorumlar",
+    noReviews: "Henüz yorum yapılmamış.",
+    noPhoto: "için fotoğraf bulunamadı",
+    addToList: "Listeye Ekle",
+    visited: "Ziyaret Edildi",
+
+    // Profile
+    visitedCities: "Ziyaret Edilen Şehirler",
+    madeReviews: "Yapılan Yorumlar",
+    noCities: "Henüz şehir eklenmemiş.",
+    noReviewsProfile: "Henüz yorum yapılmamış.",
+    noBio: "Henüz bio eklenmemiş.",
+    noBioClick: "Henüz bio eklenmemiş. Tıkla ve kendini tanıt!",
+    editHint: "düzenle →",
+    editBio: "Düzenle",
+    saveBio: "Kaydet",
+    cancel: "İptal",
+    saving: "Kaydediliyor...",
+    savedSuccess: "✓ Kaydedildi",
+
+    // Settings
+    settingsTitle: "Ayarlar",
+    settingsDesc: "Hesap ve görünüm tercihlerini yönet",
+    backToProfile: "← Profil",
+    accountSection: "Hesap",
+    appearanceSection: "Görünüm",
+    usernameLabel: "Kullanıcı Adı",
+    usernameHint: "En az 3, en fazla 20 karakter.",
+    updateBtn: "Güncelle",
+    themeLabel: "Tema",
+    themeDesc: "Açık veya koyu mod",
+    langLabel: "Dil",
+    langDesc: "Arayüz dili",
+    member: "Üye",
+    admin: "Admin",
+  },
+
+  en: {
+    // Navbar
+    searchPlaceholder: "Search city",
+    login: "Sign In",
+    profile: "Profile",
+    settings: "⚙️ Settings",
+    logout: "Sign Out",
+
+    // City Page
+    cityRatings: "City Ratings",
+    cost: "Cost of Living",
+    safety: "Safety",
+    social: "Social Life",
+    culture: "Culture",
+    gastronomy: "Gastronomy",
+    transport: "Transport",
+    reviews: "reviews",
+    rateCity: "Rate This City",
+    writeReview: "Write your review...",
+    submitReview: "Submit Review",
+    allReviews: "Reviews",
+    noReviews: "No reviews yet.",
+    noPhoto: "no photo found for",
+    addToList: "Add to List",
+    visited: "Visited",
+
+    // Profile
+    visitedCities: "Visited Cities",
+    madeReviews: "Reviews",
+    noCities: "No cities added yet.",
+    noReviewsProfile: "No reviews yet.",
+    noBio: "No bio added yet.",
+    noBioClick: "No bio yet. Click to introduce yourself!",
+    editHint: "edit →",
+    editBio: "Edit",
+    saveBio: "Save",
+    cancel: "Cancel",
+    saving: "Saving...",
+    savedSuccess: "✓ Saved",
+
+    // Settings
+    settingsTitle: "Settings",
+    settingsDesc: "Manage your account and appearance",
+    backToProfile: "← Profile",
+    accountSection: "Account",
+    appearanceSection: "Appearance",
+    usernameLabel: "Username",
+    usernameHint: "3 to 20 characters.",
+    updateBtn: "Update",
+    themeLabel: "Theme",
+    themeDesc: "Light or dark mode",
+    langLabel: "Language",
+    langDesc: "Interface language",
+    member: "Member",
+    admin: "Admin",
+  },
+} as const;
+
+export type Lang = keyof typeof translations;
+export type TranslationKey = keyof typeof translations.tr;
