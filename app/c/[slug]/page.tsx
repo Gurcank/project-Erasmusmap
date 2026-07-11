@@ -6,6 +6,8 @@ import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { latinize } from "@/lib/latinize";
 import CityContent from "@/components/ui/CityContent";
+import { parseRatings, parseReviewContent } from "@/lib/review";
+import { rateLimit } from "@/lib/rate-limit";
 
 export default async function CityPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -42,20 +44,18 @@ export default async function CityPage({ params }: { params: Promise<{ slug: str
     "use server";
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) throw new Error("Giriş yapmalısınız");
+    if (!rateLimit(`review:${session.user.email}`)) throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user) throw new Error("Kullanıcı bulunamadı");
     const existingReview = await prisma.review.findFirst({ where: { cityId, userId: user.id } });
     if (existingReview) throw new Error("Bu şehre zaten yorum yaptınız.");
+    const ratings = parseRatings(formData);
+    const content = parseReviewContent(formData);
     await prisma.review.create({
       data: {
         cityId, userId: user.id,
-        culture:      Number(formData.get("culture")),
-        gastronomy:   Number(formData.get("gastronomy")),
-        safety:       Number(formData.get("safety")),
-        socialLife:   Number(formData.get("socialLife")),
-        transport:    Number(formData.get("transport")),
-        costOfLiving: Number(formData.get("costOfLiving")),
-        content: String(formData.get("content")),
+        ...ratings,
+        content,
         isApproved: true,
       },
     });

@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import SettingsContent from "@/components/ui/SettingsContent";
+import { getUsernameError } from "@/lib/username";
+import { rateLimit } from "@/lib/rate-limit";
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
@@ -15,8 +17,15 @@ export default async function SettingsPage() {
 
   async function updateUsername(formData: FormData) {
     "use server";
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) throw new Error("Giriş yapmalısın");
+    const email = session.user.email;
+
+    if (!rateLimit(`username:${email}`)) throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+
     const username = String(formData.get("username") ?? "").toLowerCase().trim();
-    if (username.length < 3) throw new Error("Kullanıcı adı en az 3 karakter olmalı");
+    const validationError = getUsernameError(username);
+    if (validationError) throw new Error(validationError);
     const exists = await prisma.user.findUnique({ where: { username } });
     if (exists && exists.email !== email) throw new Error("Bu kullanıcı adı zaten alınmış");
     await prisma.user.update({ where: { email }, data: { username } });

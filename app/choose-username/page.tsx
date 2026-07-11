@@ -3,10 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Map from "@/components/map/Map";
-
-const USERNAME_MIN_LENGTH = 3;
-const USERNAME_MAX_LENGTH = 20;
-const USERNAME_PATTERN = /^[a-z0-9_-]+$/;
+import { USERNAME_MAX_LENGTH, getUsernameError } from "@/lib/username";
 
 export default function ChooseUsernamePage() {
   const router = useRouter();
@@ -14,12 +11,7 @@ export default function ChooseUsernamePage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const validationError = (() => {
-    if (username.length < USERNAME_MIN_LENGTH) return `En az ${USERNAME_MIN_LENGTH} karakter olmalı`;
-    if (username.length > USERNAME_MAX_LENGTH) return `En fazla ${USERNAME_MAX_LENGTH} karakter olmalı`;
-    if (!USERNAME_PATTERN.test(username)) return "Sadece küçük harf, rakam, _ ve - kullanılabilir";
-    return null;
-  })();
+  const validationError = username ? getUsernameError(username) : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

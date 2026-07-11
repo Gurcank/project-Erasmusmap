@@ -2,8 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useT } from "@/hooks/useT";
-
-const MAX_CHARS = 160;
+import { MAX_BIO_LENGTH as MAX_CHARS } from "@/lib/profile";
 
 export default function BioEditor({
   initialBio,

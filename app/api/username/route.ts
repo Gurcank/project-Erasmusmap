@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { getUsernameError } from "@/lib/username";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -10,13 +12,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (!rateLimit(`username:${session.user.email}`)) {
+    return NextResponse.json({ error: "Çok fazla istek. Lütfen biraz sonra tekrar dene." }, { status: 429 });
+  }
+
   const { username } = await req.json();
 
-  if (!username || typeof username !== "string" || username.length < 3) {
-    return NextResponse.json(
-      { error: "Kullanıcı adı en az 3 karakter olmalı" },
-      { status: 400 }
-    );
+  if (!username || typeof username !== "string") {
+    return NextResponse.json({ error: "Kullanıcı adı gerekli" }, { status: 400 });
+  }
+
+  const validationError = getUsernameError(username);
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
   try {
