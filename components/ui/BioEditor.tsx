@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useT } from "@/hooks/useT";
 import { MAX_BIO_LENGTH as MAX_CHARS } from "@/lib/profile";
 
@@ -18,6 +18,13 @@ export default function BioEditor({
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const remaining = MAX_CHARS - draft.length;
+  const savedTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+
+  useEffect(() => {
+    return () => clearTimeout(savedTimeoutRef.current);
+  }, []);
 
   const handleSave = () => {
     const formData = new FormData();
@@ -27,7 +34,7 @@ export default function BioEditor({
       setBio(draft);
       setEditing(false);
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      savedTimeoutRef.current = setTimeout(() => setSaved(false), 2000);
     });
   };
 

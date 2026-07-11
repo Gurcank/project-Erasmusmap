@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useT } from "@/hooks/useT";
 
 export default function VisitButton({
@@ -14,6 +14,13 @@ export default function VisitButton({
   const [visited, setVisited] = useState(initialVisited);
   const [loading, setLoading] = useState(false);
   const [animating, setAnimating] = useState(false);
+  const animatingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+
+  useEffect(() => {
+    return () => clearTimeout(animatingTimeoutRef.current);
+  }, []);
 
   const handleClick = async () => {
     if (loading) return;
@@ -27,7 +34,10 @@ export default function VisitButton({
       const data = await res.json();
       if (data.added) {
         setAnimating(true);
-        setTimeout(() => setAnimating(false), 700);
+        animatingTimeoutRef.current = setTimeout(
+          () => setAnimating(false),
+          700,
+        );
         setVisited(true);
       }
       if (data.removed) setVisited(false);
