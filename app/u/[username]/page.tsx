@@ -20,7 +20,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         orderBy: { createdAt: "desc" },
         include: { city: { select: { name: true, slug: true } } },
       },
-      visitedCities: { select: { id: true, name: true, slug: true, country: true, regionSlug: true } },
+      visitedCities: { select: { id: true, name: true, slug: true, country: true } },
     },
   });
 
@@ -48,7 +48,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
       <ProfileContent
         username={user.username ?? ""}
-        name={user.name}
         bio={user.bio}
         cityCount={user.visitedCities.length}
         reviewCount={user.reviews.length}

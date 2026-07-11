@@ -8,7 +8,6 @@ import type { City, ProfileReview } from "@/types";
 
 type Props = {
   username: string;
-  name: string | null;
   bio: string | null;
   cityCount: number;
   reviewCount: number;
@@ -19,7 +18,7 @@ type Props = {
 };
 
 export default function ProfileContent({
-  username, name, bio, cityCount, reviewCount,
+  username, bio, cityCount, reviewCount,
   visitedCities, reviews, isOwnProfile, updateBio,
 }: Props) {
   const t = useT();

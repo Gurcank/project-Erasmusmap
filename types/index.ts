@@ -3,7 +3,6 @@ export type City = {
   name: string;
   slug: string;
   country: string;
-  regionSlug?: string;
 };
 
 export type ReviewAuthor = {
