@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useT } from "@/hooks/useT";
 import { MAX_BIO_LENGTH as MAX_CHARS } from "@/lib/profile";
 
@@ -18,6 +18,7 @@ export default function BioEditor({
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const remaining = MAX_CHARS - draft.length;
+  const headingId = useId();
   const savedTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
@@ -46,7 +47,10 @@ export default function BioEditor({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-gray-900 dark:text-white font-semibold text-sm uppercase tracking-wider">
+        <h3
+          id={headingId}
+          className="text-gray-900 dark:text-white font-semibold text-sm uppercase tracking-wider"
+        >
           Bio
         </h3>
         {!editing && (
@@ -71,6 +75,7 @@ export default function BioEditor({
         <div className="space-y-2">
           <div className="relative">
             <textarea
+              aria-labelledby={headingId}
               value={draft}
               onChange={(e) => {
                 if (e.target.value.length <= MAX_CHARS)
@@ -106,6 +111,15 @@ export default function BioEditor({
       ) : (
         <div
           onClick={() => setEditing(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setEditing(true);
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label={t.editBio}
           className="group cursor-pointer relative bg-gray-100 dark:bg-white/10 rounded-xl p-4 border border-transparent hover:border-indigo-400/50 transition-all"
         >
           <p className="text-gray-700 dark:text-white/70 text-sm leading-relaxed">

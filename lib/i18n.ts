@@ -6,6 +6,7 @@ export const translations = {
     profile: "Profil",
     settings: "⚙️ Ayarlar",
     logout: "Çıkış Yap",
+    menu: "Menü",
 
     // City Page
     cityRatings: "Şehir Puanları",
@@ -63,6 +64,7 @@ export const translations = {
     profile: "Profile",
     settings: "⚙️ Settings",
     logout: "Sign Out",
+    menu: "Menu",
 
     // City Page
     cityRatings: "City Ratings",

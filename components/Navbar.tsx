@@ -101,6 +101,7 @@ export default function Navbar() {
             <form onSubmit={handleSearch} className="w-full">
               <input
                 type="text"
+                aria-label={t.searchPlaceholder}
                 placeholder={t.searchPlaceholder}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -142,6 +143,9 @@ export default function Navbar() {
               ) : (
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
+                  aria-label={t.profile}
+                  aria-haspopup="true"
+                  aria-expanded={profileOpen}
                   className="w-10 h-10 rounded-full overflow-hidden border border-neutral-300 dark:border-neutral-600"
                 >
                   <span className="bg-black dark:bg-white text-white dark:text-black w-full h-full flex items-center justify-center font-semibold">
@@ -182,6 +186,8 @@ export default function Navbar() {
             </div>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
+              aria-label={t.menu}
+              aria-expanded={menuOpen}
               className="md:hidden text-2xl text-gray-900 dark:text-white hover:scale-110 transition"
             >
               ☰
@@ -200,6 +206,7 @@ export default function Navbar() {
               >
                 <input
                   type="text"
+                  aria-label={t.searchPlaceholder}
                   placeholder={t.searchPlaceholder}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}

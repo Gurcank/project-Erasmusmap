@@ -61,6 +61,7 @@ export default function RegisterPage() {
           <form onSubmit={handleRegister} className="flex flex-col gap-4">
             <input
               type="text"
+              aria-label="Ad Soyad"
               placeholder="Ad Soyad"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -69,6 +70,7 @@ export default function RegisterPage() {
             />
             <input
               type="email"
+              aria-label="Email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -77,6 +79,7 @@ export default function RegisterPage() {
             />
             <input
               type="password"
+              aria-label="Şifre"
               placeholder="Şifre"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -86,6 +89,7 @@ export default function RegisterPage() {
 
             <input
               type="password"
+              aria-label="Şifre Tekrar"
               placeholder="Şifre Tekrar"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}

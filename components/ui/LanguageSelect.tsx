@@ -28,6 +28,7 @@ export default function LanguageSelect() {
         <button
           key={lang.code}
           onClick={() => changeLang(lang.code)}
+          aria-pressed={current === lang.code}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all border ${
             current === lang.code
               ? "bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-600 text-indigo-700 dark:text-indigo-300"

@@ -70,7 +70,10 @@ export default function SettingsContent({
           <div className="px-6 py-5">
             <form action={updateUsername} className="space-y-3">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-white">
+                <label
+                  htmlFor="username"
+                  className="text-sm font-medium text-gray-700 dark:text-white"
+                >
                   {t.usernameLabel}
                 </label>
                 <span className="text-xs text-gray-400 dark:text-white/30">
@@ -84,6 +87,7 @@ export default function SettingsContent({
                     @
                   </span>
                   <input
+                    id="username"
                     name="username"
                     defaultValue={username ?? ""}
                     maxLength={20}

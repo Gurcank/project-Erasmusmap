@@ -65,6 +65,7 @@ export default function ChooseUsernamePage() {
               </span>
               <input
                 type="text"
+                aria-label="Kullanıcı Adı"
                 placeholder="kullanici-adi"
                 value={username}
                 onChange={(e) => setUsername(e.target.value.toLowerCase())}
