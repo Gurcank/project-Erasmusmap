@@ -13,6 +13,7 @@ export default function LoginClient() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -22,17 +23,26 @@ export default function LoginClient() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setError("");
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    if (result?.error) {
-      setError("Email veya şifre hatalı");
-    } else {
-      router.replace("/");
+      if (result?.error) {
+        setError("Email veya şifre hatalı");
+        setIsSubmitting(false);
+      } else {
+        router.replace("/");
+      }
+    } catch {
+      setError("Bağlantı hatası. Lütfen tekrar dene.");
+      setIsSubmitting(false);
     }
   };
 
@@ -90,9 +100,10 @@ export default function LoginClient() {
 
             <button
               type="submit"
-              className="py-3 bg-black/80 text-white font-semibold rounded-xl hover:bg-black transition"
+              disabled={isSubmitting}
+              className="py-3 bg-black/80 text-white font-semibold rounded-xl hover:bg-black transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Email ile Giriş Yap
+              {isSubmitting ? "Giriş yapılıyor..." : "Email ile Giriş Yap"}
             </button>
 
             <p className="text-sm text-center text-white/80 mt-2">

@@ -4,6 +4,7 @@ import { useT } from "@/hooks/useT";
 import Link from "next/link";
 import VisitButton from "@/components/ui/VisitButton";
 import StarInput from "@/components/ui/StarInput";
+import SubmitButton from "@/components/ui/SubmitButton";
 import type { CityReview, CategoryRatings } from "@/types";
 import { averageRating } from "@/lib/review";
 
@@ -130,12 +131,12 @@ export default function CityContent({
           className="w-full bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-3 h-24 focus:outline-none focus:border-indigo-500 transition"
         />
         <div className="flex justify-center">
-          <button
-            type="submit"
-            className="bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all text-white px-6 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-indigo-900/20"
+          <SubmitButton
+            pendingText={t.submittingReview}
+            className="bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all text-white px-6 py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-indigo-900/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
           >
             {t.submitReview}
-          </button>
+          </SubmitButton>
         </div>
       </form>
 

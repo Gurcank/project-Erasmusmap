@@ -3,6 +3,7 @@
 import { useT } from "@/hooks/useT";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageSelect from "@/components/ui/LanguageSelect";
+import SubmitButton from "@/components/ui/SubmitButton";
 import Link from "next/link";
 
 type Props = {
@@ -95,12 +96,12 @@ export default function SettingsContent({
                     className="w-full pl-7 pr-4 py-2.5 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white text-sm rounded-xl border border-gray-200 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition placeholder-gray-300 dark:placeholder-white/20"
                   />
                 </div>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all"
+                <SubmitButton
+                  pendingText={t.updatingBtn}
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                 >
                   {t.updateBtn}
-                </button>
+                </SubmitButton>
               </div>
               <p className="text-xs text-gray-400 dark:text-white/30">
                 {t.usernameHint}

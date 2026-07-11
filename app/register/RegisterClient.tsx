@@ -13,14 +13,19 @@ export default function RegisterClient() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (password !== confirmPassword) {
       setError("Şifreler eşleşmiyor");
       return;
     }
+
+    setIsSubmitting(true);
+    setError("");
 
     try {
       const res = await fetch("/api/register", {
@@ -35,12 +40,14 @@ export default function RegisterClient() {
 
       if (!res.ok) {
         setError(data.error);
+        setIsSubmitting(false);
         return;
       }
 
       router.push("/login");
     } catch {
       setError("Bağlantı hatası. Lütfen tekrar dene.");
+      setIsSubmitting(false);
     }
   };
 
@@ -101,14 +108,14 @@ export default function RegisterClient() {
 
             <button
               type="submit"
-              disabled={password !== confirmPassword}
+              disabled={password !== confirmPassword || isSubmitting}
               className={`py-3 font-semibold rounded-xl transition ${
                 password === confirmPassword
-                  ? "bg-black/80 hover:bg-black text-white"
+                  ? "bg-black/80 hover:bg-black text-white disabled:opacity-50"
                   : "bg-gray-500 text-gray-300 cursor-not-allowed"
               }`}
             >
-              Kayıt Ol
+              {isSubmitting ? "Kaydediliyor..." : "Kayıt Ol"}
             </button>
 
             <p className="text-sm text-center text-white/80 mt-2">

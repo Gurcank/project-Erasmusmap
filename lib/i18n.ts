@@ -7,6 +7,7 @@ export const translations = {
     settings: "⚙️ Ayarlar",
     logout: "Çıkış Yap",
     menu: "Menü",
+    noResults: "Sonuç bulunamadı",
 
     // City Page
     cityRatings: "Şehir Puanları",
@@ -20,6 +21,7 @@ export const translations = {
     rateCity: "Şehri Değerlendir",
     writeReview: "Yorumunu yaz...",
     submitReview: "Yorumu Gönder",
+    submittingReview: "Gönderiliyor...",
     allReviews: "Yapılan Yorumlar",
     noReviews: "Henüz yorum yapılmamış.",
     noPhoto: "için fotoğraf bulunamadı",
@@ -49,6 +51,7 @@ export const translations = {
     usernameLabel: "Kullanıcı Adı",
     usernameHint: "En az 3, en fazla 20 karakter.",
     updateBtn: "Güncelle",
+    updatingBtn: "Güncelleniyor...",
     themeLabel: "Tema",
     themeDesc: "Açık veya koyu mod",
     langLabel: "Dil",
@@ -65,6 +68,7 @@ export const translations = {
     settings: "⚙️ Settings",
     logout: "Sign Out",
     menu: "Menu",
+    noResults: "No results found",
 
     // City Page
     cityRatings: "City Ratings",
@@ -78,6 +82,7 @@ export const translations = {
     rateCity: "Rate This City",
     writeReview: "Write your review...",
     submitReview: "Submit Review",
+    submittingReview: "Submitting...",
     allReviews: "Reviews",
     noReviews: "No reviews yet.",
     noPhoto: "no photo found for",
@@ -107,6 +112,7 @@ export const translations = {
     usernameLabel: "Username",
     usernameHint: "3 to 20 characters.",
     updateBtn: "Update",
+    updatingBtn: "Updating...",
     themeLabel: "Theme",
     themeDesc: "Light or dark mode",
     langLabel: "Language",

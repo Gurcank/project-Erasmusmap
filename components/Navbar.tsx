@@ -41,7 +41,7 @@ export default function Navbar() {
       .filter((c) => latinize(c.name).toLowerCase().includes(q))
       .slice(0, 6);
     setSuggestions(filtered);
-    setShowSuggestions(filtered.length > 0);
+    setShowSuggestions(allCities.length > 0);
   }, [search, allCities]);
 
   useEffect(() => {
@@ -116,20 +116,26 @@ export default function Navbar() {
             </form>
             {showSuggestions && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-2xl shadow-xl overflow-hidden z-50">
-                {suggestions.map((city) => (
-                  <button
-                    key={city.id}
-                    onClick={() => handleSelect(city)}
-                    className="w-full text-left px-5 py-3 flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-700 transition"
-                  >
-                    <span className="text-gray-900 dark:text-white font-medium">
-                      {latinize(city.name)}
-                    </span>
-                    <span className="text-gray-400 dark:text-neutral-500 text-sm">
-                      {city.country}
-                    </span>
-                  </button>
-                ))}
+                {suggestions.length === 0 ? (
+                  <p className="px-5 py-3 text-gray-400 dark:text-neutral-500 text-sm">
+                    {t.noResults}
+                  </p>
+                ) : (
+                  suggestions.map((city) => (
+                    <button
+                      key={city.id}
+                      onClick={() => handleSelect(city)}
+                      className="w-full text-left px-5 py-3 flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-700 transition"
+                    >
+                      <span className="text-gray-900 dark:text-white font-medium">
+                        {latinize(city.name)}
+                      </span>
+                      <span className="text-gray-400 dark:text-neutral-500 text-sm">
+                        {city.country}
+                      </span>
+                    </button>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -218,23 +224,29 @@ export default function Navbar() {
               </form>
               {showSuggestions && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl overflow-hidden z-50">
-                  {suggestions.map((city) => (
-                    <button
-                      key={city.id}
-                      onClick={() => {
-                        handleSelect(city);
-                        setMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-3 flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-700 transition"
-                    >
-                      <span className="text-gray-900 dark:text-white font-medium">
-                        {latinize(city.name)}
-                      </span>
-                      <span className="text-gray-400 text-sm">
-                        {city.country}
-                      </span>
-                    </button>
-                  ))}
+                  {suggestions.length === 0 ? (
+                    <p className="px-4 py-3 text-gray-400 dark:text-neutral-500 text-sm">
+                      {t.noResults}
+                    </p>
+                  ) : (
+                    suggestions.map((city) => (
+                      <button
+                        key={city.id}
+                        onClick={() => {
+                          handleSelect(city);
+                          setMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-3 flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-700 transition"
+                      >
+                        <span className="text-gray-900 dark:text-white font-medium">
+                          {latinize(city.name)}
+                        </span>
+                        <span className="text-gray-400 text-sm">
+                          {city.country}
+                        </span>
+                      </button>
+                    ))
+                  )}
                 </div>
               )}
             </div>
