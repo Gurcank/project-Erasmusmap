@@ -37,9 +37,9 @@ export default function ProfileContent({
           <div className="w-24 h-24 mx-auto rounded-full bg-gray-200 dark:bg-white/20 flex items-center justify-center text-4xl text-gray-800 dark:text-white font-bold mb-4">
             {username?.charAt(0).toUpperCase()}
           </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
             @{username}
-          </h2>
+          </h1>
         </div>
 
         <div className="space-y-4">
@@ -66,9 +66,9 @@ export default function ProfileContent({
             <BioEditor initialBio={bio ?? ""} updateBio={updateBio} />
           ) : (
             <div className="space-y-2">
-              <h3 className="text-gray-900 dark:text-white font-semibold text-sm uppercase tracking-wider">
+              <h2 className="text-gray-900 dark:text-white font-semibold text-sm uppercase tracking-wider">
                 Bio
-              </h3>
+              </h2>
               <p className="text-gray-700 dark:text-white/70 text-sm bg-gray-100 dark:bg-white/10 p-4 rounded-xl leading-relaxed">
                 {bio || (
                   <span className="italic text-gray-400 dark:text-white/30">
@@ -83,9 +83,9 @@ export default function ProfileContent({
 
       <div className="flex-1 space-y-8">
         <div className="bg-white/90 dark:bg-white/10 border border-gray-200 dark:border-white/20 rounded-3xl p-8">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
             {t.visitedCities}
-          </h3>
+          </h2>
           <div className="grid grid-cols-3 gap-4">
             {visitedCities.map((city) => (
               <Link
@@ -105,9 +105,9 @@ export default function ProfileContent({
         </div>
 
         <div className="bg-white/90 dark:bg-white/10 border border-gray-200 dark:border-white/20 rounded-3xl p-8">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
             {t.madeReviews}
-          </h3>
+          </h2>
           <div className="space-y-6">
             {reviews.map((review) => {
               const average = averageRating(review);

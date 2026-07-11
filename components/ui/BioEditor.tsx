@@ -47,12 +47,12 @@ export default function BioEditor({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3
+        <h2
           id={headingId}
           className="text-gray-900 dark:text-white font-semibold text-sm uppercase tracking-wider"
         >
           Bio
-        </h3>
+        </h2>
         {!editing && (
           <button
             onClick={() => {

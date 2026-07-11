@@ -86,7 +86,10 @@ export default function Navbar() {
   return (
     <header className="fixed top-0 left-0 w-full z-50">
       <div className="backdrop-blur-xl bg-white/80 dark:bg-neutral-900/80 border-b border-neutral-200/60 dark:border-neutral-700/60 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <nav
+          aria-label="Site navigasyonu"
+          className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between"
+        >
           <Link
             href="/"
             className="text-2xl font-bold tracking-tight hover:opacity-80 transition text-gray-900 dark:text-white"
@@ -193,7 +196,7 @@ export default function Navbar() {
               ☰
             </button>
           </div>
-        </div>
+        </nav>
 
         {menuOpen && (
           <div className="md:hidden px-6 pb-6 space-y-4">

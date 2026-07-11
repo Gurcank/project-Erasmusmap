@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Map from "@/components/map/Map";
@@ -9,6 +10,28 @@ import CityContent from "@/components/ui/CityContent";
 import { parseRatings, parseReviewContent, averageRating } from "@/lib/review";
 import type { CategoryRatings } from "@/types";
 import { rateLimit } from "@/lib/rate-limit";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const city = await prisma.city.findUnique({
+    where: { slug },
+    select: { name: true, country: true },
+  });
+  if (!city) return {};
+
+  const name = latinize(city.name);
+  const description = `${name}, ${city.country} için Erasmus öğrenci değerlendirmeleri, puanları ve fotoğrafları.`;
+  return {
+    title: name,
+    description,
+    openGraph: { title: name, description },
+    twitter: { title: name, description },
+  };
+}
 
 export default async function CityPage({
   params,

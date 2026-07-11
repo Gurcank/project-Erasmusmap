@@ -44,9 +44,9 @@ export default function SettingsContent({
       </div>
 
       <section>
-        <p className="text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-widest mb-3 px-1">
+        <h2 className="text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-widest mb-3 px-1">
           {t.accountSection}
-        </p>
+        </h2>
         <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-zinc-800">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
@@ -111,9 +111,9 @@ export default function SettingsContent({
       </section>
 
       <section>
-        <p className="text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-widest mb-3 px-1">
+        <h2 className="text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-widest mb-3 px-1">
           {t.appearanceSection}
-        </p>
+        </h2>
         <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-zinc-800">
           <div className="flex items-center justify-between px-6 py-5">
             <div className="flex items-center gap-3">

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -6,6 +7,28 @@ import { revalidatePath } from "next/cache";
 import ProfileContent from "@/components/ui/ProfileContent";
 import { MAX_BIO_LENGTH } from "@/lib/profile";
 import { rateLimit } from "@/lib/rate-limit";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: { username: true, bio: true },
+  });
+  if (!user) return {};
+
+  const title = `@${user.username}`;
+  const description = user.bio || `${title} — ErasmusMap profili`;
+  return {
+    title,
+    description,
+    openGraph: { title, description },
+    twitter: { title, description },
+  };
+}
 
 export default async function ProfilePage({
   params,

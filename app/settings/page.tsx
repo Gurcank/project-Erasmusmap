@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -6,6 +7,11 @@ import { redirect } from "next/navigation";
 import SettingsContent from "@/components/ui/SettingsContent";
 import { getUsernameError } from "@/lib/username";
 import { rateLimit } from "@/lib/rate-limit";
+
+export const metadata: Metadata = {
+  title: "Ayarlar",
+  robots: { index: false, follow: false },
+};
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
