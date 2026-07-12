@@ -10,6 +10,7 @@ import CityContent from "@/components/ui/CityContent";
 import { parseRatings, parseReviewContent, averageRating } from "@/lib/review";
 import type { CategoryRatings } from "@/types";
 import { rateLimit } from "@/lib/rate-limit";
+import { deleteReview } from "@/lib/actions";
 
 export async function generateMetadata({
   params,
@@ -74,6 +75,7 @@ export default async function CityPage({
     : null;
 
   const isVisited = (user?.visitedCities.length ?? 0) > 0;
+  const isAdmin = session?.user?.role === "ADMIN";
   const cityId = city.id;
 
   async function submitReview(formData: FormData) {
@@ -170,6 +172,8 @@ export default async function CityPage({
           categoryRatings={categoryRatings}
           reviews={city.reviews}
           submitReview={submitReview}
+          isAdmin={isAdmin}
+          deleteReview={deleteReview}
         />
       </div>
     </div>

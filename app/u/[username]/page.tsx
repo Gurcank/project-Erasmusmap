@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import ProfileContent from "@/components/ui/ProfileContent";
 import { MAX_BIO_LENGTH } from "@/lib/profile";
 import { rateLimit } from "@/lib/rate-limit";
+import { deleteReview } from "@/lib/actions";
 
 export async function generateMetadata({
   params,
@@ -61,6 +62,7 @@ export default async function ProfilePage({
     );
 
   const isOwnProfile = session?.user?.email === user.email;
+  const isAdmin = session?.user?.role === "ADMIN";
 
   async function updateBio(formData: FormData) {
     "use server";
@@ -94,6 +96,8 @@ export default async function ProfilePage({
         reviews={user.reviews}
         isOwnProfile={isOwnProfile}
         updateBio={updateBio}
+        isAdmin={isAdmin}
+        deleteReview={deleteReview}
       />
     </div>
   );

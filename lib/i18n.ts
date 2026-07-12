@@ -58,6 +58,8 @@ export const translations = {
     langDesc: "Arayüz dili",
     member: "Üye",
     admin: "Admin",
+    adminDeleteReview: "Yorumu sil",
+    confirmDeleteReview: "Bu yorumu silmek istediğine emin misin?",
   },
 
   en: {
@@ -119,6 +121,8 @@ export const translations = {
     langDesc: "Interface language",
     member: "Member",
     admin: "Admin",
+    adminDeleteReview: "Delete review",
+    confirmDeleteReview: "Are you sure you want to delete this review?",
   },
 } as const;
 

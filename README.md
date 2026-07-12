@@ -4,7 +4,7 @@
 
 **Erasmus öğrencileri için Avrupa şehirlerini keşfetme ve değerlendirme platformu.**
 
-[project-erasmus.vercel.app](https://project-erasmus.vercel.app)
+[erasmusmap.vercel.app](https://erasmusmap.vercel.app)
 
 [![CI](https://github.com/Gurcank/project-erasmus/actions/workflows/ci.yml/badge.svg)](https://github.com/Gurcank/project-erasmus/actions/workflows/ci.yml)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)](https://nextjs.org)

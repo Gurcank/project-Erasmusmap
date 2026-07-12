@@ -16,6 +16,14 @@ describe("latinize", () => {
     expect(latinize("München")).toBe("Munchen");
   });
 
+  it("strips Nordic/Icelandic letters", () => {
+    expect(latinize("Bodø")).toBe("Bodo");
+    expect(latinize("Malmö")).toBe("Malmo");
+    expect(latinize("Reykjavík")).toBe("Reykjavik");
+    expect(latinize("Þórshöfn")).toBe("Thorshofn");
+    expect(latinize("Garðabær")).toBe("Gardabaer");
+  });
+
   it("leaves plain ASCII text unchanged", () => {
     expect(latinize("Amsterdam")).toBe("Amsterdam");
   });

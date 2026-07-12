@@ -4,6 +4,7 @@ import { useT } from "@/hooks/useT";
 import Link from "next/link";
 import { latinize } from "@/lib/latinize";
 import BioEditor from "@/components/ui/BioEditor";
+import SubmitButton from "@/components/ui/SubmitButton";
 import type { City, ProfileReview } from "@/types";
 import { averageRating } from "@/lib/review";
 
@@ -16,6 +17,8 @@ type Props = {
   reviews: ProfileReview[];
   isOwnProfile: boolean;
   updateBio: (formData: FormData) => Promise<void>;
+  isAdmin: boolean;
+  deleteReview: (formData: FormData) => Promise<void>;
 };
 
 export default function ProfileContent({
@@ -27,6 +30,8 @@ export default function ProfileContent({
   reviews,
   isOwnProfile,
   updateBio,
+  isAdmin,
+  deleteReview,
 }: Props) {
   const t = useT();
 
@@ -128,8 +133,33 @@ export default function ProfileContent({
                         {new Date(review.createdAt).toLocaleDateString("tr-TR")}
                       </p>
                     </div>
-                    <div className="text-indigo-600 dark:text-indigo-400 font-semibold">
-                      ⭐ {average.toFixed(1)}
+                    <div className="flex items-center gap-3">
+                      <div className="text-indigo-600 dark:text-indigo-400 font-semibold">
+                        ⭐ {average.toFixed(1)}
+                      </div>
+                      {isAdmin && (
+                        <form
+                          action={deleteReview}
+                          onSubmit={(e) => {
+                            if (!window.confirm(t.confirmDeleteReview)) {
+                              e.preventDefault();
+                            }
+                          }}
+                        >
+                          <input
+                            type="hidden"
+                            name="reviewId"
+                            value={review.id}
+                          />
+                          <SubmitButton
+                            pendingText="…"
+                            title={t.adminDeleteReview}
+                            className="text-red-500 hover:text-red-400 text-sm disabled:opacity-50"
+                          >
+                            🗑
+                          </SubmitButton>
+                        </form>
+                      )}
                     </div>
                   </div>
                   <p className="text-gray-700 dark:text-white/80 leading-relaxed">

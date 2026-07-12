@@ -18,5 +18,15 @@ export function latinize(text: string) {
     .replace(/ü/g, "u")
     .replace(/Ü/g, "U")
     .replace(/ç/g, "c")
-    .replace(/Ç/g, "C");
+    .replace(/Ç/g, "C")
+    .replace(/ø/g, "o")
+    .replace(/Ø/g, "O")
+    .replace(/ð/g, "d")
+    .replace(/Ð/g, "D")
+    .replace(/þ/g, "th")
+    .replace(/Þ/g, "Th")
+    .replace(/æ/g, "ae")
+    .replace(/Æ/g, "Ae")
+    .replace(/œ/g, "oe")
+    .replace(/Œ/g, "Oe");
 }

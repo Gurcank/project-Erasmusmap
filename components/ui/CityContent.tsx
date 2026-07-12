@@ -18,6 +18,8 @@ type Props = {
   categoryRatings: CategoryRatings;
   reviews: CityReview[];
   submitReview: (formData: FormData) => Promise<void>;
+  isAdmin: boolean;
+  deleteReview: (formData: FormData) => Promise<void>;
 };
 
 function StarDisplay({ value }: { value: number }) {
@@ -45,6 +47,8 @@ export default function CityContent({
   categoryRatings,
   reviews,
   submitReview,
+  isAdmin,
+  deleteReview,
 }: Props) {
   const t = useT();
 
@@ -183,9 +187,30 @@ export default function CityContent({
                       </p>
                     </div>
                   </Link>
-                  <span className="text-indigo-600 dark:text-indigo-400 font-semibold text-lg">
-                    ⭐ {averageRating(review).toFixed(1)}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-indigo-600 dark:text-indigo-400 font-semibold text-lg">
+                      ⭐ {averageRating(review).toFixed(1)}
+                    </span>
+                    {isAdmin && (
+                      <form
+                        action={deleteReview}
+                        onSubmit={(e) => {
+                          if (!window.confirm(t.confirmDeleteReview)) {
+                            e.preventDefault();
+                          }
+                        }}
+                      >
+                        <input type="hidden" name="reviewId" value={review.id} />
+                        <SubmitButton
+                          pendingText="…"
+                          title={t.adminDeleteReview}
+                          className="text-red-500 hover:text-red-400 text-sm disabled:opacity-50"
+                        >
+                          🗑
+                        </SubmitButton>
+                      </form>
+                    )}
+                  </div>
                 </div>
 
                 <p className="text-gray-700 dark:text-zinc-300 leading-relaxed text-lg mt-6 max-w-4xl">
