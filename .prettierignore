@@ -3,4 +3,3 @@ node_modules
 public/eu-cities
 package-lock.json
 prisma/migrations
-CLEANUP.md

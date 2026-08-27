@@ -15,7 +15,9 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "npm"
       - run: npm ci
+      - run: npx prisma generate
       - run: npm run lint
+      - run: npm run typecheck
       - run: npm run format:check
 
   test:
@@ -43,12 +45,16 @@ jobs:
       - run: npm run build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           NEXTAUTH_URL: http://localhost:3000
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          # Read by next.config.ts to allow the Storage host in
+          # images.remotePatterns and the CSP.
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
 
   audit:
     runs-on: ubuntu-latest
@@ -59,7 +65,7 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "npm"
       - run: npm ci
-      # Only fail CI on high/critical findings — known moderate issues
-      # (transitive, no non-breaking fix available) are tracked in the
-      # cleanup report instead of blocking every PR.
+      # Fails on high/critical findings. The tree is currently clean; the
+      # deepmerge-ts override in package.json is what keeps the Prisma CLI
+      # config chain off the advisory list.
       - run: npm audit --audit-level=high
