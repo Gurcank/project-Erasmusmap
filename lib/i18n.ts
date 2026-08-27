@@ -8,6 +8,7 @@ export const translations = {
     logout: "Çıkış Yap",
     menu: "Menü",
     noResults: "Sonuç bulunamadı",
+    searching: "Aranıyor…",
 
     // City Page
     cityRatings: "Şehir Puanları",
@@ -106,6 +107,7 @@ export const translations = {
     logout: "Sign Out",
     menu: "Menu",
     noResults: "No results found",
+    searching: "Searching…",
 
     // City Page
     cityRatings: "City Ratings",

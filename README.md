@@ -20,7 +20,7 @@
 
 - 🗺️ İnteraktif Avrupa haritası (Mapbox GL)
 - ⭐ Şehir değerlendirme sistemi — 6 kategori: Kültür, Gastronomi, Güvenlik, Sosyal Hayat, Ulaşım, Yaşam Maliyeti
-- 👤 Kullanıcı profili ve ziyaret edilen şehirler listesi
+- 👤 Kullanıcı profili, ziyaret edilen şehirler ve gitmek istenenler
 - 🔐 Google ve e-posta/şifre ile giriş
 - 🌐 Türkçe / İngilizce dil desteği
 - 🌙 Koyu / Açık tema
@@ -39,6 +39,7 @@
 | Test       | Vitest                  |
 | Deploy     | Vercel                  |
 | Fotoğraf   | Unsplash API            |
+| Şehir veri | GeoNames (CC BY 4.0)    |
 
 ## Başlarken
 
@@ -88,6 +89,22 @@ npm install
 npm run db:migrate   # migration'ları uygula
 npm run db:seed      # şehirleri ekle
 npm run dev          # geliştirme sunucusu
+```
+
+### Şehir verisi
+
+Şehir listesi [`prisma/data/cities.json`](prisma/data/cities.json) dosyasında tutulur:
+Erasmus+ ülkelerinde nüfusu 50.000'i geçen şehirler ve tüm başkentler (1602 kayıt),
+koordinatları ve yerel/çeviri adlarıyla birlikte. Kaynak
+[GeoNames](https://www.geonames.org) `cities15000` veri setidir ve
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) ile lisanslanmıştır.
+
+Listeyi tazelemek için:
+
+```bash
+curl -O https://download.geonames.org/export/dump/cities15000.zip
+unzip cities15000.zip
+npx ts-node scripts/build-city-data.ts cities15000.txt
 ```
 
 > Prisma CLI ayarları [`prisma.config.ts`](prisma.config.ts) içinde; `.env.local` oradan

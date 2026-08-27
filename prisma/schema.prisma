@@ -12,11 +12,14 @@ datasource db {
 }
 
 model City {
-  id         String @id @default(uuid())
-  name       String
-  slug       String @unique
-  regionSlug String
-  country    String
+  id      String @id @default(uuid())
+  name    String
+  slug    String @unique
+  country String
+
+  /// Local and translated names from GeoNames, lowercased and de-accented.
+  /// Searched alongside `name` so "Viyana" finds Vienna and "Prag" finds Prague.
+  searchAliases String[]
 
   // Coordinates drive the map's city markers; population and geonameId come
   // from the GeoNames import that replaces the NUTS region list.
@@ -38,7 +41,6 @@ model City {
   wishlists WishlistItem[]
   favorites FavoriteCity[]
 
-  @@unique([regionSlug, slug])
 }
 
 model Review {

@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { Ban, Star, Trash2, Undo2 } from "lucide-react";
 import { useT } from "@/hooks/useT";
-import { latinize } from "@/lib/latinize";
 import SubmitButton from "@/components/ui/SubmitButton";
 import ActionForm from "@/components/ui/ActionForm";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -238,7 +237,7 @@ export default function AdminDashboard({
                           href={`/c/${review.city.slug}`}
                           className="text-xs text-accent-text transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                         >
-                          {latinize(review.city.name)}
+                          {review.city.name}
                         </Link>
                       </div>
                     </div>

@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Map from "@/components/map/Map";
 import { revalidatePath } from "next/cache";
-import { latinize } from "@/lib/latinize";
 import CityContent from "@/components/ui/CityContent";
 import { parseRatings, parseReviewContent, averageRating } from "@/lib/review";
 import type { CategoryRatings } from "@/types";
@@ -32,7 +31,7 @@ export async function generateMetadata({
   // point where a real 404 status can still be set.
   if (!city) notFound();
 
-  const name = latinize(city.name);
+  const name = city.name;
   const description = `${name}, ${city.country} için Erasmus öğrenci değerlendirmeleri, puanları ve fotoğrafları.`;
   return {
     title: name,
@@ -68,8 +67,6 @@ export default async function CityPage({
   ]);
 
   if (!city) notFound();
-
-  const latinizedCityName = latinize(city.name);
 
   const visit = viewer.ok
     ? await prisma.visit.findUnique({
@@ -130,7 +127,7 @@ export default async function CityPage({
     });
   }
 
-  const cityImage = await fetchCityPhoto(latinizedCityName);
+  const cityImage = await fetchCityPhoto(city.name);
 
   const ratingData = await prisma.review.aggregate({
     where: { cityId: city.id },
@@ -165,7 +162,7 @@ export default async function CityPage({
       <div className="relative z-10 min-h-screen bg-canvas/90 pt-16 backdrop-blur-sm">
         <CityContent
           cityId={city.id}
-          cityName={latinizedCityName}
+          cityName={city.name}
           cityImage={cityImage}
           isVisited={isVisited}
           reviewCount={reviewCount}

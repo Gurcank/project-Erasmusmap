@@ -3,6 +3,16 @@ export type City = {
   name: string;
   slug: string;
   country: string;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+/** Search results only need what the suggestion row renders. */
+export type CitySuggestion = {
+  id: string;
+  name: string;
+  slug: string;
+  country: string;
 };
 
 export type ReviewAuthor = {

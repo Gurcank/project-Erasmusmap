@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { MapPin, MessageSquareText, Star, Trash2 } from "lucide-react";
 import { useT } from "@/hooks/useT";
-import { latinize } from "@/lib/latinize";
 import BioEditor from "@/components/ui/BioEditor";
 import SubmitButton from "@/components/ui/SubmitButton";
 import ActionForm from "@/components/ui/ActionForm";
 import UserAvatar from "@/components/ui/UserAvatar";
-import type { City, ProfileReview } from "@/types";
+import type { CitySuggestion, ProfileReview } from "@/types";
 import { averageRating } from "@/lib/review";
 import type { FormAction } from "@/lib/action-result";
 
@@ -18,7 +17,7 @@ type Props = {
   bio: string | null;
   cityCount: number;
   reviewCount: number;
-  visitedCities: City[];
+  visitedCities: CitySuggestion[];
   reviews: ProfileReview[];
   isOwnProfile: boolean;
   updateBio: FormAction;
@@ -129,7 +128,7 @@ export default function ProfileContent({
                     aria-hidden="true"
                     className="shrink-0 text-text-subtle"
                   />
-                  <span className="truncate">{latinize(city.name)}</span>
+                  <span className="truncate">{city.name}</span>
                 </Link>
               ))}
             </div>
@@ -157,7 +156,7 @@ export default function ProfileContent({
                         href={`/c/${review.city.slug}`}
                         className="font-display font-semibold text-text transition-colors hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                       >
-                        {latinize(review.city.name)}
+                        {review.city.name}
                       </Link>
                       <p className="text-xs text-text-subtle">
                         {new Date(review.createdAt).toLocaleDateString("tr-TR")}
