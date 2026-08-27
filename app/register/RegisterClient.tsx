@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Map from "@/components/map/Map";
+import { Loader2 } from "lucide-react";
+import AuthShell from "@/components/ui/AuthShell";
+
+const FIELD_CLASS =
+  "w-full rounded-control border border-ink-50/20 bg-ink-50/10 px-4 py-3 text-ink-50 transition-colors placeholder:text-ink-300 focus-visible:border-accent-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-400";
 
 export default function RegisterClient() {
   const router = useRouter();
@@ -15,11 +19,13 @@ export default function RegisterClient() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const passwordsMatch = password === confirmPassword;
+
+  const handleRegister = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (isSubmitting) return;
 
-    if (password !== confirmPassword) {
+    if (!passwordsMatch) {
       setError("Şifreler eşleşmiyor");
       return;
     }
@@ -30,9 +36,7 @@ export default function RegisterClient() {
     try {
       const res = await fetch("/api/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),
       });
 
@@ -52,81 +56,80 @@ export default function RegisterClient() {
   };
 
   return (
-    <div className="relative w-full h-screen overflow-hidden">
-      <div className="absolute inset-0 -z-10">
-        <Map isStatic />
-      </div>
+    <AuthShell title="Kayıt Ol">
+      <form onSubmit={handleRegister} className="flex flex-col gap-3">
+        <input
+          type="text"
+          aria-label="Ad Soyad"
+          placeholder="Ad Soyad"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          className={FIELD_CLASS}
+          required
+        />
+        <input
+          type="email"
+          aria-label="Email"
+          placeholder="Email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          className={FIELD_CLASS}
+          required
+        />
+        <input
+          type="password"
+          aria-label="Şifre"
+          placeholder="Şifre (en az 8 karakter)"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          className={FIELD_CLASS}
+          required
+        />
+        <input
+          type="password"
+          aria-label="Şifre Tekrar"
+          placeholder="Şifre tekrar"
+          value={confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
+          aria-invalid={confirmPassword.length > 0 && !passwordsMatch}
+          className={FIELD_CLASS}
+          required
+        />
 
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80 backdrop-blur-[2px] -z-10" />
+        {confirmPassword.length > 0 && !passwordsMatch && (
+          <p className="text-sm text-accent-300">Şifreler eşleşmiyor</p>
+        )}
+        {error && (
+          <p role="alert" className="text-sm text-danger-400">
+            {error}
+          </p>
+        )}
 
-      <div className="flex items-center justify-center min-h-screen px-4">
-        <div className="w-full max-w-md backdrop-blur-2xl bg-white/10 border border-white/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] rounded-3xl p-10 transition-all duration-500">
-          <h1 className="text-3xl font-bold text-center text-white mb-8">
-            Kayıt Ol
-          </h1>
-
-          <form onSubmit={handleRegister} className="flex flex-col gap-4">
-            <input
-              type="text"
-              aria-label="Ad Soyad"
-              placeholder="Ad Soyad"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="px-4 py-3 rounded-xl bg-white/20 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/60"
-              required
+        <button
+          type="submit"
+          disabled={!passwordsMatch || isSubmitting}
+          className="mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-control bg-primary py-3 font-semibold text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isSubmitting && (
+            <Loader2
+              size={16}
+              aria-hidden="true"
+              className="animate-spin motion-reduce:animate-none"
             />
-            <input
-              type="email"
-              aria-label="Email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="px-4 py-3 rounded-xl bg-white/20 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/60"
-              required
-            />
-            <input
-              type="password"
-              aria-label="Şifre"
-              placeholder="Şifre"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="px-4 py-3 rounded-xl bg-white/20 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/60"
-              required
-            />
+          )}
+          {isSubmitting ? "Kaydediliyor…" : "Kayıt ol"}
+        </button>
 
-            <input
-              type="password"
-              aria-label="Şifre Tekrar"
-              placeholder="Şifre Tekrar"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="px-4 py-3 rounded-xl bg-white/20 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/60"
-              required
-            />
-
-            {error && <p className="text-red-300 text-sm">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={password !== confirmPassword || isSubmitting}
-              className={`py-3 font-semibold rounded-xl transition ${
-                password === confirmPassword
-                  ? "bg-black/80 hover:bg-black text-white disabled:opacity-50"
-                  : "bg-gray-500 text-gray-300 cursor-not-allowed"
-              }`}
-            >
-              {isSubmitting ? "Kaydediliyor..." : "Kayıt Ol"}
-            </button>
-
-            <p className="text-sm text-center text-white/80 mt-2">
-              Zaten hesabın var mı?{" "}
-              <Link href="/login" className="font-semibold underline">
-                Giriş Yap
-              </Link>
-            </p>
-          </form>
-        </div>
-      </div>
-    </div>
+        <p className="mt-2 text-center text-sm text-ink-300">
+          Zaten hesabın var mı?{" "}
+          <Link
+            href="/login"
+            className="font-semibold text-accent-400 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400"
+          >
+            Giriş yap
+          </Link>
+        </p>
+      </form>
+    </AuthShell>
   );
 }

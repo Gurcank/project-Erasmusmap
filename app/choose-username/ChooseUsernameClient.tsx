@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import Map from "@/components/map/Map";
+import { Loader2 } from "lucide-react";
+import AuthShell from "@/components/ui/AuthShell";
 import { USERNAME_MAX_LENGTH, getUsernameError } from "@/lib/username";
 
 export default function ChooseUsernameClient() {
@@ -15,8 +16,8 @@ export default function ChooseUsernameClient() {
 
   const validationError = username ? getUsernameError(username) : null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (validationError) return;
 
     setIsLoading(true);
@@ -48,54 +49,47 @@ export default function ChooseUsernameClient() {
   };
 
   return (
-    <div className="relative w-full h-screen overflow-hidden">
-      <div className="absolute inset-0 -z-10">
-        <Map isStatic />
-      </div>
-      <div className="absolute inset-0 bg-black/60 -z-10" />
+    <AuthShell
+      title="Kullanıcı adı seç"
+      description="Bu isim profilinde ve yorumlarında görünecek."
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <input
+          type="text"
+          aria-label="Kullanıcı adı"
+          placeholder="kullanici-adi"
+          value={username}
+          onChange={(event) => setUsername(event.target.value.toLowerCase())}
+          maxLength={USERNAME_MAX_LENGTH}
+          aria-invalid={Boolean(validationError)}
+          className="w-full rounded-control border border-ink-50/20 bg-ink-50/10 px-4 py-3 text-ink-50 transition-colors placeholder:text-ink-300 focus-visible:border-accent-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-400"
+          required
+        />
 
-      <div className="flex items-center justify-center min-h-screen px-4">
-        <div className="w-full max-w-md backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl rounded-2xl p-8">
-          <h1 className="text-3xl font-bold text-center text-white mb-2">
-            Kullanıcı Adı Seç
-          </h1>
-          <p className="text-white/60 text-sm text-center mb-8">
-            Bu isim profilinde görünecek
+        {username.length > 0 && validationError && (
+          <p className="text-sm text-accent-300">{validationError}</p>
+        )}
+        {error && (
+          <p role="alert" className="text-sm text-danger-400">
+            {error}
           </p>
+        )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 select-none">
-                @
-              </span>
-              <input
-                type="text"
-                aria-label="Kullanıcı Adı"
-                placeholder="kullanici-adi"
-                value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                maxLength={USERNAME_MAX_LENGTH}
-                className="w-full pl-8 pr-4 py-3 rounded-xl bg-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/60"
-                required
-              />
-            </div>
-
-            {username.length > 0 && validationError && (
-              <p className="text-amber-300 text-sm">{validationError}</p>
-            )}
-
-            {error && <p className="text-red-300 text-sm">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={isLoading || !!validationError || username.length === 0}
-              className="py-3 bg-black/80 text-white font-semibold rounded-xl hover:bg-black transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? "Kaydediliyor..." : "Kaydet"}
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+        <button
+          type="submit"
+          disabled={isLoading || Boolean(validationError) || !username}
+          className="mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-control bg-primary py-3 font-semibold text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isLoading && (
+            <Loader2
+              size={16}
+              aria-hidden="true"
+              className="animate-spin motion-reduce:animate-none"
+            />
+          )}
+          {isLoading ? "Kaydediliyor…" : "Kaydet"}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

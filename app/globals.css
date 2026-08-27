@@ -2,37 +2,153 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * Palette rationale: the interface sits on top of satellite imagery, so the
+ * neutral ramp is desaturated and blue-leaning to let the map carry the color.
+ * A single warm accent (amber) is the only saturated hue in the chrome — it
+ * reads against satellite's cool blues and greens, and doubles as the map
+ * marker color. Every value below was checked with a WCAG contrast script,
+ * not by eye; the pairings and their ratios are noted on the semantic tokens.
+ */
+@theme {
+  --color-ink-50: oklch(0.985 0.002 250);
+  --color-ink-100: oklch(0.965 0.004 250);
+  --color-ink-200: oklch(0.925 0.007 250);
+  --color-ink-300: oklch(0.87 0.011 250);
+  --color-ink-400: oklch(0.715 0.017 252);
+  --color-ink-450: oklch(0.638 0.019 253);
+  --color-ink-500: oklch(0.545 0.021 254);
+  --color-ink-600: oklch(0.455 0.021 256);
+  --color-ink-700: oklch(0.372 0.02 258);
+  --color-ink-800: oklch(0.278 0.019 260);
+  --color-ink-900: oklch(0.205 0.017 262);
+  --color-ink-950: oklch(0.145 0.014 264);
+
+  --color-accent-300: oklch(0.87 0.115 85);
+  --color-accent-400: oklch(0.82 0.14 78);
+  --color-accent-500: oklch(0.76 0.155 71);
+  --color-accent-600: oklch(0.68 0.15 64);
+  --color-accent-700: oklch(0.56 0.125 58);
+
+  /* Status hues carry meaning, so they always ship alongside an icon. */
+  --color-visited-400: oklch(0.78 0.145 155);
+  --color-visited-500: oklch(0.7 0.15 152);
+  --color-visited-600: oklch(0.6 0.135 150);
+  --color-visited-700: oklch(0.49 0.115 150);
+
+  --color-wish-400: oklch(0.76 0.115 235);
+  --color-wish-500: oklch(0.67 0.14 240);
+  --color-wish-600: oklch(0.57 0.155 245);
+  --color-wish-700: oklch(0.47 0.14 248);
+
+  --color-danger-400: oklch(0.73 0.17 22);
+  --color-danger-500: oklch(0.65 0.195 25);
+  --color-danger-600: oklch(0.57 0.205 27);
+  --color-danger-700: oklch(0.48 0.18 27);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    var(--font-bricolage), var(--font-inter), ui-sans-serif, system-ui,
+    sans-serif;
+
+  /* Display sizes above Tailwind's scale, for page and city titles. */
+  --text-display: 2.5rem;
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.02em;
+  --text-hero: 3.5rem;
+  --text-hero--line-height: 1.05;
+  --text-hero--letter-spacing: -0.03em;
+
+  /* Three radius steps instead of a different one per component. */
+  --radius-control: 0.625rem;
+  --radius-card: 1rem;
+  --radius-panel: 1.5rem;
+
+  /* Three elevation steps: resting card, floating panel, popover. */
+  --shadow-raised: 0 1px 2px oklch(0.145 0.014 264 / 0.06);
+  --shadow-floating:
+    0 4px 6px -1px oklch(0.145 0.014 264 / 0.08),
+    0 2px 4px -2px oklch(0.145 0.014 264 / 0.06);
+  --shadow-popover:
+    0 12px 24px -6px oklch(0.145 0.014 264 / 0.18),
+    0 4px 8px -4px oklch(0.145 0.014 264 / 0.12);
+}
+
+/*
+ * Semantic layer. Components reference these, never the raw ramp, so light and
+ * dark stay in sync from one definition.
+ */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-accent-text: var(--accent-text);
+  --color-focus: var(--focus);
+}
+
 :root {
-  --background: #f9fafb;
-  --foreground: #111827;
+  --canvas: var(--color-ink-50);
+  --surface: #fff;
+  --surface-raised: #fff;
+  /* Hairline only — decorative, exempt from the 3:1 component rule. */
+  --border: var(--color-ink-200);
+  /* Input and control edges: 3.22:1 on canvas. */
+  --border-strong: var(--color-ink-450);
+  --text: var(--color-ink-900); /* 17.16:1 on canvas */
+  --text-muted: var(--color-ink-600); /* 7.27:1 on surface */
+  --text-subtle: var(--color-ink-500); /* 4.74:1 on canvas */
+  --primary: var(--color-accent-600);
+  --primary-hover: var(--color-accent-700);
+  --on-primary: var(--color-ink-950); /* 6.62:1 on primary */
+  --accent-text: var(--color-accent-700); /* 4.84:1 on surface */
+  --focus: var(--color-accent-700); /* 4.64:1 on canvas */
 }
 
 .dark {
-  --background: #030712;
-  --foreground: #f9fafb;
+  --canvas: var(--color-ink-950);
+  --surface: var(--color-ink-900);
+  --surface-raised: var(--color-ink-800);
+  --border: var(--color-ink-800);
+  --border-strong: var(--color-ink-500); /* 3.54:1 on surface */
+  --text: var(--color-ink-50); /* 17.16:1 on surface */
+  --text-muted: var(--color-ink-400); /* 7.10:1 on surface */
+  --text-subtle: var(--color-ink-450); /* 5.29:1 on surface */
+  --primary: var(--color-accent-500);
+  --primary-hover: var(--color-accent-400);
+  --on-primary: var(--color-ink-950); /* 8.97:1 on primary */
+  --accent-text: var(--color-accent-400); /* 10.11:1 on surface */
+  --focus: var(--color-accent-500); /* 8.97:1 on canvas */
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--canvas);
+  color: var(--text);
+  font-family: var(--font-sans);
 }
 
-/* Map Tooltip Container */
+/* Map tooltip lives outside React, so it is styled here rather than inline. */
 .mapboxgl-popup.city-tooltip .mapboxgl-popup-content {
-  background: rgba(24, 24, 27, 0.85);
+  background: oklch(0.145 0.014 264 / 0.88);
   backdrop-filter: blur(12px);
-  color: white;
+  color: var(--color-ink-50);
   padding: 8px 14px;
-  border-radius: 12px;
-  font-size: 14px;
+  border-radius: var(--radius-control);
+  font-size: 0.875rem;
   font-weight: 600;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  border: 1px solid oklch(0.985 0.002 250 / 0.12);
+  box-shadow: var(--shadow-popover);
 }
 
 .mapboxgl-popup.city-tooltip .mapboxgl-popup-tip {
-  border-top-color: rgba(24, 24, 27, 0.85);
+  border-top-color: oklch(0.145 0.014 264 / 0.88);
 }
 
 .mapboxgl-popup-content {

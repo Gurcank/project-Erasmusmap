@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { Ban, Star, Trash2, Undo2 } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import { latinize } from "@/lib/latinize";
 import SubmitButton from "@/components/ui/SubmitButton";
 import ActionForm from "@/components/ui/ActionForm";
-import type { FormAction } from "@/lib/action-result";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { averageRating } from "@/lib/review";
 import type { CategoryRatings } from "@/types";
+import type { FormAction } from "@/lib/action-result";
 
 type AdminUser = {
   id: string;
@@ -48,45 +49,6 @@ type Props = {
 
 type Tab = "overview" | "users" | "reviews";
 
-// Avatars uploaded before the Storage migration are still base64 data URIs,
-// which the image optimizer cannot fetch.
-function isLegacyDataUri(src: string): boolean {
-  return src.startsWith("data:");
-}
-
-function Avatar({
-  image,
-  label,
-  size = 10,
-}: {
-  image: string | null;
-  label: string;
-  size?: number;
-}) {
-  const dim = `${size * 0.25}rem`;
-  if (image) {
-    return (
-      <Image
-        src={image}
-        alt=""
-        width={size * 4}
-        height={size * 4}
-        unoptimized={isLegacyDataUri(image)}
-        style={{ width: dim, height: dim }}
-        className="rounded-full object-cover shrink-0"
-      />
-    );
-  }
-  return (
-    <div
-      style={{ width: dim, height: dim }}
-      className="rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold shrink-0"
-    >
-      {label.charAt(0).toUpperCase()}
-    </div>
-  );
-}
-
 export default function AdminDashboard({
   currentUserEmail,
   users,
@@ -108,23 +70,28 @@ export default function AdminDashboard({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="font-display text-display font-bold text-text">
           {t.adminPanel}
         </h1>
-        <p className="text-gray-500 dark:text-white/40 text-sm mt-1">
-          {t.adminPanelDesc}
-        </p>
+        <p className="mt-1 text-sm text-text-muted">{t.adminPanelDesc}</p>
       </div>
 
-      <div className="flex gap-1 border-b border-gray-200 dark:border-zinc-800">
+      <div
+        role="tablist"
+        aria-label={t.adminPanel}
+        className="flex gap-1 border-b border-border"
+      >
         {tabs.map(({ key, label }) => (
           <button
             key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
             onClick={() => setTab(key)}
-            className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors duration-150 ${
+            className={`-mb-px cursor-pointer border-b-2 px-4 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
               tab === key
-                ? "text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
-                : "text-gray-500 dark:text-white/40 hover:text-gray-800 dark:hover:text-white/70"
+                ? "border-primary text-text"
+                : "border-transparent text-text-subtle hover:text-text"
             }`}
           >
             {label}
@@ -133,7 +100,7 @@ export default function AdminDashboard({
       </div>
 
       {tab === "overview" && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid gap-4 sm:grid-cols-3">
           {[
             { label: t.statTotalUsers, value: stats.userCount },
             { label: t.statTotalCities, value: stats.cityCount },
@@ -141,27 +108,23 @@ export default function AdminDashboard({
           ].map(({ label, value }) => (
             <div
               key={label}
-              className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 border-t-2 border-t-indigo-500/70 rounded-2xl p-6 text-center transition-all duration-300 ease-out hover:bg-gray-50 dark:hover:bg-white/[0.04]"
+              className="rounded-card border border-border bg-surface p-6 text-center"
             >
-              <p className="text-3xl font-bold text-gray-900 dark:text-white tabular-nums">
+              <p className="font-display text-3xl font-bold text-text tabular-nums">
                 {value}
               </p>
-              <p className="text-gray-500 dark:text-white/50 text-sm mt-1">
-                {label}
-              </p>
+              <p className="mt-1 text-sm text-text-muted">{label}</p>
             </div>
           ))}
         </div>
       )}
 
       {tab === "users" && (
-        <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
+        <div className="overflow-hidden rounded-card border border-border bg-surface">
           {users.length === 0 ? (
-            <p className="p-8 text-center text-gray-400 dark:text-white/40">
-              {t.noUsersFound}
-            </p>
+            <p className="p-8 text-center text-text-subtle">{t.noUsersFound}</p>
           ) : (
-            <div className="divide-y divide-gray-100 dark:divide-zinc-800">
+            <div className="divide-y divide-border">
               {users.map((user) => {
                 const isSelf = user.email === currentUserEmail;
                 const isAdminTarget = user.role === "ADMIN";
@@ -170,37 +133,45 @@ export default function AdminDashboard({
                 return (
                   <div
                     key={user.id}
-                    className="flex items-center justify-between gap-4 px-6 py-4 transition-all duration-300 ease-out hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:shadow-[inset_3px_0_0_0_#6366f1] dark:hover:shadow-[inset_3px_0_0_0_#818cf8]"
+                    className="flex items-center justify-between gap-4 px-6 py-4 transition-colors hover:bg-surface-raised"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Avatar image={user.image} label={displayName} />
+                    <div className="flex min-w-0 items-center gap-3">
+                      <UserAvatar
+                        src={user.image}
+                        label={displayName}
+                        size={40}
+                      />
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <Link
                             href={user.username ? `/u/${user.username}` : "#"}
-                            className="font-semibold text-gray-900 dark:text-white text-sm truncate border-b border-transparent pb-0.5 transition-colors duration-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-400/60"
+                            onClick={(event) => {
+                              if (!user.username) event.preventDefault();
+                            }}
+                            className="truncate text-sm font-semibold text-text transition-colors hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                           >
-                            {user.username ? `@${user.username}` : displayName}
+                            {displayName}
                           </Link>
-                          {user.role === "ADMIN" && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium shrink-0">
+                          {isAdminTarget && (
+                            <span className="shrink-0 rounded-full bg-surface-raised px-2 py-0.5 text-xs font-medium text-accent-text">
                               {t.admin}
                             </span>
                           )}
                           {user.banned && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-medium shrink-0">
+                            <span className="flex shrink-0 items-center gap-1 rounded-full bg-surface-raised px-2 py-0.5 text-xs font-medium text-danger-700 dark:text-danger-400">
+                              <Ban size={11} aria-hidden="true" />
                               {t.statusBanned}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-400 dark:text-white/40 truncate">
+                        <p className="truncate text-xs text-text-subtle">
                           {user.email} · {user._count.reviews} {t.reviews}
                         </p>
                       </div>
                     </div>
 
                     {!locked && (
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex shrink-0 items-center gap-2">
                         <ActionForm
                           action={banUser}
                           confirmMessage={
@@ -208,10 +179,12 @@ export default function AdminDashboard({
                           }
                         >
                           <input type="hidden" name="userId" value={user.id} />
-                          <SubmitButton
-                            pendingText="…"
-                            className="text-xs px-3 py-1.5 rounded-lg font-medium border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-white/70 transition-colors duration-150 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-300 dark:hover:bg-amber-500/10 dark:hover:text-amber-400 disabled:opacity-50"
-                          >
+                          <SubmitButton className="rounded-control border border-border-strong px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:border-accent-600 hover:text-accent-text disabled:opacity-50">
+                            {user.banned ? (
+                              <Undo2 size={12} aria-hidden="true" />
+                            ) : (
+                              <Ban size={12} aria-hidden="true" />
+                            )}
                             {user.banned ? t.unbanAction : t.banAction}
                           </SubmitButton>
                         </ActionForm>
@@ -220,10 +193,8 @@ export default function AdminDashboard({
                           confirmMessage={t.confirmDeleteUser}
                         >
                           <input type="hidden" name="userId" value={user.id} />
-                          <SubmitButton
-                            pendingText="…"
-                            className="text-xs px-3 py-1.5 rounded-lg font-medium border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-white/70 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-500/10 dark:hover:text-red-400 disabled:opacity-50"
-                          >
+                          <SubmitButton className="rounded-control border border-border-strong px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:border-danger-600 hover:text-danger-700 disabled:opacity-50 dark:hover:text-danger-400">
+                            <Trash2 size={12} aria-hidden="true" />
                             {t.deleteUserAction}
                           </SubmitButton>
                         </ActionForm>
@@ -240,7 +211,7 @@ export default function AdminDashboard({
       {tab === "reviews" && (
         <div className="space-y-4">
           {reviews.length === 0 ? (
-            <p className="p-8 text-center text-gray-400 dark:text-white/40 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl">
+            <p className="rounded-card border border-border bg-surface p-8 text-center text-text-subtle">
               {t.noReviewsFound}
             </p>
           ) : (
@@ -250,32 +221,35 @@ export default function AdminDashboard({
               return (
                 <div
                   key={review.id}
-                  className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 transition-all duration-300 ease-out hover:border-indigo-200 dark:hover:border-indigo-500/30 hover:shadow-[inset_3px_0_0_0_#6366f1] dark:hover:shadow-[inset_3px_0_0_0_#818cf8]"
+                  className="rounded-card border border-border bg-surface p-6 transition-colors hover:border-border-strong"
                 >
-                  <div className="flex justify-between items-start mb-3 gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Avatar
-                        image={review.user?.image ?? null}
+                  <div className="mb-3 flex items-start justify-between gap-4">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <UserAvatar
+                        src={review.user?.image ?? null}
                         label={displayName}
-                        size={9}
+                        size={36}
                       />
                       <div className="min-w-0">
-                        <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
-                          {review.user?.username
-                            ? `@${displayName}`
-                            : displayName}
+                        <p className="truncate text-sm font-semibold text-text">
+                          {displayName}
                         </p>
                         <Link
                           href={`/c/${review.city.slug}`}
-                          className="text-xs text-indigo-500 hover:text-indigo-400 transition-colors"
+                          className="text-xs text-accent-text transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                         >
                           {latinize(review.city.name)}
                         </Link>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-indigo-600 dark:text-indigo-400 font-semibold text-sm">
-                        ⭐ {averageRating(review).toFixed(1)}
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
+                        <Star
+                          size={14}
+                          aria-hidden="true"
+                          className="fill-accent-500 text-accent-500"
+                        />
+                        {averageRating(review).toFixed(1)}
                       </span>
                       <ActionForm
                         action={deleteReview}
@@ -287,16 +261,16 @@ export default function AdminDashboard({
                           value={review.id}
                         />
                         <SubmitButton
-                          pendingText="…"
                           title={t.adminDeleteReview}
-                          className="text-red-500 hover:text-red-400 text-sm transition-colors duration-150 disabled:opacity-50"
+                          aria-label={t.adminDeleteReview}
+                          className="rounded-control p-1.5 text-text-subtle transition-colors hover:bg-surface-raised hover:text-danger-700 disabled:opacity-50 dark:hover:text-danger-400"
                         >
-                          🗑
+                          <Trash2 size={14} aria-hidden="true" />
                         </SubmitButton>
                       </ActionForm>
                     </div>
                   </div>
-                  <p className="text-gray-700 dark:text-zinc-300 text-sm leading-relaxed">
+                  <p className="text-sm leading-relaxed text-text-muted">
                     {review.content}
                   </p>
                 </div>

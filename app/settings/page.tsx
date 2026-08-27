@@ -57,8 +57,8 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
-      <div className="max-w-2xl mx-auto pt-28 px-6 pb-24 space-y-6">
+    <div className="min-h-screen bg-canvas">
+      <div className="mx-auto max-w-2xl space-y-6 px-6 pt-28 pb-24">
         <SettingsContent
           name={user.name}
           email={user.email ?? ""}

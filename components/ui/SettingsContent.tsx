@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
+import { ArrowLeft, Languages, Palette } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageSelect from "@/components/ui/LanguageSelect";
 import SubmitButton from "@/components/ui/SubmitButton";
 import AvatarUploader from "@/components/ui/AvatarUploader";
-import Link from "next/link";
 import ActionForm from "@/components/ui/ActionForm";
 import type { FormAction } from "@/lib/action-result";
 
@@ -18,6 +19,14 @@ type Props = {
   profileUrl: string;
   updateUsername: FormAction;
 };
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="mb-3 px-1 text-xs font-semibold tracking-widest text-text-subtle uppercase">
+      {children}
+    </h2>
+  );
+}
 
 export default function SettingsContent({
   name,
@@ -33,128 +42,98 @@ export default function SettingsContent({
   return (
     <>
       <div className="mb-8">
-        <div className="mb-1">
-          <Link
-            href={profileUrl}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition text-sm"
-          >
-            {t.backToProfile}
-          </Link>
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <Link
+          href={profileUrl}
+          className="mb-1 inline-flex items-center gap-1.5 text-sm text-text-subtle transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          <ArrowLeft size={14} aria-hidden="true" />
+          {t.backToProfile}
+        </Link>
+        <h1 className="font-display text-display font-bold text-text">
           {t.settingsTitle}
         </h1>
-        <p className="text-gray-500 dark:text-white/40 text-sm mt-1">
-          {t.settingsDesc}
-        </p>
+        <p className="mt-1 text-sm text-text-muted">{t.settingsDesc}</p>
       </div>
 
       <section>
-        <h2 className="flex items-center gap-2 text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-widest mb-3 px-1">
-          <span className="w-1 h-1 rounded-full bg-indigo-500" />
-          {t.accountSection}
-        </h2>
-        <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-zinc-800">
-          <div className="flex items-center justify-between px-6 py-5 gap-4">
+        <SectionHeading>{t.accountSection}</SectionHeading>
+        <div className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
+          <div className="flex items-center justify-between gap-4 px-6 py-5">
             <AvatarUploader image={image} fallbackLabel={name ?? email} />
-            <span className="text-xs px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium shrink-0">
+            <span className="shrink-0 rounded-full bg-surface-raised px-3 py-1 text-xs font-medium text-text-muted">
               {role === "ADMIN" ? t.admin : t.member}
             </span>
           </div>
 
-          <div className="flex items-center justify-between px-6 py-4">
-            <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                {name}
-              </p>
-              <p className="text-xs text-gray-400 dark:text-white/40">
-                {email}
-              </p>
-            </div>
+          <div className="px-6 py-4">
+            <p className="text-sm font-semibold text-text">{name}</p>
+            <p className="text-xs text-text-subtle">{email}</p>
           </div>
 
           <div className="px-6 py-5">
             <ActionForm
               action={updateUsername}
               className="space-y-3"
-              errorClassName="text-xs text-red-500"
+              errorClassName="text-xs text-danger-700 dark:text-danger-400"
             >
-              <div className="flex items-center justify-between mb-2">
+              <div className="mb-2 flex items-center justify-between gap-3">
                 <label
                   htmlFor="username"
-                  className="text-sm font-medium text-gray-700 dark:text-white"
+                  className="text-sm font-medium text-text"
                 >
                   {t.usernameLabel}
                 </label>
-                <span className="text-xs text-gray-400 dark:text-white/30">
+                <span className="truncate text-xs text-text-subtle">
                   erasmusmap.com/u/
-                  <span className="text-indigo-500">{username ?? "…"}</span>
+                  <span className="text-accent-text">{username ?? "…"}</span>
                 </span>
               </div>
               <div className="flex gap-3">
-                <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/30 text-sm select-none">
-                    @
-                  </span>
-                  <input
-                    id="username"
-                    name="username"
-                    defaultValue={username ?? ""}
-                    maxLength={20}
-                    placeholder="username"
-                    className="w-full pl-7 pr-4 py-2.5 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white text-sm rounded-xl border border-gray-200 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition placeholder-gray-300 dark:placeholder-white/20"
-                  />
-                </div>
+                <input
+                  id="username"
+                  name="username"
+                  defaultValue={username ?? ""}
+                  maxLength={20}
+                  placeholder="kullanici-adi"
+                  className="flex-1 rounded-control border border-border-strong bg-surface px-4 py-2.5 text-sm text-text transition-colors placeholder:text-text-subtle focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
+                />
                 <SubmitButton
                   pendingText={t.updatingBtn}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                  className="rounded-control bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
                 >
                   {t.updateBtn}
                 </SubmitButton>
               </div>
-              <p className="text-xs text-gray-400 dark:text-white/30">
-                {t.usernameHint}
-              </p>
+              <p className="text-xs text-text-subtle">{t.usernameHint}</p>
             </ActionForm>
           </div>
         </div>
       </section>
 
       <section>
-        <h2 className="flex items-center gap-2 text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-widest mb-3 px-1">
-          <span className="w-1 h-1 rounded-full bg-indigo-500" />
-          {t.appearanceSection}
-        </h2>
-        <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-zinc-800">
-          <div className="flex items-center justify-between px-6 py-5 transition-all duration-300 ease-out hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:shadow-[inset_3px_0_0_0_#6366f1] dark:hover:shadow-[inset_3px_0_0_0_#818cf8]">
+        <SectionHeading>{t.appearanceSection}</SectionHeading>
+        <div className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
+          <div className="flex items-center justify-between gap-4 px-6 py-5">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center text-lg">
-                🎨
-              </div>
+              <span className="flex h-9 w-9 items-center justify-center rounded-control bg-surface-raised text-text-muted">
+                <Palette size={16} aria-hidden="true" />
+              </span>
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {t.themeLabel}
-                </p>
-                <p className="text-xs text-gray-400 dark:text-white/40">
-                  {t.themeDesc}
-                </p>
+                <p className="text-sm font-medium text-text">{t.themeLabel}</p>
+                <p className="text-xs text-text-subtle">{t.themeDesc}</p>
               </div>
             </div>
             <ThemeToggle />
           </div>
 
-          <div className="flex items-center justify-between px-6 py-5 transition-all duration-300 ease-out hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:shadow-[inset_3px_0_0_0_#6366f1] dark:hover:shadow-[inset_3px_0_0_0_#818cf8]">
+          <div className="flex items-center justify-between gap-4 px-6 py-5">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center text-lg">
-                🌐
-              </div>
+              <span className="flex h-9 w-9 items-center justify-center rounded-control bg-surface-raised text-text-muted">
+                <Languages size={16} aria-hidden="true" />
+              </span>
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {t.langLabel}
-                </p>
-                <p className="text-xs text-gray-400 dark:text-white/40">
-                  {t.langDesc}
-                </p>
+                <p className="text-sm font-medium text-text">{t.langLabel}</p>
+                <p className="text-xs text-text-subtle">{t.langDesc}</p>
               </div>
             </div>
             <LanguageSelect />

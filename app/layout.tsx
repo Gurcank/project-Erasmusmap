@@ -1,9 +1,26 @@
 import type { Metadata } from "next";
+import { Bricolage_Grotesque, Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Providers from "./providers";
 import { Analytics } from "@vercel/analytics/next";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+
+// Body face: neutral, high legibility at small sizes via its optical-size axis.
+const inter = Inter({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+// Display face: tighter, more characterful letterforms so headings carry the
+// site's identity instead of reading as another default grotesque. Both ship
+// latin-ext, which is what covers ı İ ğ Ş ç ö ü.
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
 
 // Runs before first paint so a visitor who chose the light theme never sees a
 // dark flash. Mirrors ThemeToggle's rule: dark unless "light" was stored.
@@ -12,8 +29,8 @@ const THEME_INIT_SCRIPT = `try{if(localStorage.getItem("theme")!=="light")docume
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: SITE_NAME,
-    template: `%s | ${SITE_NAME}`,
+    default: `${SITE_NAME} — Avrupa'yı Erasmus öğrencilerinden dinle`,
+    template: `%s · ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
   appleWebApp: {
@@ -40,11 +57,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="tr" suppressHydrationWarning>
+    <html
+      lang="tr"
+      className={`${inter.variable} ${bricolage.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="bg-gray-50 dark:bg-gray-950 transition-colors duration-300 overflow-x-hidden">
+      <body className="overflow-x-hidden antialiased">
         <Providers>
           <Navbar />
           <main className="min-h-screen">{children}</main>

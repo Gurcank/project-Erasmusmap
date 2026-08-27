@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { Loader2, Trash2, Upload } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import {
   AVATAR_ACCEPT_ATTRIBUTE,
@@ -94,27 +95,36 @@ export default function AvatarUploader({
           <img
             src={preview}
             alt=""
-            className="w-14 h-14 rounded-full object-cover border border-gray-200 dark:border-white/10 ring-2 ring-transparent transition-all duration-300 hover:ring-indigo-400/40"
+            className="h-14 w-14 rounded-full border border-border object-cover"
           />
         ) : (
-          <div className="w-14 h-14 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xl ring-2 ring-transparent transition-all duration-300 hover:ring-indigo-400/40">
-            {fallbackLabel.charAt(0).toUpperCase()}
-          </div>
+          <span
+            aria-hidden="true"
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-raised text-xl font-semibold text-text-muted ring-1 ring-border"
+          >
+            {fallbackLabel.trim().charAt(0).toUpperCase() || "?"}
+          </span>
         )}
         {isUploading && (
-          <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
-            <span className="w-4 h-4 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-ink-950/50">
+            <Loader2
+              size={18}
+              aria-hidden="true"
+              className="animate-spin text-ink-50 motion-reduce:animate-none"
+            />
+          </span>
         )}
       </div>
+
       <div className="space-y-1.5">
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={isUploading}
-            className="text-xs px-3 py-1.5 rounded-lg font-medium bg-indigo-600 hover:bg-indigo-500 text-white transition-colors duration-200 disabled:opacity-50"
+            className="flex cursor-pointer items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
           >
+            <Upload size={13} aria-hidden="true" />
             {isUploading ? t.uploadingPhoto : t.changePhoto}
           </button>
           {preview && (
@@ -122,8 +132,9 @@ export default function AvatarUploader({
               type="button"
               onClick={handleRemove}
               disabled={isUploading}
-              className="text-xs px-3 py-1.5 rounded-lg font-medium border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-white/70 hover:text-red-500 hover:border-red-300 dark:hover:border-red-400/40 transition-colors duration-150 disabled:opacity-50"
+              className="flex cursor-pointer items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:border-danger-600 hover:text-danger-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50 dark:hover:text-danger-400"
             >
+              <Trash2 size={13} aria-hidden="true" />
               {t.removePhoto}
             </button>
           )}
@@ -135,7 +146,11 @@ export default function AvatarUploader({
           onChange={handleFileChange}
           className="hidden"
         />
-        {error && <p className="text-xs text-red-500">{error}</p>}
+        {error && (
+          <p className="text-xs text-danger-700 dark:text-danger-400">
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );

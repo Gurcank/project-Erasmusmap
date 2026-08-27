@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { Pencil } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import { MAX_BIO_LENGTH as MAX_CHARS } from "@/lib/profile";
 import type { FormAction } from "@/lib/action-result";
@@ -58,23 +59,25 @@ export default function BioEditor({
       <div className="flex items-center justify-between">
         <h2
           id={headingId}
-          className="text-gray-900 dark:text-white font-semibold text-sm uppercase tracking-wider"
+          className="text-xs font-semibold tracking-widest text-text-subtle uppercase"
         >
           Bio
         </h2>
         {!editing && (
           <button
+            type="button"
             onClick={() => {
               setEditing(true);
               setSaved(false);
             }}
-            className="text-xs text-indigo-500 hover:text-indigo-400 transition flex items-center gap-1"
+            className="flex cursor-pointer items-center gap-1 text-xs text-accent-text transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
-            ✏️ {t.editBio}
+            <Pencil size={12} aria-hidden="true" />
+            {t.editBio}
           </button>
         )}
         {saved && (
-          <span className="text-xs text-emerald-500 font-medium animate-pulse">
+          <span className="text-xs font-medium text-visited-700 dark:text-visited-400">
             {t.savedSuccess}
           </span>
         )}
@@ -93,56 +96,59 @@ export default function BioEditor({
               placeholder={t.noBioClick}
               rows={4}
               autoFocus
-              className="w-full bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white text-sm p-4 pb-8 rounded-xl border-2 border-indigo-400 dark:border-indigo-500 focus:outline-none resize-none transition placeholder-gray-400 dark:placeholder-white/30"
+              className="w-full resize-none rounded-card border border-border-strong bg-surface p-4 pb-8 text-sm text-text transition-colors placeholder:text-text-subtle focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
             />
             <span
-              className={`absolute bottom-3 right-3 text-xs font-mono transition-colors ${remaining < 20 ? (remaining < 5 ? "text-red-500" : "text-amber-500") : "text-gray-400 dark:text-white/30"}`}
+              className={`absolute right-3 bottom-3 font-mono text-xs transition-colors ${
+                remaining < 20
+                  ? remaining < 5
+                    ? "text-danger-700 dark:text-danger-400"
+                    : "text-accent-text"
+                  : "text-text-subtle"
+              }`}
             >
               {remaining}
             </span>
           </div>
-          {error && <p className="text-xs text-red-500">{error}</p>}
+          {error && (
+            <p className="text-xs text-danger-700 dark:text-danger-400">
+              {error}
+            </p>
+          )}
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={handleSave}
               disabled={isPending || draft === bio}
-              className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white"
+              className="flex-1 cursor-pointer rounded-control bg-primary py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isPending ? t.saving : t.saveBio}
             </button>
             <button
+              type="button"
               onClick={handleCancel}
-              className="px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-white hover:bg-gray-300 dark:hover:bg-white/20"
+              className="cursor-pointer rounded-control border border-border-strong px-4 py-2 text-sm font-semibold text-text-muted transition-colors hover:bg-surface-raised hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
               {t.cancel}
             </button>
           </div>
         </div>
       ) : (
-        <div
+        <button
+          type="button"
           onClick={() => setEditing(true)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              setEditing(true);
-            }
-          }}
-          role="button"
-          tabIndex={0}
           aria-label={t.editBio}
-          className="group cursor-pointer relative bg-gray-100 dark:bg-white/10 rounded-xl p-4 border border-transparent hover:border-indigo-400/50 transition-all"
+          className="group relative w-full cursor-pointer rounded-card border border-transparent bg-surface-raised p-4 text-left transition-colors hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
-          <p className="text-gray-700 dark:text-white/70 text-sm leading-relaxed">
+          <p className="text-sm leading-relaxed text-text-muted">
             {bio || (
-              <span className="text-gray-400 dark:text-white/30 italic">
-                {t.noBioClick}
-              </span>
+              <span className="text-text-subtle italic">{t.noBioClick}</span>
             )}
           </p>
-          <span className="absolute bottom-2 right-3 text-xs text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="absolute right-3 bottom-2 text-xs text-accent-text opacity-0 transition-opacity group-hover:opacity-100">
             {t.editHint}
           </span>
-        </div>
+        </button>
       )}
     </div>
   );

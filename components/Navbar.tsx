@@ -2,19 +2,15 @@
 
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { LogOut, Menu, Search, Settings, Shield, User, X } from "lucide-react";
 import { latinize } from "@/lib/latinize";
 import { useT } from "@/hooks/useT";
+import UserAvatar from "@/components/ui/UserAvatar";
 import type { City } from "@/types";
 
-// Avatars uploaded before the Storage migration are still base64 data URIs,
-// which the image optimizer cannot fetch.
-function isLegacyDataUri(src: string): boolean {
-  return src.startsWith("data:");
-}
+const MAX_SUGGESTIONS = 6;
 
 export default function Navbar() {
   const router = useRouter();
@@ -31,9 +27,7 @@ export default function Navbar() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (session?.user?.banned) {
-      signOut({ callbackUrl: "/" });
-    }
+    if (session?.user?.banned) signOut({ callbackUrl: "/" });
   }, [session]);
 
   useEffect(() => {
@@ -49,43 +43,66 @@ export default function Navbar() {
       setShowSuggestions(false);
       return;
     }
-    const q = latinize(search).toLowerCase().trim();
-    const filtered = allCities
-      .filter((c) => latinize(c.name).toLowerCase().includes(q))
-      .slice(0, 6);
-    setSuggestions(filtered);
+    const query = latinize(search).toLowerCase().trim();
+    setSuggestions(
+      allCities
+        .filter((city) => latinize(city.name).toLowerCase().includes(query))
+        .slice(0, MAX_SUGGESTIONS),
+    );
     setShowSuggestions(allCities.length > 0);
   }, [search, allCities]);
 
   useEffect(() => {
-    function handleOutside(e: MouseEvent) {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node))
+    function handleOutside(event: MouseEvent) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target as Node)
+      )
         setProfileOpen(false);
-      if (searchRef.current && !searchRef.current.contains(e.target as Node))
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      )
         setShowSuggestions(false);
     }
     document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
+  // Escape closes whichever overlay is open — neither had a keyboard exit.
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setProfileOpen(false);
+      setShowSuggestions(false);
+      setMenuOpen(false);
+    }
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, []);
+
   useEffect(() => {
     setProfileOpen(false);
     setShowSuggestions(false);
+    setMenuOpen(false);
   }, [pathname]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = (event: React.FormEvent) => {
+    event.preventDefault();
     if (!search.trim()) return;
-    const q = latinize(search).toLowerCase().trim();
+    const query = latinize(search).toLowerCase().trim();
     const match =
-      allCities.find((c) => latinize(c.name).toLowerCase() === q) ||
-      allCities.find((c) => latinize(c.name).toLowerCase().startsWith(q)) ||
-      allCities.find((c) => latinize(c.name).toLowerCase().includes(q));
-    router.push(
-      match
-        ? `/c/${match.slug}`
-        : `/c/${latinize(search).toLowerCase().replace(/\s+/g, "-")}`,
-    );
+      allCities.find((city) => latinize(city.name).toLowerCase() === query) ||
+      allCities.find((city) =>
+        latinize(city.name).toLowerCase().startsWith(query),
+      ) ||
+      allCities.find((city) =>
+        latinize(city.name).toLowerCase().includes(query),
+      );
+    // No match means no city page exists; sending the user to a guessed slug
+    // only produced a 404.
+    if (!match) return;
+    router.push(`/c/${match.slug}`);
     setSearch("");
     setShowSuggestions(false);
   };
@@ -96,209 +113,200 @@ export default function Navbar() {
     setShowSuggestions(false);
   };
 
+  const profileHref = session?.user?.username
+    ? `/u/${session.user.username}`
+    : "/choose-username";
+
+  const suggestionList = (
+    <div className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-card border border-border bg-surface shadow-popover">
+      {suggestions.length === 0 ? (
+        <p className="px-5 py-3 text-sm text-text-subtle">{t.noResults}</p>
+      ) : (
+        suggestions.map((city) => (
+          <button
+            key={city.id}
+            type="button"
+            onClick={() => handleSelect(city)}
+            className="flex w-full cursor-pointer items-center justify-between px-5 py-3 text-left transition-colors hover:bg-surface-raised focus-visible:bg-surface-raised focus-visible:outline-none"
+          >
+            <span className="font-medium text-text">{latinize(city.name)}</span>
+            <span className="text-sm text-text-subtle">{city.country}</span>
+          </button>
+        ))
+      )}
+    </div>
+  );
+
   return (
-    <header className="fixed top-0 left-0 w-full z-50">
-      <div className="backdrop-blur-xl bg-white/80 dark:bg-neutral-900/80 border-b border-neutral-200/60 dark:border-neutral-700/60 shadow-sm">
+    <header className="fixed top-0 left-0 z-50 w-full">
+      <div className="border-b border-border bg-canvas/85 backdrop-blur-xl">
         <nav
           aria-label="Site navigasyonu"
-          className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between"
+          className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3.5"
         >
           <Link
             href="/"
-            className="text-2xl font-bold tracking-tight hover:opacity-80 transition text-gray-900 dark:text-white"
+            className="font-display text-xl font-bold tracking-tight text-text transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
-            🌍 Erasmus<span className="text-neutral-500">Map</span>
+            Erasmus<span className="text-accent-text">Map</span>
           </Link>
 
           <div
             ref={searchRef}
-            className="hidden md:flex flex-1 mx-10 max-w-xl relative"
+            className="relative mx-4 hidden max-w-lg flex-1 md:block"
           >
-            <form onSubmit={handleSearch} className="w-full">
+            <form onSubmit={handleSearch}>
+              <Search
+                size={16}
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-text-subtle"
+              />
               <input
-                type="text"
+                type="search"
                 aria-label={t.searchPlaceholder}
                 placeholder={t.searchPlaceholder}
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(event) => setSearch(event.target.value)}
                 onFocus={() =>
                   suggestions.length > 0 && setShowSuggestions(true)
                 }
-                className="w-full px-5 py-2.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-neutral-400 border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition"
+                className="w-full rounded-full border border-border-strong bg-surface py-2.5 pr-4 pl-10 text-sm text-text transition-colors placeholder:text-text-subtle focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
               />
             </form>
-            {showSuggestions && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-2xl shadow-xl overflow-hidden z-50">
-                {suggestions.length === 0 ? (
-                  <p className="px-5 py-3 text-gray-400 dark:text-neutral-500 text-sm">
-                    {t.noResults}
-                  </p>
-                ) : (
-                  suggestions.map((city) => (
-                    <button
-                      key={city.id}
-                      onClick={() => handleSelect(city)}
-                      className="w-full text-left px-5 py-3 flex items-center justify-between transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-700"
-                    >
-                      <span className="text-gray-900 dark:text-white font-medium">
-                        {latinize(city.name)}
-                      </span>
-                      <span className="text-gray-400 dark:text-neutral-500 text-sm">
-                        {city.country}
-                      </span>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
+            {showSuggestions && suggestionList}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <div ref={profileRef} className="relative hidden md:block">
               {!session ? (
                 <Link
                   href="/login"
-                  className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-full text-sm font-medium hover:opacity-80 transition"
+                  className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 >
                   {t.login}
                 </Link>
               ) : (
                 <button
+                  type="button"
                   onClick={() => setProfileOpen(!profileOpen)}
                   aria-label={t.profile}
-                  aria-haspopup="true"
+                  aria-haspopup="menu"
                   aria-expanded={profileOpen}
-                  className="w-10 h-10 rounded-full overflow-hidden border border-neutral-300 dark:border-neutral-600 ring-2 ring-transparent transition-all duration-300 hover:ring-indigo-400/50"
+                  className="flex cursor-pointer rounded-full ring-2 ring-transparent transition-shadow hover:ring-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 >
-                  {session.user?.image ? (
-                    <Image
-                      src={session.user.image}
-                      alt=""
-                      width={40}
-                      height={40}
-                      unoptimized={isLegacyDataUri(session.user.image)}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="bg-black dark:bg-white text-white dark:text-black w-full h-full flex items-center justify-center font-semibold">
-                      {session.user?.username?.charAt(0).toUpperCase() ??
-                        session.user?.name?.charAt(0)}
-                    </span>
-                  )}
+                  <UserAvatar
+                    src={session.user?.image ?? null}
+                    label={session.user?.username ?? session.user?.name ?? "?"}
+                    size={36}
+                  />
                 </button>
               )}
+
               {profileOpen && session && (
-                <div className="absolute right-0 mt-3 w-48 bg-white dark:bg-neutral-800 shadow-xl rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+                <div
+                  role="menu"
+                  className="absolute right-0 mt-3 w-52 overflow-hidden rounded-card border border-border bg-surface shadow-popover"
+                >
                   <Link
-                    href={
-                      session?.user?.username
-                        ? `/u/${session.user.username}`
-                        : "/choose-username"
-                    }
-                    className="block px-5 py-3 text-gray-800 dark:text-white transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                    href={profileHref}
+                    role="menuitem"
+                    className="flex items-center gap-2.5 px-4 py-3 text-sm text-text transition-colors hover:bg-surface-raised"
                   >
+                    <User size={15} aria-hidden="true" />
                     {t.profile}
                   </Link>
                   <Link
                     href="/settings"
-                    className="block px-5 py-3 text-gray-800 dark:text-white transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                    role="menuitem"
+                    className="flex items-center gap-2.5 px-4 py-3 text-sm text-text transition-colors hover:bg-surface-raised"
                   >
+                    <Settings size={15} aria-hidden="true" />
                     {t.settings}
                   </Link>
-                  {session?.user?.role === "ADMIN" && (
+                  {session.user?.role === "ADMIN" && (
                     <Link
                       href="/admin"
-                      className="block px-5 py-3 text-indigo-600 dark:text-indigo-400 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                      role="menuitem"
+                      className="flex items-center gap-2.5 px-4 py-3 text-sm text-accent-text transition-colors hover:bg-surface-raised"
                     >
+                      <Shield size={15} aria-hidden="true" />
                       {t.adminPanel}
                     </Link>
                   )}
                   <button
+                    type="button"
+                    role="menuitem"
                     onClick={() => signOut({ callbackUrl: "/" })}
-                    className="w-full text-left px-5 py-3 text-red-500 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                    className="flex w-full cursor-pointer items-center gap-2.5 border-t border-border px-4 py-3 text-left text-sm text-danger-700 transition-colors hover:bg-surface-raised dark:text-danger-400"
                   >
+                    <LogOut size={15} aria-hidden="true" />
                     {t.logout}
                   </button>
                 </div>
               )}
             </div>
+
             <button
+              type="button"
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label={t.menu}
               aria-expanded={menuOpen}
-              className="md:hidden text-2xl text-gray-900 dark:text-white hover:scale-110 transition"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-control text-text transition-colors hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus md:hidden"
             >
-              ☰
+              {menuOpen ? (
+                <X size={20} aria-hidden="true" />
+              ) : (
+                <Menu size={20} aria-hidden="true" />
+              )}
             </button>
           </div>
         </nav>
 
         {menuOpen && (
-          <div className="md:hidden px-6 pb-6 space-y-4">
+          <div className="space-y-4 px-6 pb-6 md:hidden">
             <div className="relative">
-              <form
-                onSubmit={(e) => {
-                  handleSearch(e);
-                  setMenuOpen(false);
-                }}
-              >
+              <form onSubmit={handleSearch}>
+                <Search
+                  size={16}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-text-subtle"
+                />
                 <input
-                  type="text"
+                  type="search"
                   aria-label={t.searchPlaceholder}
                   placeholder={t.searchPlaceholder}
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full px-5 py-3 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 border border-neutral-300 dark:border-neutral-700 focus:outline-none"
+                  onChange={(event) => setSearch(event.target.value)}
+                  className="w-full rounded-control border border-border-strong bg-surface py-3 pr-4 pl-10 text-text transition-colors placeholder:text-text-subtle focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
                 />
               </form>
-              {showSuggestions && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl overflow-hidden z-50">
-                  {suggestions.length === 0 ? (
-                    <p className="px-4 py-3 text-gray-400 dark:text-neutral-500 text-sm">
-                      {t.noResults}
-                    </p>
-                  ) : (
-                    suggestions.map((city) => (
-                      <button
-                        key={city.id}
-                        onClick={() => {
-                          handleSelect(city);
-                          setMenuOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-3 flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-700 transition"
-                      >
-                        <span className="text-gray-900 dark:text-white font-medium">
-                          {latinize(city.name)}
-                        </span>
-                        <span className="text-gray-400 text-sm">
-                          {city.country}
-                        </span>
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
+              {showSuggestions && suggestionList}
             </div>
+
             {!session ? (
               <Link
                 href="/login"
-                onClick={() => setMenuOpen(false)}
-                className="block text-center px-5 py-3 rounded-xl bg-black dark:bg-white text-white dark:text-black font-medium"
+                className="block rounded-control bg-primary px-5 py-3 text-center font-semibold text-on-primary"
               >
                 {t.login}
               </Link>
             ) : (
-              <Link
-                href={
-                  session.user?.username
-                    ? `/u/${session.user.username}`
-                    : "/choose-username"
-                }
-                onClick={() => setMenuOpen(false)}
-                className="block text-center px-5 py-3 rounded-xl bg-black dark:bg-white text-white dark:text-black font-medium"
-              >
-                {t.profile}
-              </Link>
+              <div className="space-y-2">
+                <Link
+                  href={profileHref}
+                  className="flex items-center gap-2.5 rounded-control border border-border-strong px-4 py-3 text-text"
+                >
+                  <User size={16} aria-hidden="true" />
+                  {t.profile}
+                </Link>
+                <Link
+                  href="/settings"
+                  className="flex items-center gap-2.5 rounded-control border border-border-strong px-4 py-3 text-text"
+                >
+                  <Settings size={16} aria-hidden="true" />
+                  {t.settings}
+                </Link>
+              </div>
             )}
           </div>
         )}

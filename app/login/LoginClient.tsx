@@ -4,7 +4,11 @@ import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Map from "@/components/map/Map";
+import { Loader2 } from "lucide-react";
+import AuthShell from "@/components/ui/AuthShell";
+
+const FIELD_CLASS =
+  "w-full rounded-control border border-ink-50/20 bg-ink-50/10 px-4 py-3 text-ink-50 transition-colors placeholder:text-ink-300 focus-visible:border-accent-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-400";
 
 export default function LoginClient() {
   const { status } = useSession();
@@ -17,9 +21,7 @@ export default function LoginClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (status === "authenticated") {
-      router.replace("/");
-    }
+    if (status === "authenticated") router.replace("/");
   }, [status, router]);
 
   useEffect(() => {
@@ -28,8 +30,8 @@ export default function LoginClient() {
     }
   }, [searchParams]);
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEmailLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
     setError("");
@@ -56,72 +58,72 @@ export default function LoginClient() {
   if (status === "loading") return null;
 
   return (
-    <div className="relative w-full h-screen overflow-hidden">
-      <div className="absolute inset-0 -z-10">
-        <Map isStatic />
+    <AuthShell title="Giriş Yap">
+      <button
+        type="button"
+        onClick={() => signIn("google", { callbackUrl: "/" })}
+        className="w-full cursor-pointer rounded-control bg-ink-50 py-3 font-semibold text-ink-950 transition-colors hover:bg-ink-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400"
+      >
+        Google ile devam et
+      </button>
+
+      <div className="my-6 flex items-center gap-4">
+        <span className="h-px flex-1 bg-ink-50/20" />
+        <span className="text-xs text-ink-300">veya</span>
+        <span className="h-px flex-1 bg-ink-50/20" />
       </div>
 
-      <div className="absolute inset-0 bg-black/60 -z-10" />
+      <form onSubmit={handleEmailLogin} className="flex flex-col gap-3">
+        <input
+          type="email"
+          aria-label="Email"
+          placeholder="Email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          className={FIELD_CLASS}
+          required
+        />
+        <input
+          type="password"
+          aria-label="Şifre"
+          placeholder="Şifre"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          className={FIELD_CLASS}
+          required
+        />
 
-      <div className="flex items-center justify-center min-h-screen px-4">
-        <div className="w-full max-w-md backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl rounded-2xl p-8">
-          <h1 className="text-3xl font-bold text-center text-white mb-8">
-            Giriş Yap
-          </h1>
+        {error && (
+          <p role="alert" className="text-sm text-danger-400">
+            {error}
+          </p>
+        )}
 
-          <button
-            onClick={() => signIn("google", { callbackUrl: "/" })}
-            className="w-full py-3 mb-6 bg-white text-gray-800 font-medium rounded-xl hover:scale-[1.02] transition-all duration-200 shadow-md"
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-control bg-primary py-3 font-semibold text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isSubmitting && (
+            <Loader2
+              size={16}
+              aria-hidden="true"
+              className="animate-spin motion-reduce:animate-none"
+            />
+          )}
+          {isSubmitting ? "Giriş yapılıyor…" : "Email ile giriş yap"}
+        </button>
+
+        <p className="mt-2 text-center text-sm text-ink-300">
+          Hesabın yok mu?{" "}
+          <Link
+            href="/register"
+            className="font-semibold text-accent-400 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400"
           >
-            Google ile Giriş Yap
-          </button>
-
-          <div className="relative flex items-center mb-6">
-            <div className="flex-grow border-t border-white/30"></div>
-            <span className="mx-4 text-white/70 text-sm">veya</span>
-            <div className="flex-grow border-t border-white/30"></div>
-          </div>
-
-          <form onSubmit={handleEmailLogin} className="flex flex-col gap-4">
-            <input
-              type="email"
-              aria-label="Email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="px-4 py-3 rounded-xl bg-white/20 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/60"
-              required
-            />
-
-            <input
-              type="password"
-              aria-label="Şifre"
-              placeholder="Şifre"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="px-4 py-3 rounded-xl bg-white/20 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/60"
-              required
-            />
-
-            {error && <p className="text-red-300 text-sm">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="py-3 bg-black/80 text-white font-semibold rounded-xl hover:bg-black transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? "Giriş yapılıyor..." : "Email ile Giriş Yap"}
-            </button>
-
-            <p className="text-sm text-center text-white/80 mt-2">
-              Hesabın yok mu?{" "}
-              <Link href="/register" className="font-semibold underline">
-                Kayıt Ol
-              </Link>
-            </p>
-          </form>
-        </div>
-      </div>
-    </div>
+            Kayıt ol
+          </Link>
+        </p>
+      </form>
+    </AuthShell>
   );
 }

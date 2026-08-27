@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Moon, Sun } from "lucide-react";
 
 export default function ThemeToggle() {
   const [dark, setDark] = useState(true);
@@ -14,35 +15,39 @@ export default function ThemeToggle() {
   }, []);
 
   const toggle = () => {
-    const html = document.documentElement;
-    if (dark) {
-      html.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    } else {
-      html.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    }
-    setDark(!dark);
+    const next = !dark;
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("theme", next ? "dark" : "light");
+    setDark(next);
   };
 
-  if (!mounted)
+  if (!mounted) {
     return (
-      <div className="w-14 h-7 rounded-full bg-gray-200 dark:bg-zinc-700 animate-pulse" />
+      <div className="h-7 w-14 animate-pulse rounded-full bg-surface-raised motion-reduce:animate-none" />
     );
+  }
 
   return (
     <button
+      type="button"
+      role="switch"
+      aria-checked={dark}
+      aria-label="Koyu tema"
       onClick={toggle}
-      className="relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900"
-      style={{ backgroundColor: dark ? "#6366f1" : "#d1d5db" }}
-      aria-label="Tema değiştir"
+      className={`relative h-7 w-14 cursor-pointer rounded-full transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
+        dark ? "bg-primary" : "bg-border-strong"
+      }`}
     >
       <span
-        className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center text-sm transition-all duration-300 ${
+        className={`absolute top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-surface shadow-raised transition-[left] duration-200 motion-reduce:transition-none ${
           dark ? "left-7" : "left-0.5"
         }`}
       >
-        {dark ? "🌙" : "☀️"}
+        {dark ? (
+          <Moon size={13} className="text-text" />
+        ) : (
+          <Sun size={13} className="text-text" />
+        )}
       </span>
     </button>
   );

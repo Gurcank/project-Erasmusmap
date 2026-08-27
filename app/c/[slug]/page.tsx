@@ -154,21 +154,12 @@ export default async function CityPage({
   };
   const avgScore = reviewCount > 0 ? averageRating(ratings) : 0;
 
-  const categoryRatings: CategoryRatings = {
-    culture: Math.round(ratings.culture),
-    gastronomy: Math.round(ratings.gastronomy),
-    safety: Math.round(ratings.safety),
-    socialLife: Math.round(ratings.socialLife),
-    transport: Math.round(ratings.transport),
-    costOfLiving: Math.round(ratings.costOfLiving),
-  };
-
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 -z-10">
         <Map cities={cities} isStatic />
       </div>
-      <div className="relative z-10 bg-white/85 dark:bg-black/75 backdrop-blur-sm pt-16 min-h-screen">
+      <div className="relative z-10 min-h-screen bg-canvas/90 pt-16 backdrop-blur-sm">
         <CityContent
           cityId={city.id}
           cityName={latinizedCityName}
@@ -176,7 +167,7 @@ export default async function CityPage({
           isVisited={isVisited}
           reviewCount={reviewCount}
           avgScore={avgScore}
-          categoryRatings={categoryRatings}
+          categoryRatings={ratings}
           reviews={city.reviews}
           submitReview={submitReview}
           isAdmin={isAdmin}

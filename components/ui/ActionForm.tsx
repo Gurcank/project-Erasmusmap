@@ -27,7 +27,7 @@ export default function ActionForm({
   children,
   confirmMessage,
   className,
-  errorClassName = "text-red-500 text-xs mt-1",
+  errorClassName = "mt-1 text-xs text-danger-700 dark:text-danger-400",
 }: Props) {
   const [state, formAction] = useActionState(action, null);
 

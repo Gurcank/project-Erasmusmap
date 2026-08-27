@@ -25,7 +25,7 @@ export async function generateMetadata({
   // point where a real 404 status can still be set.
   if (!user) notFound();
 
-  const title = `@${user.username}`;
+  const title = user.username ?? "";
   const description = user.bio || `${title} — ErasmusMap profili`;
   return {
     title,
@@ -93,7 +93,7 @@ export default async function ProfilePage({
       <div className="fixed inset-0 -z-20">
         <Map isStatic />
       </div>
-      <div className="fixed inset-0 bg-white/80 dark:bg-black/70 backdrop-blur-[3px] -z-10" />
+      <div className="fixed inset-0 -z-10 bg-canvas/85 backdrop-blur-[3px]" />
 
       <ProfileContent
         username={user.username ?? ""}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Check, Loader2, MapPin } from "lucide-react";
 import { useT } from "@/hooks/useT";
 
 export default function VisitButton({
@@ -13,10 +14,11 @@ export default function VisitButton({
   const t = useT();
   const [visited, setVisited] = useState(initialVisited);
   const [loading, setLoading] = useState(false);
-  const [animating, setAnimating] = useState(false);
+  const [error, setError] = useState("");
   const animatingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
+  const [animating, setAnimating] = useState(false);
 
   useEffect(() => {
     return () => clearTimeout(animatingTimeoutRef.current);
@@ -25,6 +27,7 @@ export default function VisitButton({
   const handleClick = async () => {
     if (loading) return;
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/visit", {
         method: "POST",
@@ -32,47 +35,61 @@ export default function VisitButton({
         body: JSON.stringify({ cityId }),
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? t.visitError);
+
       if (data.added) {
         setAnimating(true);
         animatingTimeoutRef.current = setTimeout(
           () => setAnimating(false),
-          700,
+          600,
         );
         setVisited(true);
       }
       if (data.removed) setVisited(false);
     } catch (err) {
-      // network error — state intentionally left unchanged so the user can retry
-      console.error("Failed to toggle visit status", err);
+      setError(err instanceof Error ? err.message : t.visitError);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={loading}
-      className={`relative overflow-hidden flex items-center gap-2.5 h-11 px-5 rounded-xl border-2 font-semibold text-sm transition-all duration-300 select-none whitespace-nowrap
-        ${visited ? "border-emerald-500 text-emerald-500 bg-emerald-500/10" : "border-indigo-400 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20"}
-        ${loading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
-    >
-      <span
-        className={`absolute bottom-0 left-0 h-full bg-emerald-500/15 transition-all duration-700 ease-out ${animating ? "w-full" : "w-0"}`}
-      />
-      <span className="relative text-base">
-        {loading ? (
-          <span className="inline-block animate-spin">⏳</span>
-        ) : visited ? (
-          "✅"
-        ) : (
-          "📍"
-        )}
-      </span>
-      <span className="relative">{visited ? t.visited : t.addToList}</span>
-      {visited && (
-        <span className="absolute left-0 top-0 h-full w-1 bg-emerald-500 rounded-l-xl" />
+    <div className="flex flex-col items-end gap-1">
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={loading}
+        aria-pressed={visited}
+        className={`relative flex h-11 cursor-pointer items-center gap-2 overflow-hidden rounded-control border px-5 text-sm font-semibold whitespace-nowrap transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-60 ${
+          visited
+            ? "border-visited-600 bg-visited-600/10 text-visited-700 dark:border-visited-500 dark:text-visited-400"
+            : "border-border-strong text-text hover:bg-surface-raised"
+        }`}
+      >
+        <span
+          aria-hidden="true"
+          className={`absolute inset-y-0 left-0 bg-visited-500/15 transition-[width] duration-500 ease-out motion-reduce:transition-none ${
+            animating ? "w-full" : "w-0"
+          }`}
+        />
+        <span className="relative flex items-center gap-2">
+          {loading ? (
+            <Loader2
+              size={16}
+              aria-hidden="true"
+              className="animate-spin motion-reduce:animate-none"
+            />
+          ) : visited ? (
+            <Check size={16} aria-hidden="true" />
+          ) : (
+            <MapPin size={16} aria-hidden="true" />
+          )}
+          {visited ? t.visited : t.addToList}
+        </span>
+      </button>
+      {error && (
+        <p className="text-xs text-danger-700 dark:text-danger-400">{error}</p>
       )}
-    </button>
+    </div>
   );
 }

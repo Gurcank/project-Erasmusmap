@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { Lang } from "@/lib/i18n";
 
-const LANGUAGES = [
-  { code: "tr" as Lang, label: "Türkçe", flag: "🇹🇷" },
-  { code: "en" as Lang, label: "English", flag: "🇬🇧" },
+// No flags: a flag names a country, not a language, and the emoji set renders
+// inconsistently across platforms.
+const LANGUAGES: { code: Lang; label: string }[] = [
+  { code: "tr", label: "Türkçe" },
+  { code: "en", label: "English" },
 ];
 
 export default function LanguageSelect() {
@@ -23,22 +25,25 @@ export default function LanguageSelect() {
   };
 
   return (
-    <div className="flex gap-2">
-      {LANGUAGES.map((lang) => (
-        <button
-          key={lang.code}
-          onClick={() => changeLang(lang.code)}
-          aria-pressed={current === lang.code}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all border ${
-            current === lang.code
-              ? "bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-600 text-indigo-700 dark:text-indigo-300"
-              : "bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10"
-          }`}
-        >
-          <span>{lang.flag}</span>
-          <span>{lang.label}</span>
-        </button>
-      ))}
+    <div className="flex gap-1.5">
+      {LANGUAGES.map((lang) => {
+        const active = current === lang.code;
+        return (
+          <button
+            key={lang.code}
+            type="button"
+            aria-pressed={active}
+            onClick={() => changeLang(lang.code)}
+            className={`cursor-pointer rounded-control border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
+              active
+                ? "border-primary bg-primary text-on-primary"
+                : "border-border-strong text-text-muted hover:bg-surface-raised hover:text-text"
+            }`}
+          >
+            {lang.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
