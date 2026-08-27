@@ -3,13 +3,14 @@
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useT } from "@/hooks/useT";
 import { MAX_BIO_LENGTH as MAX_CHARS } from "@/lib/profile";
+import type { FormAction } from "@/lib/action-result";
 
 export default function BioEditor({
   initialBio,
   updateBio,
 }: {
   initialBio: string;
-  updateBio: (formData: FormData) => Promise<void>;
+  updateBio: FormAction;
 }) {
   const t = useT();
   const [editing, setEditing] = useState(false);
@@ -17,6 +18,7 @@ export default function BioEditor({
   const [draft, setDraft] = useState(initialBio);
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
   const remaining = MAX_CHARS - draft.length;
   const headingId = useId();
   const savedTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -31,7 +33,13 @@ export default function BioEditor({
     const formData = new FormData();
     formData.set("bio", draft);
     startTransition(async () => {
-      await updateBio(formData);
+      const result = await updateBio(null, formData);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+
+      setError("");
       setBio(draft);
       setEditing(false);
       setSaved(true);
@@ -42,6 +50,7 @@ export default function BioEditor({
   const handleCancel = () => {
     setDraft(bio);
     setEditing(false);
+    setError("");
   };
 
   return (
@@ -92,6 +101,7 @@ export default function BioEditor({
               {remaining}
             </span>
           </div>
+          {error && <p className="text-xs text-red-500">{error}</p>}
           <div className="flex gap-2">
             <button
               onClick={handleSave}

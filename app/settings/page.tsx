@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import SettingsContent from "@/components/ui/SettingsContent";
-import { getUsernameError } from "@/lib/username";
+import { firstIssueMessage, usernameSchema } from "@/lib/schemas";
 import { rateLimit } from "@/lib/rate-limit";
+import { requireActiveUser } from "@/lib/auth-guards";
+import { toActionResult } from "@/lib/action-result";
+import type { ActionResult } from "@/lib/action-result";
 
 export const metadata: Metadata = {
   title: "Ayarlar",
@@ -14,34 +15,45 @@ export const metadata: Metadata = {
 };
 
 export default async function SettingsPage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) redirect("/");
+  const viewer = await requireActiveUser();
+  if (!viewer.ok) redirect("/");
 
-  const email = session.user.email;
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({
+    where: { id: viewer.user.id },
+  });
   if (!user) redirect("/");
 
-  async function updateUsername(formData: FormData) {
+  async function updateUsername(
+    _previousState: ActionResult | null,
+    formData: FormData,
+  ): Promise<ActionResult> {
     "use server";
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) throw new Error("Giriş yapmalısın");
-    const email = session.user.email;
+    return toActionResult(async () => {
+      const auth = await requireActiveUser();
+      if (!auth.ok) throw new Error(auth.error);
 
-    if (!rateLimit(`username:${email}`))
-      throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+      if (!(await rateLimit(`username:${auth.user.email}`)))
+        throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
 
-    const username = String(formData.get("username") ?? "")
-      .toLowerCase()
-      .trim();
-    const validationError = getUsernameError(username);
-    if (validationError) throw new Error(validationError);
-    const exists = await prisma.user.findUnique({ where: { username } });
-    if (exists && exists.email !== email)
-      throw new Error("Bu kullanıcı adı zaten alınmış");
-    await prisma.user.update({ where: { email }, data: { username } });
-    revalidatePath(`/u/${username}`);
-    revalidatePath("/settings");
-    redirect(`/u/${username}`);
+      const parsed = usernameSchema.safeParse(formData.get("username") ?? "");
+      if (!parsed.success) throw new Error(firstIssueMessage(parsed.error));
+      const username = parsed.data;
+
+      const exists = await prisma.user.findUnique({
+        where: { username },
+        select: { id: true },
+      });
+      if (exists && exists.id !== auth.user.id)
+        throw new Error("Bu kullanıcı adı zaten alınmış");
+
+      await prisma.user.update({
+        where: { id: auth.user.id },
+        data: { username },
+      });
+      revalidatePath(`/u/${username}`);
+      revalidatePath("/settings");
+      redirect(`/u/${username}`);
+    });
   }
 
   return (
@@ -52,6 +64,7 @@ export default async function SettingsPage() {
           email={user.email ?? ""}
           username={user.username}
           role={user.role}
+          image={user.image}
           profileUrl={user.username ? `/u/${user.username}` : "/"}
           updateUsername={updateUsername}
         />

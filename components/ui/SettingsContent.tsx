@@ -4,15 +4,19 @@ import { useT } from "@/hooks/useT";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageSelect from "@/components/ui/LanguageSelect";
 import SubmitButton from "@/components/ui/SubmitButton";
+import AvatarUploader from "@/components/ui/AvatarUploader";
 import Link from "next/link";
+import ActionForm from "@/components/ui/ActionForm";
+import type { FormAction } from "@/lib/action-result";
 
 type Props = {
   name: string | null;
   email: string;
   username: string | null;
   role: string;
+  image: string | null;
   profileUrl: string;
-  updateUsername: (formData: FormData) => Promise<void>;
+  updateUsername: FormAction;
 };
 
 export default function SettingsContent({
@@ -20,6 +24,7 @@ export default function SettingsContent({
   email,
   username,
   role,
+  image,
   profileUrl,
   updateUsername,
 }: Props) {
@@ -45,31 +50,35 @@ export default function SettingsContent({
       </div>
 
       <section>
-        <h2 className="text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-widest mb-3 px-1">
+        <h2 className="flex items-center gap-2 text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-widest mb-3 px-1">
+          <span className="w-1 h-1 rounded-full bg-indigo-500" />
           {t.accountSection}
         </h2>
         <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-zinc-800">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg">
-                {name?.charAt(0) ?? "?"}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {name}
-                </p>
-                <p className="text-xs text-gray-400 dark:text-white/40">
-                  {email}
-                </p>
-              </div>
-            </div>
-            <span className="text-xs px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium">
+          <div className="flex items-center justify-between px-6 py-5 gap-4">
+            <AvatarUploader image={image} fallbackLabel={name ?? email} />
+            <span className="text-xs px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium shrink-0">
               {role === "ADMIN" ? t.admin : t.member}
             </span>
           </div>
 
+          <div className="flex items-center justify-between px-6 py-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                {name}
+              </p>
+              <p className="text-xs text-gray-400 dark:text-white/40">
+                {email}
+              </p>
+            </div>
+          </div>
+
           <div className="px-6 py-5">
-            <form action={updateUsername} className="space-y-3">
+            <ActionForm
+              action={updateUsername}
+              className="space-y-3"
+              errorClassName="text-xs text-red-500"
+            >
               <div className="flex items-center justify-between mb-2">
                 <label
                   htmlFor="username"
@@ -106,17 +115,18 @@ export default function SettingsContent({
               <p className="text-xs text-gray-400 dark:text-white/30">
                 {t.usernameHint}
               </p>
-            </form>
+            </ActionForm>
           </div>
         </div>
       </section>
 
       <section>
-        <h2 className="text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-widest mb-3 px-1">
+        <h2 className="flex items-center gap-2 text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-widest mb-3 px-1">
+          <span className="w-1 h-1 rounded-full bg-indigo-500" />
           {t.appearanceSection}
         </h2>
         <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-zinc-800">
-          <div className="flex items-center justify-between px-6 py-5">
+          <div className="flex items-center justify-between px-6 py-5 transition-all duration-300 ease-out hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:shadow-[inset_3px_0_0_0_#6366f1] dark:hover:shadow-[inset_3px_0_0_0_#818cf8]">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center text-lg">
                 🎨
@@ -133,7 +143,7 @@ export default function SettingsContent({
             <ThemeToggle />
           </div>
 
-          <div className="flex items-center justify-between px-6 py-5">
+          <div className="flex items-center justify-between px-6 py-5 transition-all duration-300 ease-out hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:shadow-[inset_3px_0_0_0_#6366f1] dark:hover:shadow-[inset_3px_0_0_0_#818cf8]">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center text-lg">
                 🌐

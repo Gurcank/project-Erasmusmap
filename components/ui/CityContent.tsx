@@ -2,9 +2,12 @@
 
 import { useT } from "@/hooks/useT";
 import Link from "next/link";
+import Image from "next/image";
 import VisitButton from "@/components/ui/VisitButton";
 import StarInput from "@/components/ui/StarInput";
 import SubmitButton from "@/components/ui/SubmitButton";
+import ActionForm from "@/components/ui/ActionForm";
+import type { FormAction } from "@/lib/action-result";
 import type { CityReview, CategoryRatings } from "@/types";
 import { averageRating } from "@/lib/review";
 
@@ -17,10 +20,16 @@ type Props = {
   avgScore: number;
   categoryRatings: CategoryRatings;
   reviews: CityReview[];
-  submitReview: (formData: FormData) => Promise<void>;
+  submitReview: FormAction;
   isAdmin: boolean;
-  deleteReview: (formData: FormData) => Promise<void>;
+  deleteReview: FormAction;
 };
+
+// Avatars uploaded before the Storage migration are still base64 data URIs,
+// which the image optimizer cannot fetch.
+function isLegacyDataUri(src: string): boolean {
+  return src.startsWith("data:");
+}
 
 function StarDisplay({ value }: { value: number }) {
   return (
@@ -75,12 +84,15 @@ export default function CityContent({
             </h1>
             <VisitButton cityId={cityId} initialVisited={isVisited} />
           </div>
-          <div className="w-full h-[400px] rounded-2xl overflow-hidden border border-gray-200 dark:border-zinc-800">
+          <div className="relative w-full h-[400px] rounded-2xl overflow-hidden border border-gray-200 dark:border-zinc-800">
             {cityImage ? (
-              <img
+              <Image
                 src={cityImage}
                 alt={cityName}
-                className="w-full h-full object-cover"
+                fill
+                priority
+                sizes="(min-width: 768px) 50vw, 100vw"
+                className="object-cover"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-zinc-900 text-gray-400 dark:text-zinc-500">
@@ -113,8 +125,9 @@ export default function CityContent({
         </div>
       </div>
 
-      <form
+      <ActionForm
         action={submitReview}
+        errorClassName="text-sm text-red-500 text-center"
         className="bg-white dark:bg-zinc-900/80 border border-gray-200 dark:border-zinc-800 rounded-2xl p-8 space-y-8 max-w-4xl mx-auto"
       >
         <h2 className="text-xl font-semibold text-center tracking-wide text-gray-900 dark:text-white">
@@ -142,7 +155,7 @@ export default function CityContent({
             {t.submitReview}
           </SubmitButton>
         </div>
-      </form>
+      </ActionForm>
 
       <div className="mt-20 w-full">
         <div className="bg-white dark:bg-zinc-900/80 border border-gray-200 dark:border-zinc-800 rounded-3xl px-6 py-14">
@@ -158,26 +171,36 @@ export default function CityContent({
             {reviews.map((review) => (
               <div
                 key={review.id}
-                className="bg-gray-50 dark:bg-zinc-950/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-8 hover:border-indigo-400/40 transition-all"
+                className="bg-gray-50 dark:bg-zinc-950/60 border border-gray-200 dark:border-zinc-800 rounded-2xl p-8 transition-all duration-300 ease-out hover:bg-white dark:hover:bg-zinc-900 hover:border-indigo-200 dark:hover:border-indigo-500/30 hover:shadow-[inset_3px_0_0_0_#6366f1] dark:hover:shadow-[inset_3px_0_0_0_#818cf8]"
               >
                 <div className="flex justify-between items-start mb-3">
                   <Link
                     href={
-                      review.user?.username
-                        ? `/u/${review.user.username}`
-                        : review.user?.name
-                          ? `/u/${review.user.name}`
-                          : "#"
+                      review.user?.username ? `/u/${review.user.username}` : "#"
                     }
-                    className="flex items-center gap-3 hover:opacity-80 transition"
+                    onClick={(e) => {
+                      if (!review.user?.username) e.preventDefault();
+                    }}
+                    className="group flex items-center gap-3"
                   >
-                    <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center text-sm text-gray-700 dark:text-white">
-                      {(review.user?.username ?? review.user?.name)
-                        ?.charAt(0)
-                        .toUpperCase() ?? "U"}
-                    </div>
+                    {review.user?.image ? (
+                      <Image
+                        src={review.user.image}
+                        alt=""
+                        width={48}
+                        height={48}
+                        unoptimized={isLegacyDataUri(review.user.image)}
+                        className="w-12 h-12 rounded-full object-cover ring-2 ring-transparent transition-all duration-300 group-hover:ring-indigo-400/50"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center text-sm text-gray-700 dark:text-white ring-2 ring-transparent transition-all duration-300 group-hover:ring-indigo-400/50">
+                        {(review.user?.username ?? review.user?.name)
+                          ?.charAt(0)
+                          .toUpperCase() ?? "U"}
+                      </div>
+                    )}
                     <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">
+                      <p className="font-semibold text-gray-900 dark:text-white border-b border-transparent pb-0.5 transition-colors duration-300 group-hover:border-indigo-400/60">
                         {review.user?.username
                           ? `@${review.user.username}`
                           : review.user?.name}
@@ -192,15 +215,15 @@ export default function CityContent({
                       ⭐ {averageRating(review).toFixed(1)}
                     </span>
                     {isAdmin && (
-                      <form
+                      <ActionForm
                         action={deleteReview}
-                        onSubmit={(e) => {
-                          if (!window.confirm(t.confirmDeleteReview)) {
-                            e.preventDefault();
-                          }
-                        }}
+                        confirmMessage={t.confirmDeleteReview}
                       >
-                        <input type="hidden" name="reviewId" value={review.id} />
+                        <input
+                          type="hidden"
+                          name="reviewId"
+                          value={review.id}
+                        />
                         <SubmitButton
                           pendingText="…"
                           title={t.adminDeleteReview}
@@ -208,7 +231,7 @@ export default function CityContent({
                         >
                           🗑
                         </SubmitButton>
-                      </form>
+                      </ActionForm>
                     )}
                   </div>
                 </div>

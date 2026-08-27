@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Map from "@/components/map/Map";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { latinize } from "@/lib/latinize";
 import CityContent from "@/components/ui/CityContent";
@@ -11,6 +10,13 @@ import { parseRatings, parseReviewContent, averageRating } from "@/lib/review";
 import type { CategoryRatings } from "@/types";
 import { rateLimit } from "@/lib/rate-limit";
 import { deleteReview } from "@/lib/actions";
+import { requireActiveUser } from "@/lib/auth-guards";
+import { fetchCityPhoto } from "@/lib/unsplash";
+import { getCities } from "@/lib/cities";
+import { toActionResult } from "@/lib/action-result";
+import type { ActionResult } from "@/lib/action-result";
+
+const DUPLICATE_REVIEW_MESSAGE = "Bu şehre zaten yorum yaptınız.";
 
 export async function generateMetadata({
   params,
@@ -22,7 +28,9 @@ export async function generateMetadata({
     where: { slug },
     select: { name: true, country: true },
   });
-  if (!city) return {};
+  // Runs before the loading.tsx shell is streamed, so this is the last
+  // point where a real 404 status can still be set.
+  if (!city) notFound();
 
   const name = latinize(city.name);
   const description = `${name}, ${city.country} için Erasmus öğrenci değerlendirmeleri, puanları ve fotoğrafları.`;
@@ -41,7 +49,7 @@ export default async function CityPage({
 }) {
   const { slug } = await params;
 
-  const [city, cities, session] = await Promise.all([
+  const [city, cities, viewer] = await Promise.all([
     prisma.city.findUnique({
       where: { slug },
       include: {
@@ -55,72 +63,71 @@ export default async function CityPage({
         },
       },
     }),
-    prisma.city.findMany({
-      select: { id: true, name: true, slug: true, country: true },
-    }),
-    getServerSession(authOptions),
+    getCities(),
+    requireActiveUser(),
   ]);
 
   if (!city) notFound();
 
   const latinizedCityName = latinize(city.name);
 
-  const user = session?.user?.email
-    ? await prisma.user.findUnique({
-        where: { email: session.user.email },
-        select: {
-          visitedCities: { where: { id: city.id }, select: { id: true } },
-        },
+  const visitedCity = viewer.ok
+    ? await prisma.city.findFirst({
+        where: { id: city.id, users: { some: { id: viewer.user.id } } },
+        select: { id: true },
       })
     : null;
 
-  const isVisited = (user?.visitedCities.length ?? 0) > 0;
-  const isAdmin = session?.user?.role === "ADMIN";
+  const isVisited = visitedCity !== null;
+  const isAdmin = viewer.ok && viewer.user.role === "ADMIN";
   const cityId = city.id;
 
-  async function submitReview(formData: FormData) {
+  async function submitReview(
+    _previousState: ActionResult | null,
+    formData: FormData,
+  ): Promise<ActionResult> {
     "use server";
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) throw new Error("Giriş yapmalısınız");
-    if (!rateLimit(`review:${session.user.email}`))
-      throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    return toActionResult(async () => {
+      const auth = await requireActiveUser();
+      if (!auth.ok) throw new Error(auth.error);
+
+      if (!(await rateLimit(`review:${auth.user.email}`)))
+        throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+
+      const ratings = parseRatings(formData);
+      const content = parseReviewContent(formData);
+
+      try {
+        await prisma.review.create({
+          data: {
+            cityId,
+            userId: auth.user.id,
+            ...ratings,
+            content,
+            isApproved: true,
+          },
+        });
+      } catch (error) {
+        // The unique index is the real guard against a double submission; a
+        // pre-check would still lose the race between two concurrent requests.
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === "P2002"
+        ) {
+          throw new Error(DUPLICATE_REVIEW_MESSAGE);
+        }
+        throw error;
+      }
+
+      await prisma.user.update({
+        where: { id: auth.user.id },
+        data: { visitedCities: { connect: { id: cityId } } },
+      });
+      revalidatePath(`/c/${slug}`);
     });
-    if (!user) throw new Error("Kullanıcı bulunamadı");
-    const existingReview = await prisma.review.findFirst({
-      where: { cityId, userId: user.id },
-    });
-    if (existingReview) throw new Error("Bu şehre zaten yorum yaptınız.");
-    const ratings = parseRatings(formData);
-    const content = parseReviewContent(formData);
-    await prisma.review.create({
-      data: {
-        cityId,
-        userId: user.id,
-        ...ratings,
-        content,
-        isApproved: true,
-      },
-    });
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { visitedCities: { connect: { id: cityId } } },
-    });
-    revalidatePath(`/c/${slug}`);
   }
 
-  const unsplashRes = await fetch(
-    `https://api.unsplash.com/search/photos?query=${latinizedCityName}&orientation=landscape&per_page=1`,
-    {
-      headers: {
-        Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
-      },
-      next: { revalidate: 86400 },
-    },
-  );
-  const unsplashData = await unsplashRes.json();
-  const cityImage = unsplashData.results?.[0]?.urls?.regular || null;
+  const cityImage = await fetchCityPhoto(latinizedCityName);
 
   const ratingData = await prisma.review.aggregate({
     where: { cityId: city.id },

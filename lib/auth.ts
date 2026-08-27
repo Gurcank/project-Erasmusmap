@@ -4,23 +4,13 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
+import { generateUniqueUsername } from "@/lib/user";
 
-async function generateUniqueUsername(displayName: string): Promise<string> {
-  const base = (displayName || "user")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "-")
-    .replace(/-+/g, "-");
-
-  let candidate = base;
-  let counter = 1;
-
-  while (await prisma.user.findUnique({ where: { username: candidate } })) {
-    candidate = `${base}-${counter}`;
-    counter++;
-  }
-
-  return candidate;
-}
+// How long the claims copied into the token stay valid before being re-read.
+// Reading on every request defeats the point of a JWT session; never re-reading
+// would let a ban sit unnoticed for the lifetime of the token. Authorization
+// itself never trusts these claims — see requireActiveUser in lib/auth-guards.
+const TOKEN_REFRESH_INTERVAL_SECONDS = 5 * 60;
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -50,6 +40,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Kullanıcı bulunamadı");
         }
 
+        if (user.banned) {
+          throw new Error("Hesabınız askıya alınmış");
+        }
+
         const isPasswordValid = await bcrypt.compare(
           credentials.password,
           user.password,
@@ -64,7 +58,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           image: user.image,
-          username: user.username ?? undefined,
+          username: user.username,
           role: user.role,
         };
       },
@@ -86,27 +80,54 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    async jwt({ token }) {
-      if (token.email) {
-        const user = await prisma.user.findUnique({
-          where: { email: token.email },
-        });
+    async signIn({ user }) {
+      if (!user.email) return true;
+      const existing = await prisma.user.findUnique({
+        where: { email: user.email },
+        select: { banned: true },
+      });
+      return !existing?.banned;
+    },
 
-        if (user) {
-          token.username = user.username;
-          token.id = user.id;
-          token.role = user.role;
-        }
+    async jwt({ token, user, trigger }) {
+      if (!token.email) return token;
+
+      const nowInSeconds = Math.floor(Date.now() / 1000);
+      const isStale =
+        !token.refreshedAt ||
+        nowInSeconds - token.refreshedAt > TOKEN_REFRESH_INTERVAL_SECONDS;
+
+      if (!user && trigger !== "update" && !isStale) return token;
+
+      const dbUser = await prisma.user.findUnique({
+        where: { email: token.email },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          banned: true,
+          image: true,
+        },
+      });
+
+      if (dbUser) {
+        token.id = dbUser.id;
+        token.username = dbUser.username;
+        token.role = dbUser.role;
+        token.banned = dbUser.banned;
+        token.picture = dbUser.image;
+        token.refreshedAt = nowInSeconds;
       }
 
       return token;
     },
 
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.username = token.username as string;
-        session.user.role = token.role as string;
+      if (session.user && token.id) {
+        session.user.id = token.id;
+        session.user.username = token.username;
+        session.user.role = token.role;
+        session.user.banned = token.banned;
       }
 
       return session;

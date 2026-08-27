@@ -1,29 +1,89 @@
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 10;
 
-const hits = new Map<string, number[]>();
+const memoryHits = new Map<string, number[]>();
 
 /**
- * In-memory sliding-window rate limiter, keyed by caller-provided identifier
- * (e.g. IP or user id). Only holds per-instance state, so on serverless
- * platforms with multiple concurrent instances (e.g. Vercel) it limits per
- * instance rather than globally — use a shared store (Upstash Redis, Vercel KV)
- * for a hard guarantee under that deployment model.
+ * Per-instance sliding window. Only a stopgap: on serverless platforms each
+ * concurrent instance keeps its own counters, so the effective limit is
+ * multiplied by the number of running instances.
  */
-export function rateLimit(
+function inMemoryRateLimit(
   key: string,
-  limit = MAX_REQUESTS_PER_WINDOW,
-  windowMs = WINDOW_MS,
+  limit: number,
+  windowMs: number,
 ): boolean {
   const now = Date.now();
-  const timestamps = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
+  const timestamps = (memoryHits.get(key) ?? []).filter(
+    (timestamp) => now - timestamp < windowMs,
+  );
 
   if (timestamps.length >= limit) {
-    hits.set(key, timestamps);
+    memoryHits.set(key, timestamps);
     return false;
   }
 
   timestamps.push(now);
-  hits.set(key, timestamps);
+  memoryHits.set(key, timestamps);
   return true;
+}
+
+// undefined = not resolved yet, null = not configured.
+let redisClient: Redis | null | undefined;
+
+function getRedis(): Redis | null {
+  if (redisClient !== undefined) return redisClient;
+
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  redisClient = url && token ? new Redis({ url, token }) : null;
+
+  return redisClient;
+}
+
+const limiters = new Map<string, Ratelimit>();
+
+function getLimiter(limit: number, windowMs: number): Ratelimit | null {
+  const redis = getRedis();
+  if (!redis) return null;
+
+  const cacheKey = `${limit}:${windowMs}`;
+  let limiter = limiters.get(cacheKey);
+
+  if (!limiter) {
+    limiter = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(limit, `${windowMs} ms`),
+      prefix: "erasmusmap/ratelimit",
+    });
+    limiters.set(cacheKey, limiter);
+  }
+
+  return limiter;
+}
+
+/**
+ * Shared sliding-window rate limiter keyed by a caller-provided identifier
+ * (IP or user email). Uses Upstash Redis when configured so the limit holds
+ * across serverless instances, and falls back to the in-memory window for
+ * local development or a Redis outage.
+ */
+export async function rateLimit(
+  key: string,
+  limit = MAX_REQUESTS_PER_WINDOW,
+  windowMs = WINDOW_MS,
+): Promise<boolean> {
+  const limiter = getLimiter(limit, windowMs);
+  if (!limiter) return inMemoryRateLimit(key, limit, windowMs);
+
+  try {
+    const { success } = await limiter.limit(key);
+    return success;
+  } catch {
+    // A Redis outage must degrade to weaker limiting, not lock everyone out.
+    return inMemoryRateLimit(key, limit, windowMs);
+  }
 }

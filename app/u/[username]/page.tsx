@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Map from "@/components/map/Map";
 import { revalidatePath } from "next/cache";
 import ProfileContent from "@/components/ui/ProfileContent";
-import { MAX_BIO_LENGTH } from "@/lib/profile";
+import { bioSchema, firstIssueMessage } from "@/lib/schemas";
 import { rateLimit } from "@/lib/rate-limit";
 import { deleteReview } from "@/lib/actions";
+import { requireActiveUser } from "@/lib/auth-guards";
+import { toActionResult } from "@/lib/action-result";
+import type { ActionResult } from "@/lib/action-result";
 
 export async function generateMetadata({
   params,
@@ -19,7 +21,9 @@ export async function generateMetadata({
     where: { username },
     select: { username: true, bio: true },
   });
-  if (!user) return {};
+  // Runs before the loading.tsx shell is streamed, so this is the last
+  // point where a real 404 status can still be set.
+  if (!user) notFound();
 
   const title = `@${user.username}`;
   const description = user.bio || `${title} — ErasmusMap profili`;
@@ -36,48 +40,52 @@ export default async function ProfilePage({
 }: {
   params: Promise<{ username: string }>;
 }) {
-  const session = await getServerSession(authOptions);
   const { username } = await params;
+  if (!username) notFound();
 
-  if (!username) return <div>User not found</div>;
-
-  const user = await prisma.user.findUnique({
-    where: { username },
-    include: {
-      reviews: {
-        orderBy: { createdAt: "desc" },
-        include: { city: { select: { name: true, slug: true } } },
+  const [user, viewer] = await Promise.all([
+    prisma.user.findUnique({
+      where: { username },
+      include: {
+        reviews: {
+          orderBy: { createdAt: "desc" },
+          include: { city: { select: { name: true, slug: true } } },
+        },
+        visitedCities: {
+          select: { id: true, name: true, slug: true, country: true },
+        },
       },
-      visitedCities: {
-        select: { id: true, name: true, slug: true, country: true },
-      },
-    },
-  });
+    }),
+    requireActiveUser(),
+  ]);
 
-  if (!user)
-    return (
-      <div className="text-gray-900 dark:text-white pt-32 text-center">
-        Kullanıcı bulunamadı
-      </div>
-    );
+  if (!user) notFound();
 
-  const isOwnProfile = session?.user?.email === user.email;
-  const isAdmin = session?.user?.role === "ADMIN";
+  const isOwnProfile = viewer.ok && viewer.user.id === user.id;
+  const isAdmin = viewer.ok && viewer.user.role === "ADMIN";
 
-  async function updateBio(formData: FormData) {
+  async function updateBio(
+    _previousState: ActionResult | null,
+    formData: FormData,
+  ): Promise<ActionResult> {
     "use server";
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) throw new Error("Giriş yapmalısın");
-    if (!rateLimit(`bio:${session.user.email}`))
-      throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
-    const bio = String(formData.get("bio") ?? "").trim();
-    if (bio.length > MAX_BIO_LENGTH)
-      throw new Error(`Bio en fazla ${MAX_BIO_LENGTH} karakter olabilir`);
-    const updatedUser = await prisma.user.update({
-      where: { email: session.user.email },
-      data: { bio },
+    return toActionResult(async () => {
+      const auth = await requireActiveUser();
+      if (!auth.ok) throw new Error(auth.error);
+
+      if (!(await rateLimit(`bio:${auth.user.email}`)))
+        throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+
+      const parsed = bioSchema.safeParse(formData.get("bio") ?? "");
+      if (!parsed.success) throw new Error(firstIssueMessage(parsed.error));
+      const bio = parsed.data;
+
+      const updatedUser = await prisma.user.update({
+        where: { id: auth.user.id },
+        data: { bio },
+      });
+      revalidatePath(`/u/${updatedUser.username}`);
     });
-    revalidatePath(`/u/${updatedUser.username}`);
   }
 
   return (
@@ -89,6 +97,7 @@ export default async function ProfilePage({
 
       <ProfileContent
         username={user.username ?? ""}
+        image={user.image}
         bio={user.bio}
         cityCount={user.visitedCities.length}
         reviewCount={user.reviews.length}
