@@ -2,12 +2,19 @@
 
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { latinize } from "@/lib/latinize";
 import { useT } from "@/hooks/useT";
 import type { City } from "@/types";
+
+// Avatars uploaded before the Storage migration are still base64 data URIs,
+// which the image optimizer cannot fetch.
+function isLegacyDataUri(src: string): boolean {
+  return src.startsWith("data:");
+}
 
 export default function Navbar() {
   const router = useRouter();
@@ -22,6 +29,12 @@ export default function Navbar() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const { data: session } = useSession();
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (session?.user?.banned) {
+      signOut({ callbackUrl: "/" });
+    }
+  }, [session]);
 
   useEffect(() => {
     fetch("/api/cities")
@@ -125,7 +138,7 @@ export default function Navbar() {
                     <button
                       key={city.id}
                       onClick={() => handleSelect(city)}
-                      className="w-full text-left px-5 py-3 flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-700 transition"
+                      className="w-full text-left px-5 py-3 flex items-center justify-between transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-700"
                     >
                       <span className="text-gray-900 dark:text-white font-medium">
                         {latinize(city.name)}
@@ -155,12 +168,23 @@ export default function Navbar() {
                   aria-label={t.profile}
                   aria-haspopup="true"
                   aria-expanded={profileOpen}
-                  className="w-10 h-10 rounded-full overflow-hidden border border-neutral-300 dark:border-neutral-600"
+                  className="w-10 h-10 rounded-full overflow-hidden border border-neutral-300 dark:border-neutral-600 ring-2 ring-transparent transition-all duration-300 hover:ring-indigo-400/50"
                 >
-                  <span className="bg-black dark:bg-white text-white dark:text-black w-full h-full flex items-center justify-center font-semibold">
-                    {session.user?.username?.charAt(0).toUpperCase() ??
-                      session.user?.name?.charAt(0)}
-                  </span>
+                  {session.user?.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt=""
+                      width={40}
+                      height={40}
+                      unoptimized={isLegacyDataUri(session.user.image)}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="bg-black dark:bg-white text-white dark:text-black w-full h-full flex items-center justify-center font-semibold">
+                      {session.user?.username?.charAt(0).toUpperCase() ??
+                        session.user?.name?.charAt(0)}
+                    </span>
+                  )}
                 </button>
               )}
               {profileOpen && session && (
@@ -169,24 +193,29 @@ export default function Navbar() {
                     href={
                       session?.user?.username
                         ? `/u/${session.user.username}`
-                        : "#"
+                        : "/choose-username"
                     }
-                    onClick={(e) => {
-                      if (!session?.user?.username) e.preventDefault();
-                    }}
-                    className="block px-5 py-3 text-gray-800 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-700 transition"
+                    className="block px-5 py-3 text-gray-800 dark:text-white transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-700"
                   >
                     {t.profile}
                   </Link>
                   <Link
                     href="/settings"
-                    className="block px-5 py-3 text-gray-800 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-700 transition"
+                    className="block px-5 py-3 text-gray-800 dark:text-white transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-700"
                   >
                     {t.settings}
                   </Link>
+                  {session?.user?.role === "ADMIN" && (
+                    <Link
+                      href="/admin"
+                      className="block px-5 py-3 text-indigo-600 dark:text-indigo-400 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                    >
+                      {t.adminPanel}
+                    </Link>
+                  )}
                   <button
                     onClick={() => signOut({ callbackUrl: "/" })}
-                    className="w-full text-left px-5 py-3 text-red-500 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition"
+                    className="w-full text-left px-5 py-3 text-red-500 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-700"
                   >
                     {t.logout}
                   </button>
@@ -261,7 +290,9 @@ export default function Navbar() {
             ) : (
               <Link
                 href={
-                  session.user?.username ? `/u/${session.user.username}` : "#"
+                  session.user?.username
+                    ? `/u/${session.user.username}`
+                    : "/choose-username"
                 }
                 onClick={() => setMenuOpen(false)}
                 className="block text-center px-5 py-3 rounded-xl bg-black dark:bg-white text-white dark:text-black font-medium"

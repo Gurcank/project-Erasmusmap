@@ -1,47 +1,42 @@
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import { getUsernameError } from "@/lib/username";
 import { rateLimit } from "@/lib/rate-limit";
+import { requireActiveUser } from "@/lib/auth-guards";
+import { parseRequestBody, usernameRequestSchema } from "@/lib/schemas";
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireActiveUser();
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  if (!rateLimit(`username:${session.user.email}`)) {
+  if (!(await rateLimit(`username:${auth.user.email}`))) {
     return NextResponse.json(
       { error: "Çok fazla istek. Lütfen biraz sonra tekrar dene." },
       { status: 429 },
     );
   }
 
-  const { username } = await req.json();
-
-  if (!username || typeof username !== "string") {
-    return NextResponse.json(
-      { error: "Kullanıcı adı gerekli" },
-      { status: 400 },
-    );
+  const body = await req.json().catch(() => null);
+  const parsed = parseRequestBody(usernameRequestSchema, body);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
-  const validationError = getUsernameError(username);
-  if (validationError) {
-    return NextResponse.json({ error: validationError }, { status: 400 });
-  }
+  const { username } = parsed.data;
 
   try {
-    const isTaken = await prisma.user.findUnique({ where: { username } });
+    const owner = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
 
-    if (isTaken) {
+    if (owner && owner.id !== auth.user.id) {
       return NextResponse.json({ error: "Username alınmış" }, { status: 400 });
     }
 
     await prisma.user.update({
-      where: { email: session.user.email },
+      where: { id: auth.user.id },
       data: { username },
     });
 

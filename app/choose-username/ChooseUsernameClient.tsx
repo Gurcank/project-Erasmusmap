@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Map from "@/components/map/Map";
 import { USERNAME_MAX_LENGTH, getUsernameError } from "@/lib/username";
 
 export default function ChooseUsernameClient() {
   const router = useRouter();
+  const { update } = useSession();
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +36,9 @@ export default function ChooseUsernameClient() {
         return;
       }
 
+      // Refresh the token so the navbar stops treating this account as
+      // username-less and links to the real profile.
+      await update();
       router.push(`/u/${username}`);
     } catch {
       setError("Bağlantı hatası. Lütfen tekrar dene.");

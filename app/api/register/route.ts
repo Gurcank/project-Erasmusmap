@@ -2,50 +2,33 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import { rateLimit } from "@/lib/rate-limit";
+import { generateUniqueUsername } from "@/lib/user";
+import { parseRequestBody, registerSchema } from "@/lib/schemas";
 
 const BCRYPT_SALT_ROUNDS = 10;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PASSWORD_MIN_LENGTH = 8;
 
 export async function POST(req: Request) {
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (!rateLimit(`register:${ip}`, 5)) {
+  if (!(await rateLimit(`register:${ip}`, 5))) {
     return NextResponse.json(
       { error: "Çok fazla deneme. Lütfen biraz sonra tekrar dene." },
       { status: 429 },
     );
   }
 
-  const { name, email, password } = await req.json();
-
-  if (
-    !email ||
-    !password ||
-    typeof email !== "string" ||
-    typeof password !== "string"
-  ) {
-    return NextResponse.json(
-      { error: "Email ve şifre gerekli" },
-      { status: 400 },
-    );
+  const body = await req.json().catch(() => null);
+  const parsed = parseRequestBody(registerSchema, body);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
-  if (!EMAIL_PATTERN.test(email)) {
-    return NextResponse.json(
-      { error: "Geçerli bir email adresi gir" },
-      { status: 400 },
-    );
-  }
+  const { name, email, password } = parsed.data;
 
-  if (password.length < PASSWORD_MIN_LENGTH) {
-    return NextResponse.json(
-      { error: `Şifre en az ${PASSWORD_MIN_LENGTH} karakter olmalı` },
-      { status: 400 },
-    );
-  }
-
-  const existingUser = await prisma.user.findUnique({ where: { email } });
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  });
 
   if (existingUser) {
     return NextResponse.json(
@@ -56,9 +39,18 @@ export async function POST(req: Request) {
 
   try {
     const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+    // Credentials sign-up bypasses the adapter, so the createUser event that
+    // assigns usernames to OAuth accounts never fires here — without this the
+    // account would have no reachable profile URL at all.
+    const username = await generateUniqueUsername(name || email.split("@")[0]);
 
     await prisma.user.create({
-      data: { name, email, password: hashedPassword },
+      data: {
+        name: name || null,
+        email,
+        password: hashedPassword,
+        username,
+      },
     });
 
     return NextResponse.json({ message: "Kayıt başarılı" });

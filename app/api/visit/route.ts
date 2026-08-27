@@ -1,34 +1,34 @@
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
+import { requireActiveUser } from "@/lib/auth-guards";
+import { parseRequestBody, visitSchema } from "@/lib/schemas";
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireActiveUser();
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  if (!rateLimit(`visit:${session.user.email}`, 20)) {
+  if (!(await rateLimit(`visit:${auth.user.email}`, 20))) {
     return NextResponse.json(
       { error: "Çok fazla istek. Lütfen biraz sonra tekrar dene." },
       { status: 429 },
     );
   }
 
-  const { cityId } = await req.json();
-
-  if (!cityId || typeof cityId !== "string") {
-    return NextResponse.json({ error: "Invalid cityId" }, { status: 400 });
+  const body = await req.json().catch(() => null);
+  const parsed = parseRequestBody(visitSchema, body);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
+
+  const { cityId } = parsed.data;
 
   try {
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: auth.user.id },
       select: {
-        id: true,
         visitedCities: { where: { id: cityId }, select: { id: true } },
       },
     });
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     const isAlreadyVisited = user.visitedCities.length > 0;
 
     await prisma.user.update({
-      where: { id: user.id },
+      where: { id: auth.user.id },
       data: {
         visitedCities: isAlreadyVisited
           ? { disconnect: { id: cityId } }
