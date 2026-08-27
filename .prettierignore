@@ -1,5 +1,7 @@
 node_modules
 .next
-public/eu-cities
+public/map
+data/boundaries
+prisma/data
 package-lock.json
 prisma/migrations

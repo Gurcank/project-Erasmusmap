@@ -70,7 +70,10 @@ const COUNTRIES = new Set([
   "GB",
 ]);
 
-const POPULATION_THRESHOLD = 50_000;
+// The dump is already limited to places over 15k, and every one of them is a
+// city someone could study in — filtering further only left map regions with
+// no city to link to.
+const POPULATION_THRESHOLD = 0;
 const CAPITAL_FEATURE_CODE = "PPLC";
 // PPLX entries are districts of a larger city, not cities in their own right.
 const EXCLUDED_FEATURE_CODE = "PPLX";

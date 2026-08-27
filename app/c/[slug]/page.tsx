@@ -11,7 +11,6 @@ import { rateLimit } from "@/lib/rate-limit";
 import { deleteReview } from "@/lib/actions";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { fetchCityPhoto } from "@/lib/unsplash";
-import { getCities } from "@/lib/cities";
 import { toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -48,7 +47,7 @@ export default async function CityPage({
 }) {
   const { slug } = await params;
 
-  const [city, cities, viewer] = await Promise.all([
+  const [city, viewer] = await Promise.all([
     prisma.city.findUnique({
       where: { slug },
       include: {
@@ -62,7 +61,6 @@ export default async function CityPage({
         },
       },
     }),
-    getCities(),
     requireActiveUser(),
   ]);
 
@@ -157,7 +155,7 @@ export default async function CityPage({
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 -z-10">
-        <Map cities={cities} isStatic />
+        <Map isStatic />
       </div>
       <div className="relative z-10 min-h-screen bg-canvas/90 pt-16 backdrop-blur-sm">
         <CityContent

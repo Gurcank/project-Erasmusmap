@@ -18,7 +18,7 @@
 
 ## Özellikler
 
-- 🗺️ İnteraktif Avrupa haritası (Mapbox GL)
+- 🗺️ Uydu görüntülü interaktif Avrupa haritası — şehir sınırları, hover'da yükselme
 - ⭐ Şehir değerlendirme sistemi — 6 kategori: Kültür, Gastronomi, Güvenlik, Sosyal Hayat, Ulaşım, Yaşam Maliyeti
 - 👤 Kullanıcı profili, ziyaret edilen şehirler ve gitmek istenenler
 - 🔐 Google ve e-posta/şifre ile giriş
@@ -40,6 +40,7 @@
 | Deploy     | Vercel                  |
 | Fotoğraf   | Unsplash API            |
 | Şehir veri | GeoNames (CC BY 4.0)    |
+| Sınırlar   | Eurostat NUTS 3 + GADM  |
 
 ## Başlarken
 
@@ -105,6 +106,26 @@ Listeyi tazelemek için:
 curl -O https://download.geonames.org/export/dump/cities15000.zip
 unzip cities15000.zip
 npx ts-node scripts/build-city-data.ts cities15000.txt
+```
+
+### Harita sınırları
+
+Haritadaki bölge sınırları [`public/map/regions.geojson`](public/map/regions.geojson)
+dosyasından gelir. Kaynak sınırlar [`data/boundaries/`](data/boundaries) altındadır
+(Eurostat NUTS seviye 3 + Batı Balkanlar ve Kıbrıs için GADM) ve **servis edilmez**,
+yalnızca üretim girdisidir.
+
+NUTS 3, "şehir" için doğru idari seviyedir — Türkiye'de 81 il, Fransa'da département,
+Almanya'da Kreis. Ama NUTS adları kullanılamaz ("München, Kreisfreie Stadt"), bu yüzden
+her bölge içindeki en büyük GeoNames şehrine bağlanır ve o şehrin adını taşır. Bölge
+adıyla aynı adı taşıyan bir şehir varsa o tercih edilir (Tekirdağ ili "Çorlu" değil
+"Tekirdağ" olarak etiketlenir). İçinde hiç şehir olmayan bölgeler soluk çizilir ve
+tıklanamaz.
+
+Sınır dosyasını yeniden üretmek için:
+
+```bash
+npx ts-node scripts/build-map-regions.ts
 ```
 
 > Prisma CLI ayarları [`prisma.config.ts`](prisma.config.ts) içinde; `.env.local` oradan

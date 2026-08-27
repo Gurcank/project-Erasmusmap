@@ -4,110 +4,48 @@ import { useEffect, useRef } from "react";
 import mapboxgl from "@/lib/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useRouter } from "next/navigation";
-import type { City } from "@/types";
 
 type MapProps = {
-  cities?: City[];
   isStatic?: boolean;
 };
 
 // Satellite imagery with labels, from which everything except country names is
-// hidden below — the app's own markers are the only city labels, so the
-// basemap's would compete with them.
+// hidden below — the region layer carries the city names.
 const MAP_STYLE = "mapbox://styles/mapbox/satellite-streets-v12";
 
 const INITIAL_CENTER: [number, number] = [12, 50];
-const INITIAL_ZOOM = 3.4;
-// A tilted camera is what makes a raised city read as height rather than as a
-// circle that simply got bigger.
+const INITIAL_ZOOM = 3.6;
+// A tilted camera is what makes a raised region read as height rather than as
+// a shape that simply changed colour.
 const INITIAL_PITCH = 45;
 
-const CITY_SOURCE = "cities";
-const CITY_LAYER = "city-points";
-const CITY_LABEL_LAYER = "city-labels";
-const HOVER_SOURCE = "hovered-city";
-const HOVER_LAYER = "hovered-city-extrusion";
+const REGION_SOURCE = "regions";
+const REGION_FILL_LAYER = "region-fill";
+const REGION_DIM_LAYER = "region-dim";
+const REGION_OUTLINE_LAYER = "region-outline";
+const REGION_LABEL_LAYER = "region-label";
 
-/** Height of the raised pillar, in metres. */
-const PILLAR_HEIGHT = 90_000;
-const PILLAR_RADIUS_KM = 14;
-const PILLAR_SIDES = 36;
-const RAISE_DURATION_MS = 260;
+/** How far a hovered region rises, in metres. */
+const RAISED_HEIGHT = 60_000;
+const RAISE_DURATION_MS = 250;
 
-// Basemap label layers that would collide with our own markers.
+// Basemap label layers that would compete with the region names.
 const HIDDEN_LABEL_KEYWORDS = ["settlement", "place", "poi", "transit", "road"];
 
-const ACCENT = "#ee9e23";
-const MARKER_STROKE = "#0b0e14";
+// Regions sit on top of satellite imagery, so their fill stays nearly
+// transparent — the boundary and the raise carry the interaction, not a wash
+// of colour that would hide the terrain underneath.
+const REGION_FILL = "rgba(255, 255, 255, 0.10)";
+const REGION_FILL_HOVER = "rgba(238, 158, 35, 0.62)";
+const REGION_DIM_FILL = "rgba(8, 11, 18, 0.32)";
+const OUTLINE_COLOR = "rgba(255, 255, 255, 0.42)";
 const LABEL_COLOR = "#f9fafb";
+const LABEL_HALO = "#0b0e14";
 
-/**
- * Approximates a circle around a point as a polygon so it can be extruded.
- * Only the hovered city needs one, so this runs per hover rather than shipping
- * ~1600 pre-built polygons to the browser.
- */
-function circleAround(
-  longitude: number,
-  latitude: number,
-  radiusKm: number,
-): GeoJSON.Feature<GeoJSON.Polygon> {
-  const latitudeRadians = (latitude * Math.PI) / 180;
-  const degreesPerKmLongitude = 1 / (111.32 * Math.cos(latitudeRadians));
-  const degreesPerKmLatitude = 1 / 110.574;
-
-  const ring: [number, number][] = [];
-  for (let step = 0; step < PILLAR_SIDES; step++) {
-    const angle = (step / PILLAR_SIDES) * 2 * Math.PI;
-    ring.push([
-      longitude + radiusKm * degreesPerKmLongitude * Math.cos(angle),
-      latitude + radiusKm * degreesPerKmLatitude * Math.sin(angle),
-    ]);
-  }
-  ring.push(ring[0]);
-
-  return {
-    type: "Feature",
-    properties: {},
-    geometry: { type: "Polygon", coordinates: [ring] },
-  };
-}
-
-const EMPTY_COLLECTION: GeoJSON.FeatureCollection = {
-  type: "FeatureCollection",
-  features: [],
-};
-
-function toFeatureCollection(cities: City[]): GeoJSON.FeatureCollection {
-  return {
-    type: "FeatureCollection",
-    features: cities
-      .filter((city) => city.latitude !== null && city.longitude !== null)
-      .map((city) => ({
-        type: "Feature",
-        properties: { name: city.name, slug: city.slug, country: city.country },
-        geometry: {
-          type: "Point",
-          coordinates: [city.longitude as number, city.latitude as number],
-        },
-      })),
-  };
-}
-
-export default function Map({ cities = [], isStatic = false }: MapProps) {
+export default function Map({ isStatic = false }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const popupRef = useRef<mapboxgl.Popup | null>(null);
-  const citiesRef = useRef<City[]>(cities);
   const router = useRouter();
-
-  useEffect(() => {
-    citiesRef.current = cities;
-    const map = mapRef.current;
-    if (!map?.isStyleLoaded()) return;
-    const source = map.getSource(CITY_SOURCE) as
-      mapboxgl.GeoJSONSource | undefined;
-    source?.setData(toFeatureCollection(cities));
-  }, [cities]);
 
   useEffect(() => {
     if (mapRef.current || !containerRef.current) return;
@@ -138,7 +76,7 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
       });
 
       // Country names stay for orientation; the basemap's city, road and POI
-      // labels go, so our markers are the only city layer.
+      // labels go, so the region layer is the only city labelling.
       for (const layer of map.getStyle().layers ?? []) {
         if (layer.type !== "symbol") continue;
         if (layer.id.includes("country-label")) continue;
@@ -149,21 +87,41 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
         }
       }
 
-      map.addSource(CITY_SOURCE, {
+      map.addSource(REGION_SOURCE, {
         type: "geojson",
-        data: toFeatureCollection(citiesRef.current),
+        data: "/map/regions.geojson",
+        // Required for feature-state, which drives the hover.
+        generateId: true,
       });
-      map.addSource(HOVER_SOURCE, { type: "geojson", data: EMPTY_COLLECTION });
 
-      // Added before the markers so the dot stays readable on top of the pillar.
+      // Regions with no city inside are context only: dimmed, never raised,
+      // never clickable.
       map.addLayer({
-        id: HOVER_LAYER,
+        id: REGION_DIM_LAYER,
+        type: "fill",
+        source: REGION_SOURCE,
+        filter: ["!", ["has", "citySlug"]],
+        paint: { "fill-color": REGION_DIM_FILL },
+      });
+
+      map.addLayer({
+        id: REGION_FILL_LAYER,
         type: "fill-extrusion",
-        source: HOVER_SOURCE,
+        source: REGION_SOURCE,
+        filter: ["has", "citySlug"],
         paint: {
-          "fill-extrusion-color": ACCENT,
-          "fill-extrusion-opacity": 0.5,
-          "fill-extrusion-height": 0,
+          "fill-extrusion-color": [
+            "case",
+            ["boolean", ["feature-state", "hover"], false],
+            REGION_FILL_HOVER,
+            REGION_FILL,
+          ],
+          "fill-extrusion-height": [
+            "case",
+            ["boolean", ["feature-state", "hover"], false],
+            RAISED_HEIGHT,
+            0,
+          ],
           "fill-extrusion-base": 0,
           "fill-extrusion-height-transition": {
             duration: prefersReducedMotion ? 0 : RAISE_DURATION_MS,
@@ -173,44 +131,28 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
       });
 
       map.addLayer({
-        id: CITY_LAYER,
-        type: "circle",
-        source: CITY_SOURCE,
+        id: REGION_OUTLINE_LAYER,
+        type: "line",
+        source: REGION_SOURCE,
         paint: {
-          "circle-color": ACCENT,
-          "circle-stroke-color": MARKER_STROKE,
-          "circle-stroke-width": 1,
-          "circle-opacity": 0.95,
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            3,
-            2.5,
-            6,
-            4.5,
-            10,
-            7,
-          ],
+          "line-color": OUTLINE_COLOR,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 3, 0.4, 8, 1.1],
         },
       });
 
       map.addLayer({
-        id: CITY_LABEL_LAYER,
+        id: REGION_LABEL_LAYER,
         type: "symbol",
-        source: CITY_SOURCE,
-        // Below this zoom ~1600 labels would be an unreadable wall of text.
-        minzoom: 5.5,
+        source: REGION_SOURCE,
+        filter: ["has", "citySlug"],
         layout: {
           "text-field": ["get", "name"],
-          "text-size": 12,
-          "text-offset": [0, 1.1],
-          "text-anchor": "top",
+          "text-size": ["interpolate", ["linear"], ["zoom"], 4, 10, 8, 14],
           "text-allow-overlap": false,
         },
         paint: {
           "text-color": LABEL_COLOR,
-          "text-halo-color": MARKER_STROKE,
+          "text-halo-color": LABEL_HALO,
           "text-halo-width": 1.4,
         },
       });
@@ -218,68 +160,65 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
       // Decorative background maps get no interaction at all.
       if (isStatic) return;
 
-      popupRef.current = new mapboxgl.Popup({
+      const popup = new mapboxgl.Popup({
         closeButton: false,
         closeOnClick: false,
         className: "city-tooltip",
-        offset: 14,
+        offset: 12,
       });
 
-      let hoveredSlug: string | null = null;
+      let hoveredId: number | null = null;
 
       const clearHover = () => {
-        hoveredSlug = null;
-        const source = map.getSource(HOVER_SOURCE) as mapboxgl.GeoJSONSource;
-        source.setData(EMPTY_COLLECTION);
-        map.setPaintProperty(HOVER_LAYER, "fill-extrusion-height", 0);
-        popupRef.current?.remove();
+        if (hoveredId !== null) {
+          map.setFeatureState(
+            { source: REGION_SOURCE, id: hoveredId },
+            { hover: false },
+          );
+        }
+        hoveredId = null;
+        popup.remove();
         map.getCanvas().style.cursor = "";
       };
 
-      map.on("mousemove", CITY_LAYER, (event) => {
+      map.on("mousemove", REGION_FILL_LAYER, (event) => {
         const feature = event.features?.[0];
-        if (!feature || feature.geometry.type !== "Point") return;
+        if (!feature || typeof feature.id !== "number") return;
 
-        const slug = feature.properties?.slug;
-        if (typeof slug !== "string" || slug === hoveredSlug) return;
-        hoveredSlug = slug;
+        if (feature.id !== hoveredId) {
+          if (hoveredId !== null) {
+            map.setFeatureState(
+              { source: REGION_SOURCE, id: hoveredId },
+              { hover: false },
+            );
+          }
+          hoveredId = feature.id;
+          map.setFeatureState(
+            { source: REGION_SOURCE, id: hoveredId },
+            { hover: true },
+          );
+        }
 
-        const [longitude, latitude] = feature.geometry.coordinates as [
-          number,
-          number,
-        ];
-        const source = map.getSource(HOVER_SOURCE) as mapboxgl.GeoJSONSource;
-        source.setData({
-          type: "FeatureCollection",
-          features: [circleAround(longitude, latitude, PILLAR_RADIUS_KM)],
-        });
-        map.setPaintProperty(
-          HOVER_LAYER,
-          "fill-extrusion-height",
-          PILLAR_HEIGHT,
-        );
-
-        popupRef.current
-          ?.setLngLat([longitude, latitude])
+        popup
+          .setLngLat(event.lngLat)
           .setText(String(feature.properties?.name ?? ""))
           .addTo(map);
         map.getCanvas().style.cursor = "pointer";
       });
 
-      map.on("mouseleave", CITY_LAYER, clearHover);
+      map.on("mouseleave", REGION_FILL_LAYER, clearHover);
 
-      map.on("click", CITY_LAYER, (event) => {
-        const slug = event.features?.[0]?.properties?.slug;
+      map.on("click", REGION_FILL_LAYER, (event) => {
+        const slug = event.features?.[0]?.properties?.citySlug;
         if (typeof slug === "string") router.push(`/c/${slug}`);
       });
     });
 
     return () => {
-      popupRef.current?.remove();
       mapRef.current?.remove();
       mapRef.current = null;
     };
-    // Built once; city updates are pushed through the effect above.
+    // Built once — the region data is a static file, not a prop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
