@@ -40,7 +40,7 @@ export default async function SettingsPage() {
       const username = parsed.data;
 
       const exists = await prisma.user.findUnique({
-        where: { username },
+        where: { usernameLower: username.toLowerCase() },
         select: { id: true },
       });
       if (exists && exists.id !== auth.user.id)
@@ -48,7 +48,7 @@ export default async function SettingsPage() {
 
       await prisma.user.update({
         where: { id: auth.user.id },
-        data: { username },
+        data: { username, usernameLower: username.toLowerCase() },
       });
       revalidatePath(`/u/${username}`);
       revalidatePath("/settings");

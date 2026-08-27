@@ -2,7 +2,9 @@ import { latinize } from "@/lib/latinize";
 
 export const USERNAME_MIN_LENGTH = 3;
 export const USERNAME_MAX_LENGTH = 20;
-export const USERNAME_PATTERN = /^[a-z0-9_-]+$/;
+// Casing is preserved for display; uniqueness is enforced on the lowercase
+// mirror column, so "Ada" and "ada" cannot both be taken.
+export const USERNAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
 
 const FALLBACK_USERNAME_BASE = "user";
 
@@ -12,7 +14,7 @@ export function getUsernameError(username: string): string | null {
   if (username.length > USERNAME_MAX_LENGTH)
     return `En fazla ${USERNAME_MAX_LENGTH} karakter olmalı`;
   if (!USERNAME_PATTERN.test(username))
-    return "Sadece küçük harf, rakam, _ ve - kullanılabilir";
+    return "Sadece harf, rakam, _ ve - kullanılabilir";
   return null;
 }
 

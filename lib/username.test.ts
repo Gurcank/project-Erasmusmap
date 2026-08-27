@@ -19,10 +19,15 @@ describe("getUsernameError", () => {
     expect(getUsernameError("a".repeat(21))).toMatch(/en fazla/i);
   });
 
-  it("rejects uppercase letters and other invalid characters", () => {
-    expect(getUsernameError("Gurcan")).toMatch(/küçük harf/i);
-    expect(getUsernameError("gurcan k")).toMatch(/küçük harf/i);
-    expect(getUsernameError("gurcan@k")).toMatch(/küçük harf/i);
+  it("accepts mixed case, since display casing is preserved", () => {
+    expect(getUsernameError("GurcanK")).toBeNull();
+    expect(getUsernameError("Ada_Lovelace-1")).toBeNull();
+  });
+
+  it("rejects characters outside letters, digits, underscore and dash", () => {
+    expect(getUsernameError("gurcan k")).toMatch(/Sadece harf/i);
+    expect(getUsernameError("gurcan@k")).toMatch(/Sadece harf/i);
+    expect(getUsernameError("gürcan")).toMatch(/Sadece harf/i);
   });
 });
 

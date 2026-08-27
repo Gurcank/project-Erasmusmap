@@ -17,10 +17,9 @@ export const bioSchema = z
 export const usernameSchema = z
   .string({ error: "Kullanıcı adı gerekli" })
   .trim()
-  .toLowerCase()
   .min(USERNAME_MIN_LENGTH, `En az ${USERNAME_MIN_LENGTH} karakter olmalı`)
   .max(USERNAME_MAX_LENGTH, `En fazla ${USERNAME_MAX_LENGTH} karakter olmalı`)
-  .regex(USERNAME_PATTERN, "Sadece küçük harf, rakam, _ ve - kullanılabilir");
+  .regex(USERNAME_PATTERN, "Sadece harf, rakam, _ ve - kullanılabilir");
 
 export const registerSchema = z.object({
   name: z

@@ -12,39 +12,58 @@ datasource db {
 }
 
 model City {
-  id          String   @id @default(uuid())
-  name        String
-  slug        String   @unique
-  regionSlug  String
-  country     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String @id @default(uuid())
+  name       String
+  slug       String @unique
+  regionSlug String
+  country    String
 
-  reviews     Review[]
+  // Coordinates drive the map's city markers; population and geonameId come
+  // from the GeoNames import that replaces the NUTS region list.
+  latitude   Float?
+  longitude  Float?
+  population Int?
+  geonameId  Int?    @unique
 
-  users   User[]  @relation("VisitedCities")
+  // Cached Unsplash result: fetching a photo per request cannot serve the
+  // trending lists or profile favourites.
+  imageUrl         String?
+  imageAttribution String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reviews   Review[]
+  visits    Visit[]
+  wishlists WishlistItem[]
+  favorites FavoriteCity[]
 
   @@unique([regionSlug, slug])
 }
 
 model Review {
-  id        String   @id @default(uuid())
-  content   String
-  
-  culture       Int
-  gastronomy    Int
-  safety        Int
-  socialLife    Int
-  transport     Int
-  costOfLiving  Int
+  id      String @id @default(uuid())
+  content String
 
-  cityId    String
-  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  // Stored on a 1–10 scale so half stars are exact integers: 7 means 3.5
+  // stars. See lib/review.ts for the conversion helpers.
+  culture      Int
+  gastronomy   Int
+  safety       Int
+  socialLife   Int
+  transport    Int
+  costOfLiving Int
 
-  userId    String?
-  user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  cityId String
+  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
 
-  isApproved Boolean  @default(false)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  isApproved Boolean @default(false)
+
+  likes    ReviewLike[]
+  comments ReviewComment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -57,41 +76,143 @@ model Review {
   @@index([userId])
 }
 
+/// A city the user has been to, optionally with the dates they were there.
+/// Replaces the implicit many-to-many, which had nowhere to put the dates.
+model Visit {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  cityId String
+  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  startDate DateTime? @db.Date
+  endDate   DateTime? @db.Date
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, cityId])
+  @@index([userId])
+  @@index([cityId])
+}
+
+/// A city the user wants to go to.
+model WishlistItem {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  cityId String
+  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, cityId])
+  @@index([userId])
+  @@index([cityId])
+}
+
+/// The four cities pinned at the top of a profile. `position` is 0–3 and is
+/// unique per user, so the slots cannot collide.
+model FavoriteCity {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  cityId String
+  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  position Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, position])
+  @@unique([userId, cityId])
+  @@index([userId])
+}
+
+model ReviewLike {
+  id String @id @default(uuid())
+
+  reviewId String
+  review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, reviewId])
+  @@index([reviewId])
+}
+
+/// A reply to a review. Single level: replies cannot themselves be replied to.
+model ReviewComment {
+  id String @id @default(uuid())
+
+  reviewId String
+  review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  content String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reviewId, createdAt])
+  @@index([userId])
+}
+
 model User {
-  id            String    @id @default(uuid())
-  username      String?   @unique
+  id String @id @default(uuid())
+
+  /// Shown as the user typed it, so display casing is preserved.
+  username String? @unique
+  /// Lowercase mirror of `username`. Uniqueness and every lookup go through
+  /// this column, so "Ada" and "ada" cannot both exist.
+  usernameLower String? @unique
+
   name          String?
   email         String    @unique
-  password      String?   // Credentials login için
+  password      String? // Credentials login için
   emailVerified DateTime?
   image         String?
-  bio String? @db.Text
+  bio           String?   @db.Text
   role          Role      @default(USER)
   banned        Boolean   @default(false)
 
-  accounts      Account[]
-  sessions      Session[]
-  reviews       Review[]
-  visitedCities   City[]   @relation("VisitedCities")
+  accounts       Account[]
+  sessions       Session[]
+  reviews        Review[]
+  visits         Visit[]
+  wishlist       WishlistItem[]
+  favoriteCities FavoriteCity[]
+  reviewLikes    ReviewLike[]
+  reviewComments ReviewComment[]
 
-
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Account {
-  id                 String  @id @default(uuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

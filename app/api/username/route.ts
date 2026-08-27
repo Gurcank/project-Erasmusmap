@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 
   try {
     const owner = await prisma.user.findUnique({
-      where: { username },
+      where: { usernameLower: username.toLowerCase() },
       select: { id: true },
     });
 
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
     await prisma.user.update({
       where: { id: auth.user.id },
-      data: { username },
+      data: { username, usernameLower: username.toLowerCase() },
     });
 
     return NextResponse.json({ success: true });

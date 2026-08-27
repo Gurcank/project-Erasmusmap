@@ -16,7 +16,7 @@ export async function generateUniqueUsername(
 
   while (
     await prisma.user.findUnique({
-      where: { username: candidate },
+      where: { usernameLower: candidate.toLowerCase() },
       select: { id: true },
     })
   ) {

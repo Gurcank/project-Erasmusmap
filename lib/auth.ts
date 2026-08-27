@@ -70,7 +70,7 @@ export const authOptions: NextAuthOptions = {
       const username = await generateUniqueUsername(user.name ?? "");
       await prisma.user.update({
         where: { id: user.id },
-        data: { username },
+        data: { username, usernameLower: username.toLowerCase() },
       });
     },
   },

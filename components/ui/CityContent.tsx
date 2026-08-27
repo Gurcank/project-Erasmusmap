@@ -11,7 +11,7 @@ import ActionForm from "@/components/ui/ActionForm";
 import UserAvatar from "@/components/ui/UserAvatar";
 import Rating from "@/components/ui/Rating";
 import type { CityReview, CategoryRatings } from "@/types";
-import { averageRating } from "@/lib/review";
+import { averageRating, toStars } from "@/lib/review";
 import type { FormAction } from "@/lib/action-result";
 
 type Props = {
@@ -54,7 +54,7 @@ export default function CityContent({
       value: categoryRatings.gastronomy,
     },
     { key: "transport", label: t.transport, value: categoryRatings.transport },
-  ];
+  ].map((row) => ({ ...row, stars: toStars(row.value) }));
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-16 md:px-8">
@@ -91,12 +91,12 @@ export default function CityContent({
           <h2 className="font-display text-xl font-semibold text-text">
             {t.cityRatings}
           </h2>
-          {ratingRows.map(({ key, label, value }) => (
+          {ratingRows.map(({ key, label, stars }) => (
             <div key={key} className="flex items-center justify-between gap-4">
               <span className="text-sm text-text-muted">{label}</span>
               <Rating
-                value={value}
-                label={`${label}: 5 üzerinden ${value.toFixed(1)}`}
+                value={stars}
+                label={`${label}: 5 üzerinden ${stars.toFixed(1)}`}
                 size={17}
               />
             </div>
@@ -242,8 +242,8 @@ export default function CityContent({
                       >
                         {label}
                         <Rating
-                          value={value}
-                          label={`${label}: 5 üzerinden ${value}`}
+                          value={toStars(value)}
+                          label={`${label}: 5 üzerinden ${toStars(value)}`}
                           size={11}
                         />
                       </span>

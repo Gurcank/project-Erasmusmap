@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { Star } from "lucide-react";
+import { toRatingValue } from "@/lib/review";
 
 type Props = {
   label: string;
@@ -69,7 +70,11 @@ export default function StarInput({ label, name }: Props) {
           );
         })}
       </div>
-      <input type="hidden" name={name} value={rating} />
+      <input
+        type="hidden"
+        name={name}
+        value={rating === 0 ? "" : toRatingValue(rating)}
+      />
     </div>
   );
 }

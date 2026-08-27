@@ -71,14 +71,14 @@ export default async function CityPage({
 
   const latinizedCityName = latinize(city.name);
 
-  const visitedCity = viewer.ok
-    ? await prisma.city.findFirst({
-        where: { id: city.id, users: { some: { id: viewer.user.id } } },
+  const visit = viewer.ok
+    ? await prisma.visit.findUnique({
+        where: { userId_cityId: { userId: viewer.user.id, cityId: city.id } },
         select: { id: true },
       })
     : null;
 
-  const isVisited = visitedCity !== null;
+  const isVisited = visit !== null;
   const isAdmin = viewer.ok && viewer.user.role === "ADMIN";
   const cityId = city.id;
 
@@ -119,9 +119,12 @@ export default async function CityPage({
         throw error;
       }
 
-      await prisma.user.update({
-        where: { id: auth.user.id },
-        data: { visitedCities: { connect: { id: cityId } } },
+      // Reviewing a city implies having been there. upsert keeps any dates
+      // the user already recorded for that visit.
+      await prisma.visit.upsert({
+        where: { userId_cityId: { userId: auth.user.id, cityId } },
+        create: { userId: auth.user.id, cityId },
+        update: {},
       });
       revalidatePath(`/c/${slug}`);
     });

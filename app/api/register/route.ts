@@ -50,6 +50,7 @@ export async function POST(req: Request) {
         email,
         password: hashedPassword,
         username,
+        usernameLower: username.toLowerCase(),
       },
     });
 

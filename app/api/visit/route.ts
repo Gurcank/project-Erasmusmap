@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
@@ -24,34 +25,29 @@ export async function POST(req: Request) {
   }
 
   const { cityId } = parsed.data;
+  const identity = { userId_cityId: { userId: auth.user.id, cityId } };
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: auth.user.id },
-      select: {
-        visitedCities: { where: { id: cityId }, select: { id: true } },
-      },
+    const existing = await prisma.visit.findUnique({
+      where: identity,
+      select: { id: true },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (existing) {
+      await prisma.visit.delete({ where: { id: existing.id } });
+      return NextResponse.json({ removed: true });
     }
 
-    const isAlreadyVisited = user.visitedCities.length > 0;
-
-    await prisma.user.update({
-      where: { id: auth.user.id },
-      data: {
-        visitedCities: isAlreadyVisited
-          ? { disconnect: { id: cityId } }
-          : { connect: { id: cityId } },
-      },
-    });
-
-    return NextResponse.json(
-      isAlreadyVisited ? { removed: true } : { added: true },
-    );
-  } catch {
+    await prisma.visit.create({ data: { userId: auth.user.id, cityId } });
+    return NextResponse.json({ added: true });
+  } catch (error) {
+    // P2003 is a foreign key violation — the city id does not exist.
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2003"
+    ) {
+      return NextResponse.json({ error: "Şehir bulunamadı" }, { status: 404 });
+    }
     return NextResponse.json({ error: "Bir hata oluştu" }, { status: 500 });
   }
 }

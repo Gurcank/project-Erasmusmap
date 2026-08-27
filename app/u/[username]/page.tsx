@@ -18,7 +18,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { username } = await params;
   const user = await prisma.user.findUnique({
-    where: { username },
+    where: { usernameLower: username.toLowerCase() },
     select: { username: true, bio: true },
   });
   // Runs before the loading.tsx shell is streamed, so this is the last
@@ -45,14 +45,19 @@ export default async function ProfilePage({
 
   const [user, viewer] = await Promise.all([
     prisma.user.findUnique({
-      where: { username },
+      where: { usernameLower: username.toLowerCase() },
       include: {
         reviews: {
           orderBy: { createdAt: "desc" },
           include: { city: { select: { name: true, slug: true } } },
         },
-        visitedCities: {
-          select: { id: true, name: true, slug: true, country: true },
+        visits: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            city: {
+              select: { id: true, name: true, slug: true, country: true },
+            },
+          },
         },
       },
     }),
@@ -99,9 +104,9 @@ export default async function ProfilePage({
         username={user.username ?? ""}
         image={user.image}
         bio={user.bio}
-        cityCount={user.visitedCities.length}
+        cityCount={user.visits.length}
         reviewCount={user.reviews.length}
-        visitedCities={user.visitedCities}
+        visitedCities={user.visits.map((visit) => visit.city)}
         reviews={user.reviews}
         isOwnProfile={isOwnProfile}
         updateBio={updateBio}
