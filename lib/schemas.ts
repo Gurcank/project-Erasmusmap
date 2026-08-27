@@ -76,3 +76,45 @@ export function parseRequestBody<T>(
 export function firstIssueMessage(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Geçersiz veri";
 }
+
+const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+const EARLIEST_YEAR = 1950;
+
+/**
+ * Parses the two `<input type="month">` fields of the visit form. Both are
+ * optional, and clearing them is how a user removes the dates, so empty is a
+ * valid value rather than an error.
+ */
+export function parseVisitDates(
+  formData: FormData,
+):
+  | { ok: true; data: { startDate: Date | null; endDate: Date | null } }
+  | { ok: false; error: string } {
+  const read = (field: string): string =>
+    String(formData.get(field) ?? "").trim();
+
+  const toDate = (value: string): Date | null | "invalid" => {
+    if (!value) return null;
+    if (!MONTH_PATTERN.test(value)) return "invalid";
+    // Month inputs give YYYY-MM; anchor to the first of the month in UTC so the
+    // stored date does not shift by a day across time zones.
+    const date = new Date(`${value}-01T00:00:00Z`);
+    if (Number.isNaN(date.getTime())) return "invalid";
+    if (date.getUTCFullYear() < EARLIEST_YEAR) return "invalid";
+    if (date.getUTCFullYear() > new Date().getUTCFullYear() + 10)
+      return "invalid";
+    return date;
+  };
+
+  const startDate = toDate(read("startDate"));
+  const endDate = toDate(read("endDate"));
+
+  if (startDate === "invalid" || endDate === "invalid") {
+    return { ok: false, error: "Geçerli bir tarih seç" };
+  }
+  if (startDate && endDate && startDate > endDate) {
+    return { ok: false, error: "Başlangıç tarihi bitişten sonra olamaz" };
+  }
+
+  return { ok: true, data: { startDate, endDate } };
+}

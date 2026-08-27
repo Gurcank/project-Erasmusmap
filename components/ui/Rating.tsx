@@ -8,6 +8,8 @@ type Props = {
   /** Accessible label, e.g. "Güvenlik: 5 üzerinden 3,5". */
   label: string;
   className?: string;
+  /** Hides it from assistive tech, for when a labelled control wraps it. */
+  decorative?: boolean;
 };
 
 const MAX_STARS = 5;
@@ -21,6 +23,7 @@ export default function Rating({
   size = 16,
   label,
   className = "",
+  decorative = false,
 }: Props) {
   const clamped = Math.min(MAX_STARS, Math.max(0, value));
   const filledWidth = `${(clamped / MAX_STARS) * 100}%`;
@@ -28,8 +31,9 @@ export default function Rating({
 
   return (
     <span
-      role="img"
-      aria-label={label}
+      role={decorative ? undefined : "img"}
+      aria-label={decorative ? undefined : label}
+      aria-hidden={decorative || undefined}
       className={`relative inline-flex shrink-0 ${className}`}
     >
       <span className="flex gap-0.5" aria-hidden="true">

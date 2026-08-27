@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ImageOff, Star, Trash2 } from "lucide-react";
 import { useT } from "@/hooks/useT";
-import VisitButton from "@/components/ui/VisitButton";
+import CityActions from "@/components/ui/CityActions";
 import StarInput from "@/components/ui/StarInput";
 import SubmitButton from "@/components/ui/SubmitButton";
 import ActionForm from "@/components/ui/ActionForm";
@@ -19,6 +19,12 @@ type Props = {
   cityName: string;
   cityImage: string | null;
   isVisited: boolean;
+  isWishlisted: boolean;
+  visitStartDate: Date | null;
+  visitEndDate: Date | null;
+  toggleVisit: FormAction;
+  toggleWishlist: FormAction;
+  saveVisitDates: FormAction;
   reviewCount: number;
   avgScore: number;
   categoryRatings: CategoryRatings;
@@ -33,6 +39,12 @@ export default function CityContent({
   cityName,
   cityImage,
   isVisited,
+  isWishlisted,
+  visitStartDate,
+  visitEndDate,
+  toggleVisit,
+  toggleWishlist,
+  saveVisitDates,
   reviewCount,
   avgScore,
   categoryRatings,
@@ -60,11 +72,20 @@ export default function CityContent({
     <div className="mx-auto max-w-7xl px-6 py-16 md:px-8">
       <div className="mb-16 grid items-start gap-10 md:grid-cols-2 lg:gap-16">
         <div>
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <h1 className="font-display text-display font-bold text-text lg:text-hero">
-              {cityName}
-            </h1>
-            <VisitButton cityId={cityId} initialVisited={isVisited} />
+          <h1 className="mb-5 font-display text-display font-bold text-text lg:text-hero">
+            {cityName}
+          </h1>
+          <div className="mb-6">
+            <CityActions
+              cityId={cityId}
+              isVisited={isVisited}
+              isWishlisted={isWishlisted}
+              startDate={visitStartDate}
+              endDate={visitEndDate}
+              toggleVisit={toggleVisit}
+              toggleWishlist={toggleWishlist}
+              saveVisitDates={saveVisitDates}
+            />
           </div>
           <div className="relative h-[320px] w-full overflow-hidden rounded-panel border border-border md:h-[400px]">
             {cityImage ? (
@@ -120,6 +141,7 @@ export default function CityContent({
         <h2 className="text-center font-display text-xl font-semibold text-text">
           {t.rateCity}
         </h2>
+        <p className="text-center text-xs text-text-subtle">{t.ratingHint}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <StarInput label={t.cost} name="costOfLiving" />
           <StarInput label={t.safety} name="safety" />

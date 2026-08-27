@@ -9,6 +9,11 @@ import { parseRatings, parseReviewContent, averageRating } from "@/lib/review";
 import type { CategoryRatings } from "@/types";
 import { rateLimit } from "@/lib/rate-limit";
 import { deleteReview } from "@/lib/actions";
+import {
+  saveVisitDates,
+  toggleVisit,
+  toggleWishlist,
+} from "@/lib/city-actions";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { fetchCityPhoto } from "@/lib/unsplash";
 import { toActionResult } from "@/lib/action-result";
@@ -66,14 +71,22 @@ export default async function CityPage({
 
   if (!city) notFound();
 
-  const visit = viewer.ok
-    ? await prisma.visit.findUnique({
-        where: { userId_cityId: { userId: viewer.user.id, cityId: city.id } },
-        select: { id: true },
-      })
+  const identity = viewer.ok
+    ? { userId_cityId: { userId: viewer.user.id, cityId: city.id } }
     : null;
 
-  const isVisited = visit !== null;
+  const [visit, wishlistItem] = identity
+    ? await Promise.all([
+        prisma.visit.findUnique({
+          where: identity,
+          select: { startDate: true, endDate: true },
+        }),
+        prisma.wishlistItem.findUnique({
+          where: identity,
+          select: { id: true },
+        }),
+      ])
+    : [null, null];
   const isAdmin = viewer.ok && viewer.user.role === "ADMIN";
   const cityId = city.id;
 
@@ -162,7 +175,13 @@ export default async function CityPage({
           cityId={city.id}
           cityName={city.name}
           cityImage={cityImage}
-          isVisited={isVisited}
+          isVisited={visit !== null}
+          isWishlisted={wishlistItem !== null}
+          visitStartDate={visit?.startDate ?? null}
+          visitEndDate={visit?.endDate ?? null}
+          toggleVisit={toggleVisit}
+          toggleWishlist={toggleWishlist}
+          saveVisitDates={saveVisitDates}
           reviewCount={reviewCount}
           avgScore={avgScore}
           categoryRatings={ratings}
