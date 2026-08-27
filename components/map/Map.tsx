@@ -71,33 +71,76 @@ const COUNTRY_COLORS: Record<string, string> = {
 
 const FALLBACK_REGION_COLOR = "#e5e7eb";
 
-// Mapbox GL doesn't support data/feature-state expressions for
-// fill-extrusion-opacity (camera expressions only), so the hover "pop" comes
-// from two stacked layers per region: a 2D fill (data-driven opacity, as
-// before) for the color/brightness change, and a fill-extrusion (fixed
-// opacity, data-driven height) purely for the rise. Fixed rather than
-// zoom-interpolated height, since a zoom expression is only valid at the
-// top level of a style-spec expression — it can't be nested inside "case".
-const HOVER_HEIGHT: mapboxgl.ExpressionSpecification = [
-  "case",
-  ["boolean", ["feature-state", "hover"], false],
-  45000,
-  0,
-];
+// A darker tone of each region's own color, used on hover instead of a flat
+// opacity bump. Simple per-channel multiply — keeps hue stable while reading
+// unambiguously as "the same color, deepened", not a different color.
+function darken(hex: string, amount = 0.32): string {
+  const scale = 1 - amount;
+  const channel = (start: number) =>
+    Math.round(parseInt(hex.slice(start, start + 2), 16) * scale)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${channel(1)}${channel(3)}${channel(5)}`;
+}
+
+// A lightened tint of each region's own color, used for the hover
+// "highlight" rim — reads as light catching the raised edge, and stays
+// visually tied to that region's own color rather than a generic white line
+// that would blend into the basemap and the always-on white borders.
+function lighten(hex: string, amount = 0.55): string {
+  const channel = (start: number) => {
+    const original = parseInt(hex.slice(start, start + 2), 16);
+    return Math.round(original + (255 - original) * amount)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return `#${channel(1)}${channel(3)}${channel(5)}`;
+}
+
+const DARK_COUNTRY_COLORS: Record<string, string> = Object.fromEntries(
+  Object.entries(COUNTRY_COLORS).map(([code, color]) => [code, darken(color)]),
+);
+
+const LIGHT_COUNTRY_COLORS: Record<string, string> = Object.fromEntries(
+  Object.entries(COUNTRY_COLORS).map(([code, color]) => [code, lighten(color)]),
+);
 
 const HOVER_FILL_OPACITY: mapboxgl.ExpressionSpecification = [
   "case",
   ["boolean", ["feature-state", "hover"], false],
-  0.9,
+  0.85,
   0.6,
+];
+
+const HOVER_SHADOW_OPACITY: mapboxgl.ExpressionSpecification = [
+  "case",
+  ["boolean", ["feature-state", "hover"], false],
+  0.45,
+  0,
+];
+
+const HOVER_HIGHLIGHT_WIDTH: mapboxgl.ExpressionSpecification = [
+  "case",
+  ["boolean", ["feature-state", "hover"], false],
+  1.5,
+  0,
 ];
 
 const HOVER_LINE_WIDTH: mapboxgl.ExpressionSpecification = [
   "case",
   ["boolean", ["feature-state", "hover"], false],
-  3,
+  2.5,
   0,
 ];
+
+function hoverColorCase(normal: unknown, hover: unknown): unknown[] {
+  return [
+    "case",
+    ["boolean", ["feature-state", "hover"], false],
+    hover,
+    normal,
+  ];
+}
 
 function normalizeRegionName(name: string): string {
   return latinize(name).toLowerCase().replace(/-/g, " ");
@@ -105,7 +148,8 @@ function normalizeRegionName(name: string): string {
 
 function resolveFeatureName(properties: Record<string, unknown>): string {
   const nutsId = properties.NUTS_ID as string | undefined;
-  if (nutsId && REGION_NAME_OVERRIDES[nutsId]) return REGION_NAME_OVERRIDES[nutsId];
+  if (nutsId && REGION_NAME_OVERRIDES[nutsId])
+    return REGION_NAME_OVERRIDES[nutsId];
 
   const gid1 = properties.GID_1 as string | undefined;
   if (gid1 && BALKAN_REGION_NAMES[gid1]) return BALKAN_REGION_NAMES[gid1];
@@ -119,8 +163,11 @@ function resolveFeatureName(properties: Record<string, unknown>): string {
   );
 }
 
-function buildCountryColorExpression(fallback: string): unknown[] {
-  const entries = Object.entries(COUNTRY_COLORS).flatMap(([code, color]) => [
+function buildCountryColorExpression(
+  palette: Record<string, string>,
+  fallback: string,
+): unknown[] {
+  const entries = Object.entries(palette).flatMap(([code, color]) => [
     code,
     color,
   ]);
@@ -147,28 +194,16 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
       projection: "globe",
       center: [10, 50],
       zoom: 4,
-      pitch: 30,
+      pitch: 0,
       interactive: !isStatic,
     });
 
     mapRef.current = map;
 
-    // Mapbox's globe projection doesn't render fill-extrusion height (the
-    // hover "lift"), so switch to mercator once zoomed in far enough that
-    // the globe's curvature isn't visible anyway and users are hovering
-    // individual regions up close.
-    const GLOBE_TO_MERCATOR_ZOOM = 5;
-    let currentProjection: "globe" | "mercator" = "globe";
-    map.on("zoom", () => {
-      const shouldBeMercator = map.getZoom() >= GLOBE_TO_MERCATOR_ZOOM;
-      const next = shouldBeMercator ? "mercator" : "globe";
-      if (next !== currentProjection) {
-        currentProjection = next;
-        map.setProjection({ name: next });
-      }
-    });
-
     map.on("load", () => {
+      // Globe + space now that the hover "pop" is built entirely from flat
+      // 2D layers (fill/line translate + opacity), not fill-extrusion —
+      // globe projection is only incompatible with 3D geometry, not this.
       map.setFog({
         color: "#000000",
         "high-color": "#000000",
@@ -208,12 +243,14 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
         }
       });
 
-      popupRef.current = new mapboxgl.Popup({
-        closeButton: false,
-        closeOnClick: false,
-        className: "city-tooltip",
-        offset: 15,
-      });
+      if (!isStatic) {
+        popupRef.current = new mapboxgl.Popup({
+          closeButton: false,
+          closeOnClick: false,
+          className: "city-tooltip",
+          offset: 15,
+        });
+      }
 
       map.addSource("nuts", {
         type: "geojson",
@@ -223,6 +260,11 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
       map.addSource("bosnia", {
         type: "geojson",
         data: "/eu-cities/bosnia.json",
+        generateId: true,
+      });
+      map.addSource("montenegro", {
+        type: "geojson",
+        data: "/eu-cities/montenegro.json",
         generateId: true,
       });
       map.addSource("kosovo", {
@@ -236,13 +278,34 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
         generateId: true,
       });
 
-      // Eurostat only recognizes the Republic of Cyprus as a single NUTS
-      // unit, so the whole island is excluded here in favor of the dedicated
-      // "cyprus" source above, which splits it into two regions.
+      // Cyprus and Montenegro are excluded here — Eurostat only models
+      // Cyprus as a single (Republic of Cyprus) unit and Montenegro as a
+      // single whole-country unit, so both are drawn from their own
+      // dedicated, real-city-level layers instead (added above/below).
+      // Germany and the UK's NUTS3 level is hundreds of small,
+      // unrecognizable rural districts; NUTS2 has far fewer, bigger,
+      // more recognizable regions — every other country stays at NUTS3.
+      const NUTS_LEVEL_2_COUNTRIES = ["DE", "UK"];
       const cityFilter = [
         "all",
-        ["==", ["get", "LEVL_CODE"], 3],
         ["!=", ["get", "CNTR_CODE"], "CY"],
+        ["!=", ["get", "CNTR_CODE"], "ME"],
+        [
+          "any",
+          [
+            "all",
+            ["in", ["get", "CNTR_CODE"], ["literal", NUTS_LEVEL_2_COUNTRIES]],
+            ["==", ["get", "LEVL_CODE"], 2],
+          ],
+          [
+            "all",
+            [
+              "!",
+              ["in", ["get", "CNTR_CODE"], ["literal", NUTS_LEVEL_2_COUNTRIES]],
+            ],
+            ["==", ["get", "LEVL_CODE"], 3],
+          ],
+        ],
       ];
 
       map.addLayer({
@@ -257,7 +320,9 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
         id: string;
         source: string;
         filter?: unknown[];
-        fillColor: unknown;
+        color: unknown;
+        hoverColor: unknown;
+        highlightColor: unknown;
       };
 
       const regionLayers: RegionLayer[] = [
@@ -265,39 +330,101 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
           id: "city",
           source: "nuts",
           filter: cityFilter,
-          fillColor: buildCountryColorExpression(FALLBACK_REGION_COLOR),
+          color: buildCountryColorExpression(
+            COUNTRY_COLORS,
+            FALLBACK_REGION_COLOR,
+          ),
+          hoverColor: buildCountryColorExpression(
+            DARK_COUNTRY_COLORS,
+            darken(FALLBACK_REGION_COLOR),
+          ),
+          highlightColor: buildCountryColorExpression(
+            LIGHT_COUNTRY_COLORS,
+            lighten(FALLBACK_REGION_COLOR),
+          ),
         },
         {
           id: "bosnia",
           source: "bosnia",
-          fillColor: COUNTRY_COLORS.BA,
+          color: COUNTRY_COLORS.BA,
+          hoverColor: DARK_COUNTRY_COLORS.BA,
+          highlightColor: LIGHT_COUNTRY_COLORS.BA,
+        },
+        {
+          id: "montenegro",
+          source: "montenegro",
+          color: COUNTRY_COLORS.ME,
+          hoverColor: DARK_COUNTRY_COLORS.ME,
+          highlightColor: LIGHT_COUNTRY_COLORS.ME,
         },
         {
           id: "kosovo",
           source: "kosovo",
-          fillColor: COUNTRY_COLORS.XK,
+          color: COUNTRY_COLORS.XK,
+          hoverColor: DARK_COUNTRY_COLORS.XK,
+          highlightColor: LIGHT_COUNTRY_COLORS.XK,
         },
         {
           id: "cyprus",
           source: "cyprus",
-          fillColor: [
+          color: [
             "match",
             ["get", "GID_1"],
             "CYN.1_1",
             COUNTRY_COLORS.XCY,
             COUNTRY_COLORS.CY,
           ],
+          hoverColor: [
+            "match",
+            ["get", "GID_1"],
+            "CYN.1_1",
+            DARK_COUNTRY_COLORS.XCY,
+            DARK_COUNTRY_COLORS.CY,
+          ],
+          highlightColor: [
+            "match",
+            ["get", "GID_1"],
+            "CYN.1_1",
+            LIGHT_COUNTRY_COLORS.XCY,
+            LIGHT_COUNTRY_COLORS.CY,
+          ],
         },
       ];
 
-      for (const { id, source, filter, fillColor } of regionLayers) {
-        const colorExpr =
-          fillColor as mapboxgl.DataDrivenPropertyValueSpecification<string>;
+      for (const {
+        id,
+        source,
+        filter,
+        color,
+        hoverColor,
+        highlightColor,
+      } of regionLayers) {
         const filterProp = filter
           ? { filter: filter as mapboxgl.FilterSpecification }
           : {};
+        const colorExpr = hoverColorCase(
+          color,
+          hoverColor,
+        ) as mapboxgl.DataDrivenPropertyValueSpecification<string>;
 
-        // Base color + the classic hover brightening (data-driven opacity).
+        // A "raised card" look built entirely from flat 2D layers — no
+        // camera pitch, no 3D geometry, so the map itself never tilts and
+        // stays 2D at every zoom level. Only the hovered feature gets it:
+        // a dark cast shadow offset down-right (simulating light from the
+        // top-left) plus a bright highlight rim offset up-left on the same
+        // side the "light" comes from, both invisible until hovered.
+        map.addLayer({
+          id: `${id}-shadow`,
+          type: "fill",
+          source,
+          ...filterProp,
+          paint: {
+            "fill-color": "#0f172a",
+            "fill-opacity": HOVER_SHADOW_OPACITY,
+            "fill-translate": [6, 7],
+          },
+        });
+        // Base color, switching to a darker tone of itself on hover.
         map.addLayer({
           id: `${id}-fill`,
           type: "fill",
@@ -308,22 +435,18 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
             "fill-opacity": HOVER_FILL_OPACITY,
           },
         });
-        // Sits on top of the fill purely to animate a height "lift" on
-        // hover — fill-extrusion-opacity can't be data-driven, so it stays
-        // fixed and flush with the fill layer until it rises.
         map.addLayer({
-          id: `${id}-extrusion`,
-          type: "fill-extrusion",
+          id: `${id}-highlight`,
+          type: "line",
           source,
           ...filterProp,
           paint: {
-            "fill-extrusion-color": colorExpr,
-            "fill-extrusion-opacity": 0.75,
-            "fill-extrusion-height": HOVER_HEIGHT,
-            "fill-extrusion-base": 0,
-            "fill-extrusion-vertical-gradient": true,
-            "fill-extrusion-height-transition": { duration: 350 },
-          } as mapboxgl.FillExtrusionLayerSpecification["paint"],
+            "line-color":
+              highlightColor as mapboxgl.DataDrivenPropertyValueSpecification<string>,
+            "line-width": HOVER_HIGHLIGHT_WIDTH,
+            "line-opacity": 0.9,
+            "line-translate": [-1.5, -2],
+          },
         });
         map.addLayer({
           id: `${id}-outline`,
@@ -351,11 +474,12 @@ export default function Map({ cities = [], isStatic = false }: MapProps) {
         };
       }
 
+      // The background maps on the profile, auth and error pages are purely
+      // decorative: no popup, no cursor change, no navigation on click.
+      if (isStatic) return;
+
       for (const { id, source } of regionLayers) {
         let hoveredId: number | null = null;
-        // Events are wired to the flat fill layer, not the extrusion layer
-        // stacked on top of it — its footprint stays put as the extrusion
-        // rises, so hit-testing doesn't jitter as the hovered region lifts.
         const layerId = `${id}-fill`;
 
         map.on("mousemove", layerId, (e) => {

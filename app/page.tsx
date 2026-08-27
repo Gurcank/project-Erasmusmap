@@ -1,9 +1,7 @@
 import Map from "@/components/map/Map";
-import { prisma } from "@/lib/prisma";
+import { getCities } from "@/lib/cities";
 
 export default async function HomePage() {
-  const cities = await prisma.city.findMany({
-    select: { id: true, name: true, slug: true, country: true },
-  });
+  const cities = await getCities();
   return <Map cities={cities} />;
 }

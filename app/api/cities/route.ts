@@ -1,18 +1,9 @@
-import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-
-// City list changes rarely (seed-time only), so cache it instead of hitting
-// the DB on every Navbar mount across every visitor.
-export const revalidate = 3600;
+import { getCities } from "@/lib/cities";
 
 export async function GET() {
   try {
-    const cities = await prisma.city.findMany({
-      select: { id: true, name: true, slug: true, country: true },
-      orderBy: { name: "asc" },
-    });
-
-    return NextResponse.json(cities);
+    return NextResponse.json(await getCities());
   } catch {
     return NextResponse.json(
       { error: "Cities could not be fetched" },

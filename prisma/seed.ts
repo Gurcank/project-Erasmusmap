@@ -6,7 +6,11 @@ import { REGION_NAME_OVERRIDES, BALKAN_REGION_NAMES } from "../lib/regionNames";
 
 const prisma = new PrismaClient();
 
-const NUTS_LEVEL = 3;
+// Germany and the UK's NUTS3 level is a mix of well-known independent
+// cities and hundreds of small, unrecognizable rural districts (e.g.
+// "Main-Spessart"); their NUTS2 level has far fewer, bigger, more
+// recognizable regions instead. Every other country uses NUTS3.
+const NUTS_LEVEL_2_COUNTRIES = new Set(["DE", "UK"]);
 
 function slugify(text: string): string {
   return latinize(text)
@@ -24,9 +28,10 @@ type SeedCity = {
   country: string;
 };
 
-// Cyprus is excluded here — Eurostat only models the Republic of Cyprus as a
-// single unit, so it's seeded from the dedicated cyprus.json layer instead
-// (see loadStaticRegionCities), which splits it into two regions.
+// Cyprus and Montenegro are excluded here — Eurostat only models Cyprus as a
+// single (Republic of Cyprus) unit and Montenegro as a single whole-country
+// unit, neither with real internal cities, so both are seeded from their own
+// dedicated GADM-sourced layers instead (see loadStaticRegionCities).
 function loadNutsCities(): SeedCity[] {
   const filePath = path.join(
     process.cwd(),
@@ -40,7 +45,10 @@ function loadNutsCities(): SeedCity[] {
 
   for (const feature of geo.features) {
     const props = feature.properties;
-    if (props.LEVL_CODE !== NUTS_LEVEL || props.CNTR_CODE === "CY") continue;
+    if (props.CNTR_CODE === "CY" || props.CNTR_CODE === "ME") continue;
+
+    const expectedLevel = NUTS_LEVEL_2_COUNTRIES.has(props.CNTR_CODE) ? 2 : 3;
+    if (props.LEVL_CODE !== expectedLevel) continue;
 
     const country: string = props.CNTR_CODE;
     const regionSlug: string = props.NUTS_ID;
@@ -59,6 +67,7 @@ function loadNutsCities(): SeedCity[] {
 // components/map/Map.tsx).
 const STATIC_LAYER_COUNTRY_CODES: Record<string, string> = {
   BIH: "BA",
+  MNE: "ME",
   XKO: "XK",
   CYP: "CY",
   CYN: "XCY",
@@ -111,6 +120,7 @@ async function main() {
   const cities = disambiguateSlugs([
     ...loadNutsCities(),
     ...loadStaticRegionCities("bosnia.json"),
+    ...loadStaticRegionCities("montenegro.json"),
     ...loadStaticRegionCities("kosovo.json"),
     ...loadStaticRegionCities("cyprus.json"),
   ]);
@@ -122,6 +132,11 @@ async function main() {
   console.log("Done. All regions inserted.");
 }
 
+// A failed seed must not report success — CI and deploy pipelines only
+// look at the exit code.
 main()
-  .catch(console.error)
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
   .finally(() => prisma.$disconnect());

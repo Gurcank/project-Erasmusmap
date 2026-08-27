@@ -57,40 +57,60 @@ npm install
 
 `.env.local` dosyası oluştur — tüm değişkenler ve açıklamaları için [`.env.example`](.env.example)'a bak:
 
-| Değişken                   | Açıklama                                             | Zorunlu |
-| -------------------------- | ---------------------------------------------------- | :-----: |
-| `DATABASE_URL`             | PostgreSQL bağlantı adresi                           |   ✅    |
-| `NEXTAUTH_SECRET`          | Oturum imzalama anahtarı — `openssl rand -base64 32` |   ✅    |
-| `NEXTAUTH_URL`             | Canonical adres (local'de `http://localhost:3000`)   |   ✅    |
-| `GOOGLE_CLIENT_ID`         | Google OAuth istemci ID'si                           |   ✅    |
-| `GOOGLE_CLIENT_SECRET`     | Google OAuth istemci sırrı                           |   ✅    |
-| `NEXT_PUBLIC_MAPBOX_TOKEN` | Mapbox GL erişim anahtarı (tarayıcıya açık)          |   ✅    |
-| `UNSPLASH_ACCESS_KEY`      | Şehir fotoğrafları için Unsplash API anahtarı        |   ✅    |
-| `NEXT_PUBLIC_SITE_URL`     | Metadata/OG/sitemap için canonical adres             |    —    |
+| Değişken                    | Açıklama                                             | Zorunlu |
+| --------------------------- | ---------------------------------------------------- | :-----: |
+| `DATABASE_URL`              | PostgreSQL bağlantı adresi                           |   ✅    |
+| `DIRECT_URL`                | Migration/seed için session bağlantısı (port `5432`) |   ✅    |
+| `NEXTAUTH_SECRET`           | Oturum imzalama anahtarı — `openssl rand -base64 32` |   ✅    |
+| `NEXTAUTH_URL`              | Canonical adres (local'de `http://localhost:3000`)   |   ✅    |
+| `GOOGLE_CLIENT_ID`          | Google OAuth istemci ID'si                           |   ✅    |
+| `GOOGLE_CLIENT_SECRET`      | Google OAuth istemci sırrı                           |   ✅    |
+| `NEXT_PUBLIC_MAPBOX_TOKEN`  | Mapbox GL erişim anahtarı (tarayıcıya açık)          |   ✅    |
+| `UNSPLASH_ACCESS_KEY`       | Şehir fotoğrafları için Unsplash API anahtarı        |   ✅    |
+| `NEXT_PUBLIC_SITE_URL`      | Metadata/OG/sitemap için canonical adres             |    —    |
+| `SUPABASE_URL`              | Supabase proje adresi (profil fotoğrafı depolama)    |   ✅    |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role anahtarı — tarayıcıya açılmaz  |   ✅    |
+| `UPSTASH_REDIS_REST_URL`    | Upstash Redis REST adresi (rate limit)               |    —    |
+| `UPSTASH_REDIS_REST_TOKEN`  | Upstash Redis REST token'ı                           |    —    |
 
-> **Supabase kullanıyorsan:** connection pooler'ın _transaction_ modunu (port `6543`, `?pgbouncer=true`) kullan — session modu (`5432`) serverless ortamlarda bağlantı hatası verebiliyor.
+> **Supabase kullanıyorsan:** uygulama sorguları için connection pooler'ın _transaction_ modunu
+> (port `6543`, `?pgbouncer=true`) kullan. `DIRECT_URL` ise aynı adresin `5432` portu olmalı —
+> Prisma migration'ları pooler üzerinden advisory lock alamadığı için takılır.
+
+> **Profil fotoğrafları:** Supabase panelinde `avatars` adında **public** bir Storage bucket'ı oluştur.
+> Yükleme service-role anahtarıyla sunucu tarafında yapılır; okuma herkese açıktır. Bucket yoksa
+> fotoğraf yükleme `503` döner, uygulamanın geri kalanı etkilenmez.
+
+> **Rate limit:** `UPSTASH_*` değişkenleri tanımlı değilse limitleyici instance başına çalışan
+> bellek içi bir pencereye düşer — yerel geliştirme için yeterli, üretimde değil.
 
 ```bash
-npx prisma migrate deploy   # migration'ları uygula
-npx prisma db seed          # şehirleri ekle
-npm run dev                 # geliştirme sunucusu
+npm run db:migrate   # migration'ları uygula
+npm run db:seed      # şehirleri ekle
+npm run dev          # geliştirme sunucusu
 ```
+
+> Prisma CLI ayarları [`prisma.config.ts`](prisma.config.ts) içinde; `.env.local` oradan
+> yükleniyor, ayrıca bir `.env` dosyası tutmana gerek yok.
 
 ### Komutlar
 
-| Komut            | Açıklama                          |
-| ---------------- | --------------------------------- |
-| `npm run dev`    | Geliştirme sunucusu               |
-| `npm run build`  | Production build                  |
-| `npm run start`  | Production build'i çalıştır       |
-| `npm run lint`   | ESLint                            |
-| `npm run format` | Prettier ile formatla             |
-| `npm run test`   | Vitest ile unit testleri çalıştır |
+| Komut                | Açıklama                          |
+| -------------------- | --------------------------------- |
+| `npm run dev`        | Geliştirme sunucusu               |
+| `npm run build`      | Production build                  |
+| `npm run start`      | Production build'i çalıştır       |
+| `npm run lint`       | ESLint                            |
+| `npm run format`     | Prettier ile formatla             |
+| `npm run test`       | Vitest ile unit testleri çalıştır |
+| `npm run typecheck`  | TypeScript tip kontrolü           |
+| `npm run db:migrate` | Migration'ları uygula             |
+| `npm run db:seed`    | Şehirleri ekle                    |
 
 ## CI/CD
 
-[`ci.yml`](.github/workflows/ci.yml) her push ve pull request'te lint, test, build ve bağımlılık
-audit'i çalıştırır. Build job'ının geçmesi için yukarıdaki ortam değişkenlerinin repo'nun
+[`ci.yml`](.github/workflows/ci.yml) her push ve pull request'te lint, tip kontrolü, format, test,
+build ve bağımlılık audit'i çalıştırır. Build job'ının geçmesi için yukarıdaki ortam değişkenlerinin repo'nun
 **Settings → Secrets and variables → Actions** bölümünde tanımlı olması gerekir.
 
 ## Deployment

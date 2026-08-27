@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Map from "@/components/map/Map";
@@ -9,6 +9,7 @@ import Map from "@/components/map/Map";
 export default function LoginClient() {
   const { status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,6 +21,12 @@ export default function LoginClient() {
       router.replace("/");
     }
   }, [status, router]);
+
+  useEffect(() => {
+    if (searchParams.get("error") === "AccessDenied") {
+      setError("Hesabınız askıya alınmış. Giriş yapamazsınız.");
+    }
+  }, [searchParams]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();

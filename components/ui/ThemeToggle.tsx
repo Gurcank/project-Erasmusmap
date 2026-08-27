@@ -7,15 +7,10 @@ export default function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // The blocking script in the root layout already applied the stored
+    // theme; read the result rather than deciding again.
+    setDark(document.documentElement.classList.contains("dark"));
     setMounted(true);
-    const saved = localStorage.getItem("theme");
-    if (saved === "light") {
-      document.documentElement.classList.remove("dark");
-      setDark(false);
-    } else {
-      document.documentElement.classList.add("dark");
-      setDark(true);
-    }
   }, []);
 
   const toggle = () => {

@@ -4,7 +4,11 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Runtime queries go through the transaction pooler (port 6543).
+  url       = env("DATABASE_URL")
+  // Migrations need a session connection (port 5432): the pooler cannot hold
+  // the advisory lock or run DDL, so migrate commands hang against it.
+  directUrl = env("DIRECT_URL")
 }
 
 model City {
@@ -13,9 +17,6 @@ model City {
   slug        String   @unique
   regionSlug  String
   country     String
-  description String?
-  latitude    Float?
-  longitude   Float?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -44,12 +45,13 @@ model Review {
   user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   isApproved Boolean  @default(false)
-  ipAddress  String?
-  userAgent  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // One review per user per city — the application-level check alone loses
+  // the race when two submissions land concurrently.
+  @@unique([cityId, userId])
   @@index([cityId])
   @@index([createdAt])
   @@index([userId])
@@ -65,6 +67,7 @@ model User {
   image         String?
   bio String? @db.Text
   role          Role      @default(USER)
+  banned        Boolean   @default(false)
 
   accounts      Account[]
   sessions      Session[]
