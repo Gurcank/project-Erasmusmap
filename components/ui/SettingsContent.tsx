@@ -6,8 +6,8 @@ import { useT } from "@/hooks/useT";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageSelect from "@/components/ui/LanguageSelect";
 import SubmitButton from "@/components/ui/SubmitButton";
-import AvatarUploader from "@/components/ui/AvatarUploader";
 import ActionForm from "@/components/ui/ActionForm";
+import UserAvatar from "@/components/ui/UserAvatar";
 import type { FormAction } from "@/lib/action-result";
 
 type Props = {
@@ -59,15 +59,18 @@ export default function SettingsContent({
         <SectionHeading>{t.accountSection}</SectionHeading>
         <div className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
           <div className="flex items-center justify-between gap-4 px-6 py-5">
-            <AvatarUploader image={image} fallbackLabel={name ?? email} />
+            <div className="flex items-center gap-3">
+              <UserAvatar src={image} label={name ?? email} size={44} />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-text">
+                  {name}
+                </p>
+                <p className="truncate text-xs text-text-subtle">{email}</p>
+              </div>
+            </div>
             <span className="shrink-0 rounded-full bg-surface-raised px-3 py-1 text-xs font-medium text-text-muted">
               {role === "ADMIN" ? t.admin : t.member}
             </span>
-          </div>
-
-          <div className="px-6 py-4">
-            <p className="text-sm font-semibold text-text">{name}</p>
-            <p className="text-xs text-text-subtle">{email}</p>
           </div>
 
           <div className="px-6 py-5">

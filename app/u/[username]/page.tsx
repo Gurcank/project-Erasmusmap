@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import Map from "@/components/map/Map";
 import { revalidatePath } from "next/cache";
 import ProfileContent from "@/components/ui/ProfileContent";
-import { bioSchema, firstIssueMessage } from "@/lib/schemas";
+import type { ProfileTab } from "@/components/ui/ProfileContent";
 import { rateLimit } from "@/lib/rate-limit";
 import { deleteReview } from "@/lib/actions";
+import { addFavoriteCity, removeFavoriteCity } from "@/lib/profile-actions";
+import { MAX_FAVORITE_CITIES } from "@/lib/profile";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
+import { bioSchema, firstIssueMessage } from "@/lib/schemas";
+
+const TABS: ProfileTab[] = ["visited", "wishlist", "reviews"];
 
 export async function generateMetadata({
   params,
@@ -21,8 +25,8 @@ export async function generateMetadata({
     where: { usernameLower: username.toLowerCase() },
     select: { username: true, bio: true },
   });
-  // Runs before the loading.tsx shell is streamed, so this is the last
-  // point where a real 404 status can still be set.
+  // Runs before the shell is streamed, so this is the last point where a real
+  // 404 status can still be set.
   if (!user) notFound();
 
   const title = user.username ?? "";
@@ -37,11 +41,17 @@ export async function generateMetadata({
 
 export default async function ProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ username: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
-  const { username } = await params;
+  const [{ username }, { tab }] = await Promise.all([params, searchParams]);
   if (!username) notFound();
+
+  const activeTab: ProfileTab = TABS.includes(tab as ProfileTab)
+    ? (tab as ProfileTab)
+    : "visited";
 
   const [user, viewer] = await Promise.all([
     prisma.user.findUnique({
@@ -52,10 +62,35 @@ export default async function ProfilePage({
           include: { city: { select: { name: true, slug: true } } },
         },
         visits: {
+          orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+          select: {
+            startDate: true,
+            endDate: true,
+            city: {
+              select: { id: true, name: true, slug: true, country: true },
+            },
+          },
+        },
+        wishlist: {
           orderBy: { createdAt: "desc" },
           select: {
             city: {
               select: { id: true, name: true, slug: true, country: true },
+            },
+          },
+        },
+        favoriteCities: {
+          orderBy: { position: "asc" },
+          select: {
+            position: true,
+            city: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                country: true,
+                imageUrl: true,
+              },
             },
           },
         },
@@ -83,35 +118,44 @@ export default async function ProfilePage({
 
       const parsed = bioSchema.safeParse(formData.get("bio") ?? "");
       if (!parsed.success) throw new Error(firstIssueMessage(parsed.error));
-      const bio = parsed.data;
 
       const updatedUser = await prisma.user.update({
         where: { id: auth.user.id },
-        data: { bio },
+        data: { bio: parsed.data },
       });
       revalidatePath(`/u/${updatedUser.username}`);
     });
   }
 
   return (
-    <div className="relative min-h-screen w-full pt-24">
-      <div className="fixed inset-0 -z-20">
-        <Map isStatic />
-      </div>
-      <div className="fixed inset-0 -z-10 bg-canvas/85 backdrop-blur-[3px]" />
-
+    <div className="min-h-screen bg-canvas pt-24">
       <ProfileContent
         username={user.username ?? ""}
         image={user.image}
         bio={user.bio}
-        cityCount={user.visits.length}
-        reviewCount={user.reviews.length}
-        visitedCities={user.visits.map((visit) => visit.city)}
-        reviews={user.reviews}
         isOwnProfile={isOwnProfile}
-        updateBio={updateBio}
         isAdmin={isAdmin}
+        activeTab={activeTab}
+        maxFavorites={MAX_FAVORITE_CITIES}
+        favorites={user.favoriteCities.map((favorite) => ({
+          cityId: favorite.city.id,
+          position: favorite.position,
+          name: favorite.city.name,
+          slug: favorite.city.slug,
+          country: favorite.city.country,
+          imageUrl: favorite.city.imageUrl,
+        }))}
+        visitedCities={user.visits.map((visit) => ({
+          ...visit.city,
+          startDate: visit.startDate,
+          endDate: visit.endDate,
+        }))}
+        wishlist={user.wishlist.map((item) => item.city)}
+        reviews={user.reviews}
+        updateBio={updateBio}
         deleteReview={deleteReview}
+        addFavoriteCity={addFavoriteCity}
+        removeFavoriteCity={removeFavoriteCity}
       />
     </div>
   );
