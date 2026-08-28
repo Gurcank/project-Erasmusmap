@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import {
+  Landmark,
   Loader2,
   LogOut,
   Menu,
@@ -194,6 +195,17 @@ export default function Navbar() {
             Erasmus<span className="text-accent-text">Map</span>
           </Link>
 
+          <Link
+            href="/meydan"
+            className={`hidden shrink-0 rounded-control px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus md:block ${
+              pathname === "/meydan"
+                ? "bg-surface-raised text-text"
+                : "text-text-muted hover:text-text"
+            }`}
+          >
+            {t.square}
+          </Link>
+
           <div
             ref={searchRef}
             className="relative mx-4 hidden max-w-lg flex-1 md:block"
@@ -294,6 +306,14 @@ export default function Navbar() {
               {searchField(true)}
               {showSuggestions && suggestionList}
             </div>
+
+            <Link
+              href="/meydan"
+              className="flex items-center gap-2.5 rounded-control border border-border-strong px-4 py-3 text-text"
+            >
+              <Landmark size={16} aria-hidden="true" />
+              {t.square}
+            </Link>
 
             {!session ? (
               <Link

@@ -47,3 +47,23 @@ export type ProfileReview = CategoryRatings & {
     slug: string;
   };
 };
+
+export type ReviewReply = {
+  id: string;
+  content: string;
+  createdAt: Date;
+  user: ReviewAuthor | null;
+};
+
+/** A review with everything the shared card renders. */
+export type EngagedReview = CategoryRatings & {
+  id: string;
+  content: string;
+  createdAt: Date;
+  user: ReviewAuthor | null;
+  likeCount: number;
+  likedByViewer: boolean;
+  replies: ReviewReply[];
+  /** Set when the card is shown away from the city's own page. */
+  city?: { name: string; slug: string };
+};

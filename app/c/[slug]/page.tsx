@@ -10,6 +10,12 @@ import type { CategoryRatings } from "@/types";
 import { rateLimit } from "@/lib/rate-limit";
 import { deleteReview } from "@/lib/actions";
 import {
+  addReviewComment,
+  deleteReviewComment,
+  toggleReviewLike,
+} from "@/lib/square-actions";
+import type { EngagedReview } from "@/types";
+import {
   saveVisitDates,
   toggleVisit,
   toggleWishlist,
@@ -61,6 +67,18 @@ export default async function CityPage({
             user: {
               select: { id: true, name: true, image: true, username: true },
             },
+            comments: {
+              orderBy: { createdAt: "asc" },
+              select: {
+                id: true,
+                content: true,
+                createdAt: true,
+                user: {
+                  select: { id: true, name: true, image: true, username: true },
+                },
+              },
+            },
+            _count: { select: { likes: true } },
           },
           orderBy: { createdAt: "desc" },
         },
@@ -138,6 +156,35 @@ export default async function CityPage({
     });
   }
 
+  // One query for the viewer's likes across every review on the page, rather
+  // than one per card.
+  const viewerLikes = viewer.ok
+    ? await prisma.reviewLike.findMany({
+        where: {
+          userId: viewer.user.id,
+          reviewId: { in: city.reviews.map((review) => review.id) },
+        },
+        select: { reviewId: true },
+      })
+    : [];
+  const likedReviewIds = new Set(viewerLikes.map((like) => like.reviewId));
+
+  const reviews: EngagedReview[] = city.reviews.map((review) => ({
+    id: review.id,
+    content: review.content,
+    createdAt: review.createdAt,
+    culture: review.culture,
+    gastronomy: review.gastronomy,
+    safety: review.safety,
+    socialLife: review.socialLife,
+    transport: review.transport,
+    costOfLiving: review.costOfLiving,
+    user: review.user,
+    likeCount: review._count.likes,
+    likedByViewer: likedReviewIds.has(review.id),
+    replies: review.comments,
+  }));
+
   const cityImage = await fetchCityPhoto(city.name);
 
   const ratingData = await prisma.review.aggregate({
@@ -185,7 +232,11 @@ export default async function CityPage({
           reviewCount={reviewCount}
           avgScore={avgScore}
           categoryRatings={ratings}
-          reviews={city.reviews}
+          reviews={reviews}
+          viewerId={viewer.ok ? viewer.user.id : null}
+          toggleReviewLike={toggleReviewLike}
+          addReviewComment={addReviewComment}
+          deleteReviewComment={deleteReviewComment}
           submitReview={submitReview}
           isAdmin={isAdmin}
           deleteReview={deleteReview}

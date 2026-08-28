@@ -1,17 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
-import { ImageOff, Star, Trash2 } from "lucide-react";
+import { ImageOff } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import CityActions from "@/components/ui/CityActions";
 import StarInput from "@/components/ui/StarInput";
 import SubmitButton from "@/components/ui/SubmitButton";
 import ActionForm from "@/components/ui/ActionForm";
-import UserAvatar from "@/components/ui/UserAvatar";
+import ReviewCard from "@/components/ui/ReviewCard";
 import Rating from "@/components/ui/Rating";
-import type { CityReview, CategoryRatings } from "@/types";
-import { averageRating, toStars } from "@/lib/review";
+import type { EngagedReview, CategoryRatings } from "@/types";
+import { toStars } from "@/lib/review";
 import type { FormAction } from "@/lib/action-result";
 
 type Props = {
@@ -28,10 +27,14 @@ type Props = {
   reviewCount: number;
   avgScore: number;
   categoryRatings: CategoryRatings;
-  reviews: CityReview[];
+  reviews: EngagedReview[];
   submitReview: FormAction;
   isAdmin: boolean;
+  viewerId: string | null;
   deleteReview: FormAction;
+  toggleReviewLike: FormAction;
+  addReviewComment: FormAction;
+  deleteReviewComment: FormAction;
 };
 
 export default function CityContent({
@@ -51,7 +54,11 @@ export default function CityContent({
   reviews,
   submitReview,
   isAdmin,
+  viewerId,
   deleteReview,
+  toggleReviewLike,
+  addReviewComment,
+  deleteReviewComment,
 }: Props) {
   const t = useT();
 
@@ -178,102 +185,18 @@ export default function CityContent({
           </p>
         ) : (
           <div className="flex flex-col gap-5">
-            {reviews.map((review) => {
-              const author = review.user?.username ?? review.user?.name ?? "—";
-              return (
-                <article
-                  key={review.id}
-                  className="rounded-panel border border-border bg-surface p-6 transition-colors hover:border-border-strong md:p-8"
-                >
-                  <div className="mb-5 flex items-start justify-between gap-4">
-                    <Link
-                      href={
-                        review.user?.username
-                          ? `/u/${review.user.username}`
-                          : "#"
-                      }
-                      onClick={(event) => {
-                        if (!review.user?.username) event.preventDefault();
-                      }}
-                      className="group flex items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                    >
-                      <UserAvatar
-                        src={review.user?.image ?? null}
-                        label={author}
-                        size={44}
-                      />
-                      <div>
-                        <p className="font-semibold text-text transition-colors group-hover:text-accent-text">
-                          {author}
-                        </p>
-                        <p className="text-xs text-text-subtle">
-                          {new Date(review.createdAt).toLocaleDateString(
-                            "tr-TR",
-                          )}
-                        </p>
-                      </div>
-                    </Link>
-
-                    <div className="flex shrink-0 items-center gap-3">
-                      <span className="flex items-center gap-1.5 font-semibold text-text">
-                        <Star
-                          size={15}
-                          aria-hidden="true"
-                          className="fill-accent-500 text-accent-500"
-                        />
-                        {averageRating(review).toFixed(1)}
-                      </span>
-                      {isAdmin && (
-                        <ActionForm
-                          action={deleteReview}
-                          confirmMessage={t.confirmDeleteReview}
-                        >
-                          <input
-                            type="hidden"
-                            name="reviewId"
-                            value={review.id}
-                          />
-                          <SubmitButton
-                            title={t.adminDeleteReview}
-                            aria-label={t.adminDeleteReview}
-                            className="rounded-control p-1.5 text-text-subtle transition-colors hover:bg-surface-raised hover:text-danger-700 disabled:opacity-50 dark:hover:text-danger-400"
-                          >
-                            <Trash2 size={15} aria-hidden="true" />
-                          </SubmitButton>
-                        </ActionForm>
-                      )}
-                    </div>
-                  </div>
-
-                  <p className="max-w-prose leading-relaxed text-text-muted">
-                    {review.content}
-                  </p>
-
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {[
-                      { label: t.cost, value: review.costOfLiving },
-                      { label: t.safety, value: review.safety },
-                      { label: t.social, value: review.socialLife },
-                      { label: t.culture, value: review.culture },
-                      { label: t.gastronomy, value: review.gastronomy },
-                      { label: t.transport, value: review.transport },
-                    ].map(({ label, value }) => (
-                      <span
-                        key={label}
-                        className="flex items-center gap-1.5 rounded-control bg-surface-raised px-2.5 py-1 text-xs text-text-muted"
-                      >
-                        {label}
-                        <Rating
-                          value={toStars(value)}
-                          label={`${label}: 5 üzerinden ${toStars(value)}`}
-                          size={11}
-                        />
-                      </span>
-                    ))}
-                  </div>
-                </article>
-              );
-            })}
+            {reviews.map((review) => (
+              <ReviewCard
+                key={review.id}
+                review={review}
+                viewerId={viewerId}
+                isAdmin={isAdmin}
+                toggleReviewLike={toggleReviewLike}
+                addReviewComment={addReviewComment}
+                deleteReviewComment={deleteReviewComment}
+                deleteReview={deleteReview}
+              />
+            ))}
           </div>
         )}
       </section>
