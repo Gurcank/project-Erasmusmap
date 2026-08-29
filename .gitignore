@@ -47,3 +47,6 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+
+# raw Overpass dumps cached by scripts/build-railways.ts (regenerable, large)
+/data/osm-rail-cache

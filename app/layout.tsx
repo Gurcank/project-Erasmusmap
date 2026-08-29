@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Bricolage_Grotesque, Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
@@ -24,6 +25,9 @@ const bricolage = Bricolage_Grotesque({
 
 // Runs before first paint so a visitor who chose the light theme never sees a
 // dark flash. Mirrors ThemeToggle's rule: dark unless "light" was stored.
+// Delivered through next/script's beforeInteractive strategy: Next injects it
+// into the document head ahead of hydration, and React does not warn about a
+// raw inline <script> the way it does for one rendered as an element.
 const THEME_INIT_SCRIPT = `try{if(localStorage.getItem("theme")!=="light")document.documentElement.classList.add("dark")}catch(e){document.documentElement.classList.add("dark")}`;
 
 export const metadata: Metadata = {
@@ -62,10 +66,10 @@ export default function RootLayout({
       className={`${inter.variable} ${bricolage.variable}`}
       suppressHydrationWarning
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-      </head>
       <body className="overflow-x-hidden antialiased">
+        <Script id="theme-init" strategy="beforeInteractive">
+          {THEME_INIT_SCRIPT}
+        </Script>
         <Providers>
           <Navbar />
           <main className="min-h-screen">{children}</main>

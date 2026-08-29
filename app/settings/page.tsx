@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import MapBackground from "@/components/map/Map";
 import SettingsContent from "@/components/ui/SettingsContent";
-import { firstIssueMessage, usernameSchema } from "@/lib/schemas";
-import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveUser } from "@/lib/auth-guards";
-import { toActionResult } from "@/lib/action-result";
-import type { ActionResult } from "@/lib/action-result";
+import { toggleBlock } from "@/lib/social-actions";
 
 export const metadata: Metadata = {
   title: "Ayarlar",
@@ -18,56 +15,35 @@ export default async function SettingsPage() {
   const viewer = await requireActiveUser();
   if (!viewer.ok) redirect("/");
 
-  const user = await prisma.user.findUnique({
-    where: { id: viewer.user.id },
-  });
+  const [user, blocks] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: viewer.user.id },
+      select: { username: true },
+    }),
+    prisma.block.findMany({
+      where: { blockerId: viewer.user.id },
+      orderBy: { createdAt: "desc" },
+      // No image: a blocked user's avatar stays hidden even in this list.
+      select: {
+        blocked: { select: { id: true, username: true, name: true } },
+      },
+    }),
+  ]);
   if (!user) redirect("/");
 
-  async function updateUsername(
-    _previousState: ActionResult | null,
-    formData: FormData,
-  ): Promise<ActionResult> {
-    "use server";
-    return toActionResult(async () => {
-      const auth = await requireActiveUser();
-      if (!auth.ok) throw new Error(auth.error);
-
-      if (!(await rateLimit(`username:${auth.user.email}`)))
-        throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
-
-      const parsed = usernameSchema.safeParse(formData.get("username") ?? "");
-      if (!parsed.success) throw new Error(firstIssueMessage(parsed.error));
-      const username = parsed.data;
-
-      const exists = await prisma.user.findUnique({
-        where: { usernameLower: username.toLowerCase() },
-        select: { id: true },
-      });
-      if (exists && exists.id !== auth.user.id)
-        throw new Error("Bu kullanıcı adı zaten alınmış");
-
-      await prisma.user.update({
-        where: { id: auth.user.id },
-        data: { username, usernameLower: username.toLowerCase() },
-      });
-      revalidatePath(`/u/${username}`);
-      revalidatePath("/settings");
-      redirect(`/u/${username}`);
-    });
-  }
-
   return (
-    <div className="min-h-screen bg-canvas">
-      <div className="mx-auto max-w-2xl space-y-6 px-6 pt-28 pb-24">
-        <SettingsContent
-          name={user.name}
-          email={user.email ?? ""}
-          username={user.username}
-          role={user.role}
-          image={user.image}
-          profileUrl={user.username ? `/u/${user.username}` : "/"}
-          updateUsername={updateUsername}
-        />
+    <div className="relative min-h-screen">
+      <div className="fixed inset-0 -z-10">
+        <MapBackground isStatic />
+      </div>
+      <div className="relative z-10 min-h-screen bg-canvas/90 pt-28 pb-24 backdrop-blur-sm">
+        <div className="mx-auto max-w-2xl space-y-6 px-6">
+          <SettingsContent
+            profileUrl={user.username ? `/u/${user.username}` : "/"}
+            blockedUsers={blocks.map((block) => block.blocked)}
+            unblockUser={toggleBlock}
+          />
+        </div>
       </div>
     </div>
   );

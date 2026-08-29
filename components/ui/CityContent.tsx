@@ -77,45 +77,47 @@ export default function CityContent({
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-16 md:px-8">
-      <div className="mb-16 grid items-start gap-10 md:grid-cols-2 lg:gap-16">
-        <div>
-          <h1 className="mb-5 font-display text-display font-bold text-text lg:text-hero">
-            {cityName}
-          </h1>
-          <div className="mb-6">
-            <CityActions
-              cityId={cityId}
-              isVisited={isVisited}
-              isWishlisted={isWishlisted}
-              startDate={visitStartDate}
-              endDate={visitEndDate}
-              toggleVisit={toggleVisit}
-              toggleWishlist={toggleWishlist}
-              saveVisitDates={saveVisitDates}
+      <h1 className="mb-6 font-display text-display font-bold text-text lg:text-hero">
+        {cityName}
+      </h1>
+
+      {/* Visited / wishlist sit above the ratings, not beside the photo. */}
+      <div className="mb-8">
+        <CityActions
+          cityId={cityId}
+          isVisited={isVisited}
+          isWishlisted={isWishlisted}
+          startDate={visitStartDate}
+          endDate={visitEndDate}
+          toggleVisit={toggleVisit}
+          toggleWishlist={toggleWishlist}
+          saveVisitDates={saveVisitDates}
+        />
+      </div>
+
+      {/* Photo and ratings are one row of equal-height panels. */}
+      <div className="mb-16 grid gap-10 md:grid-cols-2 lg:gap-16">
+        <div className="relative min-h-[22rem] w-full overflow-hidden rounded-panel border border-border">
+          {cityImage ? (
+            <Image
+              src={cityImage}
+              alt={cityName}
+              fill
+              priority
+              sizes="(min-width: 768px) 50vw, 100vw"
+              className="object-cover"
             />
-          </div>
-          <div className="relative h-[320px] w-full overflow-hidden rounded-panel border border-border md:h-[400px]">
-            {cityImage ? (
-              <Image
-                src={cityImage}
-                alt={cityName}
-                fill
-                priority
-                sizes="(min-width: 768px) 50vw, 100vw"
-                className="object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-surface-raised text-text-subtle">
-                <ImageOff size={22} aria-hidden="true" />
-                <span className="text-sm">
-                  {cityName} {t.noPhoto}
-                </span>
-              </div>
-            )}
-          </div>
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-surface-raised text-text-subtle">
+              <ImageOff size={22} aria-hidden="true" />
+              <span className="text-sm">
+                {cityName} {t.noPhoto}
+              </span>
+            </div>
+          )}
         </div>
 
-        <div className="space-y-5 rounded-panel border border-border bg-surface p-6 md:p-8">
+        <div className="flex min-h-[22rem] flex-col gap-5 rounded-panel border border-border bg-surface p-6 md:p-8">
           <h2 className="font-display text-xl font-semibold text-text">
             {t.cityRatings}
           </h2>
@@ -129,7 +131,7 @@ export default function CityContent({
               />
             </div>
           ))}
-          <div className="flex items-baseline gap-3 border-t border-border pt-5">
+          <div className="mt-auto flex items-baseline gap-3 border-t border-border pt-5">
             <span className="font-display text-4xl font-bold text-text tabular-nums">
               {reviewCount > 0 ? avgScore.toFixed(1) : "—"}
             </span>
@@ -148,7 +150,6 @@ export default function CityContent({
         <h2 className="text-center font-display text-xl font-semibold text-text">
           {t.rateCity}
         </h2>
-        <p className="text-center text-xs text-text-subtle">{t.ratingHint}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <StarInput label={t.cost} name="costOfLiving" />
           <StarInput label={t.safety} name="safety" />

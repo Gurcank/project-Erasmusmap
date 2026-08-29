@@ -87,10 +87,14 @@ describe("parseReviewContent", () => {
     expect(parseReviewContent(formData)).toBe("Harika bir şehir!");
   });
 
-  it("rejects empty content", () => {
+  it("allows empty content — a rating alone is a valid review", () => {
     const formData = new FormData();
     formData.set("content", "   ");
-    expect(() => parseReviewContent(formData)).toThrow(/boş olamaz/);
+    expect(parseReviewContent(formData)).toBe("");
+  });
+
+  it("treats a missing content field as empty", () => {
+    expect(parseReviewContent(new FormData())).toBe("");
   });
 
   it("rejects content longer than the max length", () => {

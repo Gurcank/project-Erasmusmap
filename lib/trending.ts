@@ -75,6 +75,8 @@ type TrendingReviewRow = {
   authorName: string | null;
   authorUsername: string | null;
   authorImage: string | null;
+  stayStart: Date | null;
+  stayEnd: Date | null;
   likeCount: number;
   commentCount: number;
 };
@@ -82,9 +84,12 @@ type TrendingReviewRow = {
 /**
  * Reviews ranked by engagement. Replies weigh more than likes because they
  * take more effort; recency breaks ties so a fresh thread is not buried under
- * an old popular one.
+ * an old popular one. A signed-in viewer never sees reviews by someone in a
+ * block relationship with them, in either direction.
  */
-export async function getTrendingReviews(): Promise<TrendingReviewRow[]> {
+export async function getTrendingReviews(
+  viewerId: string | null,
+): Promise<TrendingReviewRow[]> {
   return prisma.$queryRaw<TrendingReviewRow[]>`
     SELECT
       r.id, r.content, r."createdAt",
@@ -92,14 +97,22 @@ export async function getTrendingReviews(): Promise<TrendingReviewRow[]> {
       c.slug AS "citySlug", c.name AS "cityName",
       u.id AS "authorId", u.name AS "authorName",
       u.username AS "authorUsername", u.image AS "authorImage",
+      v."startDate" AS "stayStart", v."endDate" AS "stayEnd",
       COUNT(DISTINCT l.id)::int AS "likeCount",
       COUNT(DISTINCT cm.id)::int AS "commentCount"
     FROM "Review" r
     JOIN "City" c ON c.id = r."cityId"
     LEFT JOIN "User" u ON u.id = r."userId"
+    LEFT JOIN "Visit" v ON v."userId" = r."userId" AND v."cityId" = r."cityId"
     LEFT JOIN "ReviewLike" l ON l."reviewId" = r.id
     LEFT JOIN "ReviewComment" cm ON cm."reviewId" = r.id
-    GROUP BY r.id, c.slug, c.name, u.id, u.name, u.username, u.image
+    WHERE ${viewerId}::text IS NULL OR NOT EXISTS (
+      SELECT 1 FROM "Block" b
+      WHERE (b."blockerId" = ${viewerId} AND b."blockedId" = r."userId")
+         OR (b."blockerId" = r."userId" AND b."blockedId" = ${viewerId})
+    )
+    GROUP BY r.id, c.slug, c.name, u.id, u.name, u.username, u.image,
+      v."startDate", v."endDate"
     ORDER BY
       (COUNT(DISTINCT l.id) * 2 + COUNT(DISTINCT cm.id) * 3) DESC,
       r."createdAt" DESC

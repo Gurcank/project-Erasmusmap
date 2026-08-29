@@ -50,7 +50,7 @@ export default function Rating({
           <Star
             key={index}
             size={size}
-            className="shrink-0 fill-accent-500 text-accent-500"
+            className="shrink-0 fill-star text-star"
           />
         ))}
       </span>

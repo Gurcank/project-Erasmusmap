@@ -36,10 +36,12 @@ export const ratingsSchema = z.object(
   ) as Record<(typeof RATING_FIELDS)[number], typeof ratingField>,
 );
 
+// The text is optional: a rating on its own is a valid review, so an empty
+// body is stored as "" rather than rejected. Only the length ceiling is a
+// hard failure.
 export const reviewContentSchema = z
-  .string({ error: "Yorum boş olamaz" })
+  .string({ error: "Geçersiz yorum" })
   .trim()
-  .min(1, "Yorum boş olamaz")
   .max(
     MAX_REVIEW_LENGTH,
     `Yorum en fazla ${MAX_REVIEW_LENGTH} karakter olabilir`,

@@ -46,6 +46,9 @@ export type ProfileReview = CategoryRatings & {
     name: string;
     slug: string;
   };
+  /** The reviewer's recorded stay in this city, if they gave dates. */
+  stayStart?: Date | null;
+  stayEnd?: Date | null;
 };
 
 export type ReviewReply = {
@@ -66,4 +69,7 @@ export type EngagedReview = CategoryRatings & {
   replies: ReviewReply[];
   /** Set when the card is shown away from the city's own page. */
   city?: { name: string; slug: string };
+  /** The reviewer's recorded stay in this city, if they gave dates. */
+  stayStart?: Date | null;
+  stayEnd?: Date | null;
 };

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import SubmitButton from "@/components/ui/SubmitButton";
+import DateRangePicker from "@/components/ui/DateRangePicker";
 import type { ActionResult, FormAction } from "@/lib/action-result";
 
 type Props = {
@@ -22,12 +23,6 @@ type Props = {
   toggleWishlist: FormAction;
   saveVisitDates: FormAction;
 };
-
-/** Date to the YYYY-MM value an `<input type="month">` expects. */
-function toMonthValue(date: Date | null): string {
-  if (!date) return "";
-  return date.toISOString().slice(0, 7);
-}
 
 function ActionError({ state }: { state: ActionResult | null }) {
   if (!state || state.ok) return null;
@@ -125,28 +120,11 @@ export default function CityActions({
             <p className="text-xs text-text-subtle">{t.visitDatesHint}</p>
           </div>
 
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-xs text-text-muted">
-              {t.dateFrom}
-              <input
-                type="month"
-                name="startDate"
-                defaultValue={toMonthValue(startDate)}
-                className="rounded-control border border-border-strong bg-surface px-3 py-2 text-sm text-text focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-text-muted">
-              {t.dateTo}
-              <input
-                type="month"
-                name="endDate"
-                defaultValue={toMonthValue(endDate)}
-                className="rounded-control border border-border-strong bg-surface px-3 py-2 text-sm text-text focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
-              />
-            </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <DateRangePicker defaultStart={startDate} defaultEnd={endDate} />
             <SubmitButton
               pendingText={t.saveDates}
-              className="h-[38px] rounded-control bg-primary px-4 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="h-10 rounded-control bg-primary px-4 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {t.saveDates}
             </SubmitButton>

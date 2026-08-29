@@ -8,11 +8,28 @@ import {
 
 export const PASSWORD_MIN_LENGTH = 8;
 export const NAME_MAX_LENGTH = 100;
+export const LOCATION_MAX_LENGTH = 80;
 
 export const bioSchema = z
   .string({ error: "Geçersiz bio" })
   .trim()
   .max(MAX_BIO_LENGTH, `Bio en fazla ${MAX_BIO_LENGTH} karakter olabilir`);
+
+// The display name is optional — a fresh account has none — so empty is a
+// valid value that clears it rather than an error.
+export const nameSchema = z
+  .string({ error: "Geçersiz ad" })
+  .trim()
+  .max(NAME_MAX_LENGTH, `Ad en fazla ${NAME_MAX_LENGTH} karakter olabilir`);
+
+// Free-text location shown on the profile. Optional; empty clears it.
+export const locationSchema = z
+  .string({ error: "Geçersiz konum" })
+  .trim()
+  .max(
+    LOCATION_MAX_LENGTH,
+    `Konum en fazla ${LOCATION_MAX_LENGTH} karakter olabilir`,
+  );
 
 export const usernameSchema = z
   .string({ error: "Kullanıcı adı gerekli" })
@@ -77,13 +94,13 @@ export function firstIssueMessage(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Geçersiz veri";
 }
 
-const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+const DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 const EARLIEST_YEAR = 1950;
 
 /**
- * Parses the two `<input type="month">` fields of the visit form. Both are
- * optional, and clearing them is how a user removes the dates, so empty is a
- * valid value rather than an error.
+ * Parses the two date fields of the visit form, each a `YYYY-MM-DD` string from
+ * the range calendar. Both are optional, and clearing them is how a user
+ * removes the dates, so empty is a valid value rather than an error.
  */
 export function parseVisitDates(
   formData: FormData,
@@ -95,11 +112,15 @@ export function parseVisitDates(
 
   const toDate = (value: string): Date | null | "invalid" => {
     if (!value) return null;
-    if (!MONTH_PATTERN.test(value)) return "invalid";
-    // Month inputs give YYYY-MM; anchor to the first of the month in UTC so the
-    // stored date does not shift by a day across time zones.
-    const date = new Date(`${value}-01T00:00:00Z`);
+    if (!DATE_PATTERN.test(value)) return "invalid";
+    // Anchor the day at midnight UTC so the stored @db.Date does not shift
+    // across time zones. The calendar reports the day the user picked in their
+    // own locale, so no further conversion is wanted.
+    const date = new Date(`${value}T00:00:00Z`);
     if (Number.isNaN(date.getTime())) return "invalid";
+    // A YYYY-MM-DD that passed the pattern but names a day the month lacks
+    // (2025-02-30) rolls over — reject it rather than store the wrong day.
+    if (date.toISOString().slice(0, 10) !== value) return "invalid";
     if (date.getUTCFullYear() < EARLIEST_YEAR) return "invalid";
     if (date.getUTCFullYear() > new Date().getUTCFullYear() + 10)
       return "invalid";

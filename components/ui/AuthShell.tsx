@@ -19,7 +19,9 @@ export default function AuthShell({ title, description, children }: Props) {
       <div className="absolute inset-0 -z-10">
         <Map isStatic />
       </div>
-      <div className="absolute inset-0 -z-10 bg-ink-950/70" />
+      {/* Dim + blur the globe so it reads as a backdrop, still visible behind
+          the card rather than a flat wash. */}
+      <div className="absolute inset-0 -z-10 bg-ink-950/45 backdrop-blur-md" />
 
       <div className="flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-md rounded-panel border border-ink-50/15 bg-ink-950/65 p-8 shadow-popover backdrop-blur-xl">

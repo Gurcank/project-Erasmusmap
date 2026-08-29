@@ -1,6 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
-import cities from "../prisma/data/cities.json";
+
+// Read rather than import: a JSON import needs an import attribute under ESM,
+// which breaks depending on how the script is invoked (same reason as seed.ts).
+const cities = JSON.parse(
+  fs.readFileSync(path.join("prisma", "data", "cities.json"), "utf8"),
+) as {
+  slug: string;
+  name: string;
+  country: string;
+  latitude: number | null;
+  longitude: number | null;
+  population: number;
+}[];
 
 /**
  * Builds the map's boundary layer.
@@ -23,6 +35,17 @@ import cities from "../prisma/data/cities.json";
 // Raw NUTS/GADM dumps are build inputs; only the generated file is served.
 const SOURCE_DIR = path.join("data", "boundaries");
 const OUTPUT_PATH = path.join("public", "map", "regions.geojson");
+// One Point per matched city, at the city's own coordinates. The map labels
+// from this so a region drawn as several polygons (islands, exclaves) still
+// gets its name written exactly once.
+const LABELS_PATH = path.join("public", "map", "region-labels.geojson");
+// The set of cities the search box is allowed to return: exactly the one city
+// each region resolves to, so a metropolis's districts never show up.
+const PRIMARY_SLUGS_PATH = path.join(
+  "prisma",
+  "data",
+  "primary-city-slugs.json",
+);
 
 // Only the properties the map actually reads are kept; the NUTS dump ships
 // eight per feature and the file is downloaded by every visitor.
@@ -32,6 +55,8 @@ type RegionProperties = {
   /** Display name: the matched city, or the cleaned-up region name. */
   name: string;
   country: string;
+  /** Population of the matched city — the map labels bigger cities first. */
+  population?: number;
 };
 
 type Ring = [number, number][];
@@ -298,6 +323,7 @@ function main() {
   }
 
   const features: GeoJSON.Feature[] = [];
+  const labelFeatures: GeoJSON.Feature[] = [];
   let matched = 0;
 
   prepared.forEach((entry, index) => {
@@ -307,6 +333,7 @@ function main() {
           citySlug: match.slug,
           name: match.name,
           country: entry.region.country,
+          population: match.population,
         }
       : {
           name: cleanRegionName(entry.region.name),
@@ -319,6 +346,17 @@ function main() {
       geometry: entry.region.geometry,
       properties,
     });
+
+    if (match && match.latitude !== null && match.longitude !== null) {
+      labelFeatures.push({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [match.longitude, match.latitude],
+        },
+        properties: { name: match.name, population: match.population },
+      });
+    }
   });
 
   const collection: GeoJSON.FeatureCollection = {
@@ -326,11 +364,26 @@ function main() {
     features,
   };
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(collection));
+  fs.writeFileSync(
+    LABELS_PATH,
+    JSON.stringify({ type: "FeatureCollection", features: labelFeatures }),
+  );
+
+  const primarySlugs = [
+    ...new Set(
+      features
+        .map((feature) => feature.properties?.citySlug as string | undefined)
+        .filter((slug): slug is string => Boolean(slug)),
+    ),
+  ].sort();
+  fs.writeFileSync(PRIMARY_SLUGS_PATH, JSON.stringify(primarySlugs) + "\n");
 
   const sizeMb = fs.statSync(OUTPUT_PATH).size / 1024 / 1024;
   console.log(`Matched to a city: ${matched} / ${features.length}`);
   console.log(`Unmatched (rendered dimmed): ${features.length - matched}`);
   console.log(`Wrote ${OUTPUT_PATH} (${sizeMb.toFixed(2)} MB)`);
+  console.log(`Wrote ${LABELS_PATH} (${labelFeatures.length} label points)`);
+  console.log(`Wrote ${PRIMARY_SLUGS_PATH} (${primarySlugs.length} slugs)`);
 }
 
 main();

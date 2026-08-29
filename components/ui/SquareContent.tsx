@@ -12,6 +12,9 @@ import type { FormAction } from "@/lib/action-result";
 type Props = {
   cities: TrendingCity[];
   reviews: EngagedReview[];
+  feed: EngagedReview[];
+  feedFollowingCount: number;
+  viewerSignedIn: boolean;
   viewerId: string | null;
   isAdmin: boolean;
   toggleReviewLike: FormAction;
@@ -74,6 +77,9 @@ function CityTile({ city, rank }: { city: TrendingCity; rank: number }) {
 export default function SquareContent({
   cities,
   reviews,
+  feed,
+  feedFollowingCount,
+  viewerSignedIn,
   viewerId,
   isAdmin,
   toggleReviewLike,
@@ -91,6 +97,36 @@ export default function SquareContent({
         </h1>
         <p className="mt-1 text-text-muted">{t.squareDesc}</p>
       </header>
+
+      {viewerSignedIn && (
+        <section>
+          <h2 className="mb-4 font-display text-lg font-bold text-text">
+            {t.feedTitle}
+          </h2>
+          {feed.length === 0 ? (
+            <p className="rounded-card border border-dashed border-border-strong px-4 py-10 text-center text-sm text-text-subtle">
+              {feedFollowingCount === 0
+                ? t.feedEmptyNoFollows
+                : t.feedEmptyNoReviews}
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {feed.map((review) => (
+                <ReviewCard
+                  key={review.id}
+                  review={review}
+                  viewerId={viewerId}
+                  isAdmin={isAdmin}
+                  toggleReviewLike={toggleReviewLike}
+                  addReviewComment={addReviewComment}
+                  deleteReviewComment={deleteReviewComment}
+                  deleteReview={deleteReview}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       <section>
         <h2 className="mb-4 font-display text-lg font-bold text-text">

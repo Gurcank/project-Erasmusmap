@@ -1,13 +1,22 @@
 "use client";
 
+import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { MapPin, MessageSquareText, Star, Trash2 } from "lucide-react";
+import {
+  CalendarDays,
+  Check,
+  Copy,
+  MoreHorizontal,
+  Star,
+  Trash2,
+  UserMinus,
+} from "lucide-react";
 import { useT } from "@/hooks/useT";
-import BioEditor from "@/components/ui/BioEditor";
+import { formatStayRange } from "@/lib/format";
 import SubmitButton from "@/components/ui/SubmitButton";
 import ActionForm from "@/components/ui/ActionForm";
 import UserAvatar from "@/components/ui/UserAvatar";
-import AvatarUploader from "@/components/ui/AvatarUploader";
+import AvatarModal from "@/components/ui/AvatarModal";
 import FavoriteCities from "@/components/ui/FavoriteCities";
 import type { FavoriteCity } from "@/components/ui/FavoriteCities";
 import type { CitySuggestion, ProfileReview } from "@/types";
@@ -22,44 +31,189 @@ export type VisitedCity = CitySuggestion & {
 };
 
 type Props = {
+  userId: string;
   username: string;
   image: string | null;
   bio: string | null;
   isOwnProfile: boolean;
   isAdmin: boolean;
+  viewerSignedIn: boolean;
+  isFollowing: boolean;
+  followerCount: number;
+  followingCount: number;
+  toggleFollow: FormAction;
+  toggleBlock: FormAction;
   activeTab: ProfileTab;
   favorites: FavoriteCity[];
   maxFavorites: number;
   visitedCities: VisitedCity[];
   wishlist: CitySuggestion[];
   reviews: ProfileReview[];
-  updateBio: FormAction;
   deleteReview: FormAction;
   addFavoriteCity: FormAction;
   removeFavoriteCity: FormAction;
 };
-
-/** Whole months between two dates, rounded up, minimum one. */
-function stayLengthInMonths(
-  start: Date | null,
-  end: Date | null,
-): number | null {
-  if (!start || !end) return null;
-  const months =
-    (end.getUTCFullYear() - start.getUTCFullYear()) * 12 +
-    (end.getUTCMonth() - start.getUTCMonth());
-  return months > 0 ? months : 1;
-}
-
-function formatMonth(date: Date): string {
-  return date.toLocaleDateString("tr-TR", { month: "short", year: "numeric" });
-}
 
 function EmptyState({ children }: { children: React.ReactNode }) {
   return (
     <p className="rounded-card border border-dashed border-border-strong px-4 py-10 text-center text-sm text-text-subtle">
       {children}
     </p>
+  );
+}
+
+/** Follow / following toggle shown on another user's profile. */
+function FollowButton({
+  userId,
+  isFollowing,
+  toggleFollow,
+}: {
+  userId: string;
+  isFollowing: boolean;
+  toggleFollow: FormAction;
+}) {
+  const t = useT();
+  const [state, action] = useActionState(toggleFollow, null);
+
+  return (
+    <form action={action} className="contents">
+      <input type="hidden" name="targetUserId" value={userId} />
+      <SubmitButton
+        aria-pressed={isFollowing}
+        aria-label={isFollowing ? t.unfollow : t.follow}
+        className={`rounded-control px-4 py-1.5 text-xs font-semibold tracking-wide uppercase transition-colors ${
+          isFollowing
+            ? "border border-border-strong text-text hover:border-danger-600 hover:text-danger-700 dark:hover:text-danger-400"
+            : "bg-primary text-on-primary hover:bg-primary-hover"
+        }`}
+      >
+        {isFollowing ? t.followingState : t.follow}
+      </SubmitButton>
+      {state && !state.ok && (
+        <span
+          role="alert"
+          className="text-xs text-danger-700 dark:text-danger-400"
+        >
+          {state.error}
+        </span>
+      )}
+    </form>
+  );
+}
+
+/**
+ * The "⋯" control next to the name. Always offers "copy link"; on another
+ * user's profile it also offers "block".
+ */
+function ProfileMenu({
+  username,
+  block,
+}: {
+  username: string;
+  block?: { userId: string; toggleBlock: FormAction };
+}) {
+  const t = useT();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [blockState, blockAction] = useActionState(
+    block?.toggleBlock ?? (async () => ({ ok: true as const })),
+    null,
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/u/${username}`,
+      );
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard is unavailable (insecure context, denied permission) — the
+      // menu simply does nothing rather than throwing at the user.
+    }
+  };
+
+  const itemClass =
+    "flex w-full items-center gap-2 rounded-[0.4rem] px-3 py-2 text-left text-sm transition-colors hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={t.profileMenu}
+        className="flex h-8 w-8 items-center justify-center rounded-control border border-border-strong text-text-muted transition-colors hover:bg-surface-raised hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+      >
+        <MoreHorizontal size={16} aria-hidden="true" />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute left-0 z-20 mt-1 min-w-[12rem] rounded-control border border-border bg-surface p-1 shadow-popover"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={copyLink}
+            className={`${itemClass} text-text`}
+          >
+            {copied ? (
+              <Check
+                size={14}
+                aria-hidden="true"
+                className="text-visited-600"
+              />
+            ) : (
+              <Copy size={14} aria-hidden="true" />
+            )}
+            {copied ? t.linkCopied : t.copyLink}
+          </button>
+
+          {block && (
+            <form
+              action={blockAction}
+              onSubmit={(event) => {
+                if (!window.confirm(t.confirmBlock)) event.preventDefault();
+              }}
+            >
+              <input type="hidden" name="targetUserId" value={block.userId} />
+              <button
+                type="submit"
+                role="menuitem"
+                className={`${itemClass} text-danger-700 dark:text-danger-400`}
+              >
+                <UserMinus size={14} aria-hidden="true" />
+                {t.blockUser}
+              </button>
+              {blockState && !blockState.ok && (
+                <p className="px-3 py-1 text-xs text-danger-700 dark:text-danger-400">
+                  {blockState.error}
+                </p>
+              )}
+            </form>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -95,23 +249,30 @@ function CityLink({
 }
 
 export default function ProfileContent({
+  userId,
   username,
   image,
   bio,
   isOwnProfile,
   isAdmin,
+  viewerSignedIn,
+  isFollowing,
+  followerCount,
+  followingCount,
+  toggleFollow,
+  toggleBlock,
   activeTab,
   favorites,
   maxFavorites,
   visitedCities,
   wishlist,
   reviews,
-  updateBio,
   deleteReview,
   addFavoriteCity,
   removeFavoriteCity,
 }: Props) {
   const t = useT();
+  const [avatarOpen, setAvatarOpen] = useState(false);
 
   const tabs: { key: ProfileTab; label: string; count: number }[] = [
     { key: "visited", label: t.tabVisited, count: visitedCities.length },
@@ -119,48 +280,107 @@ export default function ProfileContent({
     { key: "reviews", label: t.tabReviews, count: reviews.length },
   ];
 
+  const currentYear = new Date().getUTCFullYear();
+  const citiesThisYear = visitedCities.filter(
+    (city) =>
+      city.startDate &&
+      new Date(city.startDate).getUTCFullYear() === currentYear,
+  ).length;
+
+  const stats = [
+    { label: t.statCities, value: visitedCities.length },
+    { label: t.statThisYear, value: citiesThisYear },
+    { label: t.statFollowing, value: followingCount },
+    { label: t.statFollowers, value: followerCount },
+  ];
+
+  // Another signed-in user's profile gets follow + block controls.
+  const showSocialControls = viewerSignedIn && !isOwnProfile;
+
   return (
     <div className="mx-auto max-w-5xl space-y-10 px-6 pb-20">
-      <header className="flex flex-col gap-6 rounded-panel border border-border bg-surface p-6 sm:flex-row sm:items-start md:p-8">
-        <div className="shrink-0">
-          {isOwnProfile ? (
-            <div className="space-y-2">
-              <AvatarUploader image={image} fallbackLabel={username} />
-              <p className="text-xs text-text-subtle">{t.profilePhotoHint}</p>
-            </div>
-          ) : (
-            <UserAvatar src={image} label={username} size={80} />
-          )}
-        </div>
+      <header className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+        <div className="flex items-start gap-4 sm:gap-5">
+          <button
+            type="button"
+            onClick={() => setAvatarOpen(true)}
+            aria-label={t.viewPhoto}
+            aria-haspopup="dialog"
+            className="shrink-0 cursor-pointer rounded-full transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          >
+            <UserAvatar src={image} label={username} size={96} />
+          </button>
 
-        <div className="min-w-0 flex-1 space-y-4">
-          <div>
-            <h1 className="font-display text-2xl font-bold text-text">
+          <div className="min-w-0 space-y-3 pt-1">
+            <h1 className="font-display text-2xl font-bold break-words text-text sm:text-3xl">
               {username}
             </h1>
-            <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-text-muted">
-              <span className="flex items-center gap-1.5">
-                <MapPin size={14} aria-hidden="true" />
-                {visitedCities.length} {t.visitedCities.toLowerCase()}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <MessageSquareText size={14} aria-hidden="true" />
-                {reviews.length} {t.tabReviews.toLowerCase()}
-              </span>
-            </p>
-          </div>
 
-          {isOwnProfile ? (
-            <BioEditor initialBio={bio ?? ""} updateBio={updateBio} />
-          ) : (
-            bio && (
+            <div className="flex flex-wrap items-center gap-2">
+              {isOwnProfile ? (
+                <Link
+                  href="/account"
+                  className="rounded-control border border-border-strong px-3 py-1.5 text-xs font-semibold tracking-wide text-text uppercase transition-colors hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                >
+                  {t.editProfile}
+                </Link>
+              ) : (
+                showSocialControls && (
+                  <FollowButton
+                    userId={userId}
+                    isFollowing={isFollowing}
+                    toggleFollow={toggleFollow}
+                  />
+                )
+              )}
+              <ProfileMenu
+                username={username}
+                block={showSocialControls ? { userId, toggleBlock } : undefined}
+              />
+            </div>
+
+            {bio ? (
               <p className="max-w-prose text-sm leading-relaxed text-text-muted">
                 {bio}
               </p>
-            )
-          )}
+            ) : (
+              isOwnProfile && (
+                <Link
+                  href="/account"
+                  className="inline-block text-sm text-accent-text transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                >
+                  {t.noBioClick}
+                </Link>
+              )
+            )}
+          </div>
         </div>
+
+        <dl className="flex shrink-0 divide-x divide-border self-start rounded-card border border-border">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="flex flex-col items-center px-4 py-2.5 sm:px-6"
+            >
+              <dd className="font-display text-xl font-bold text-text tabular-nums">
+                {stat.value}
+              </dd>
+              <dt className="mt-0.5 text-[0.65rem] font-semibold tracking-widest text-text-subtle uppercase">
+                {stat.label}
+              </dt>
+            </div>
+          ))}
+        </dl>
       </header>
+
+      {avatarOpen && (
+        <AvatarModal
+          image={image}
+          label={username}
+          isOwn={isOwnProfile}
+          onClose={() => setAvatarOpen(false)}
+        />
+      )}
 
       <FavoriteCities
         favorites={favorites}
@@ -203,23 +423,14 @@ export default function ProfileContent({
             <EmptyState>{t.noCities}</EmptyState>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {visitedCities.map((city) => {
-                const months = stayLengthInMonths(city.startDate, city.endDate);
-                const meta = months
-                  ? `${months} ${t.monthShort}`
-                  : city.startDate
-                    ? formatMonth(city.startDate)
-                    : undefined;
-                return (
-                  <CityLink
-                    key={city.id}
-                    slug={city.slug}
-                    name={city.name}
-                    country={city.country}
-                    meta={meta}
-                  />
-                );
-              })}
+              {visitedCities.map((city) => (
+                <CityLink
+                  key={city.id}
+                  slug={city.slug}
+                  name={city.name}
+                  country={city.country}
+                />
+              ))}
             </div>
           ))}
 
@@ -266,7 +477,7 @@ export default function ProfileContent({
                         <Star
                           size={14}
                           aria-hidden="true"
-                          className="fill-accent-500 text-accent-500"
+                          className="fill-star text-star"
                         />
                         {averageRating(review).toFixed(1)}
                       </span>
@@ -291,9 +502,22 @@ export default function ProfileContent({
                       )}
                     </div>
                   </div>
-                  <p className="leading-relaxed text-text-muted">
-                    {review.content}
-                  </p>
+                  {formatStayRange(review.stayStart, review.stayEnd) && (
+                    <p
+                      aria-label={t.stayAriaLabel}
+                      className="mb-2 flex items-center gap-1.5 text-xs text-text-subtle"
+                    >
+                      <CalendarDays size={13} aria-hidden="true" />
+                      <span className="tabular-nums">
+                        {formatStayRange(review.stayStart, review.stayEnd)}
+                      </span>
+                    </p>
+                  )}
+                  {review.content && (
+                    <p className="leading-relaxed text-text-muted">
+                      {review.content}
+                    </p>
+                  )}
                 </article>
               ))}
             </div>

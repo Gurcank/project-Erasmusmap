@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
 import ProfileContent from "@/components/ui/ProfileContent";
 import type { ProfileTab } from "@/components/ui/ProfileContent";
-import { rateLimit } from "@/lib/rate-limit";
 import { deleteReview } from "@/lib/actions";
 import { addFavoriteCity, removeFavoriteCity } from "@/lib/profile-actions";
+import { toggleBlock, toggleFollow } from "@/lib/social-actions";
+import { isBlockedBetween } from "@/lib/social";
 import { MAX_FAVORITE_CITIES } from "@/lib/profile";
 import { requireActiveUser } from "@/lib/auth-guards";
-import { toActionResult } from "@/lib/action-result";
-import type { ActionResult } from "@/lib/action-result";
-import { bioSchema, firstIssueMessage } from "@/lib/schemas";
 
 const TABS: ProfileTab[] = ["visited", "wishlist", "reviews"];
 
@@ -104,37 +101,60 @@ export default async function ProfilePage({
   const isOwnProfile = viewer.ok && viewer.user.id === user.id;
   const isAdmin = viewer.ok && viewer.user.role === "ADMIN";
 
-  async function updateBio(
-    _previousState: ActionResult | null,
-    formData: FormData,
-  ): Promise<ActionResult> {
-    "use server";
-    return toActionResult(async () => {
-      const auth = await requireActiveUser();
-      if (!auth.ok) throw new Error(auth.error);
-
-      if (!(await rateLimit(`bio:${auth.user.email}`)))
-        throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
-
-      const parsed = bioSchema.safeParse(formData.get("bio") ?? "");
-      if (!parsed.success) throw new Error(firstIssueMessage(parsed.error));
-
-      const updatedUser = await prisma.user.update({
-        where: { id: auth.user.id },
-        data: { bio: parsed.data },
-      });
-      revalidatePath(`/u/${updatedUser.username}`);
-    });
+  // A block in either direction hides the profile entirely — 404 rather than a
+  // "you are blocked" page, which would just confirm the block.
+  if (viewer.ok && !isOwnProfile) {
+    if (await isBlockedBetween(viewer.user.id, user.id)) notFound();
   }
+
+  const viewerId = viewer.ok ? viewer.user.id : null;
+  const [followerCount, followingCount, viewerFollows] = await Promise.all([
+    prisma.follow.count({ where: { followingId: user.id } }),
+    prisma.follow.count({ where: { followerId: user.id } }),
+    viewerId && !isOwnProfile
+      ? prisma.follow.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: viewerId,
+              followingId: user.id,
+            },
+          },
+          select: { id: true },
+        })
+      : null,
+  ]);
+
+  // The reviews tab shows the stay the user recorded for each reviewed city.
+  const stayByCitySlug = new Map(
+    user.visits.map((visit) => [
+      visit.city.slug,
+      { startDate: visit.startDate, endDate: visit.endDate },
+    ]),
+  );
+  const reviews = user.reviews.map((review) => {
+    const stay = stayByCitySlug.get(review.city.slug);
+    return {
+      ...review,
+      stayStart: stay?.startDate ?? null,
+      stayEnd: stay?.endDate ?? null,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-canvas pt-24">
       <ProfileContent
+        userId={user.id}
         username={user.username ?? ""}
         image={user.image}
         bio={user.bio}
         isOwnProfile={isOwnProfile}
         isAdmin={isAdmin}
+        viewerSignedIn={viewerId !== null}
+        isFollowing={Boolean(viewerFollows)}
+        followerCount={followerCount}
+        followingCount={followingCount}
+        toggleFollow={toggleFollow}
+        toggleBlock={toggleBlock}
         activeTab={activeTab}
         maxFavorites={MAX_FAVORITE_CITIES}
         favorites={user.favoriteCities.map((favorite) => ({
@@ -151,8 +171,7 @@ export default async function ProfilePage({
           endDate: visit.endDate,
         }))}
         wishlist={user.wishlist.map((item) => item.city)}
-        reviews={user.reviews}
-        updateBio={updateBio}
+        reviews={reviews}
         deleteReview={deleteReview}
         addFavoriteCity={addFavoriteCity}
         removeFavoriteCity={removeFavoriteCity}

@@ -21,6 +21,7 @@ import {
   toggleWishlist,
 } from "@/lib/city-actions";
 import { requireActiveUser } from "@/lib/auth-guards";
+import { getHiddenUserIds } from "@/lib/social";
 import { fetchCityPhoto } from "@/lib/unsplash";
 import { toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
@@ -88,6 +89,19 @@ export default async function CityPage({
   ]);
 
   if (!city) notFound();
+
+  // Blocked users' reviews and replies never render.
+  const hiddenUserIds = new Set(
+    await getHiddenUserIds(viewer.ok ? viewer.user.id : null),
+  );
+  const visibleReviews = city.reviews
+    .filter((review) => !review.user || !hiddenUserIds.has(review.user.id))
+    .map((review) => ({
+      ...review,
+      comments: review.comments.filter(
+        (comment) => !comment.user || !hiddenUserIds.has(comment.user.id),
+      ),
+    }));
 
   const identity = viewer.ok
     ? { userId_cityId: { userId: viewer.user.id, cityId: city.id } }
@@ -162,28 +176,60 @@ export default async function CityPage({
     ? await prisma.reviewLike.findMany({
         where: {
           userId: viewer.user.id,
-          reviewId: { in: city.reviews.map((review) => review.id) },
+          reviewId: { in: visibleReviews.map((review) => review.id) },
         },
         select: { reviewId: true },
       })
     : [];
   const likedReviewIds = new Set(viewerLikes.map((like) => like.reviewId));
 
-  const reviews: EngagedReview[] = city.reviews.map((review) => ({
-    id: review.id,
-    content: review.content,
-    createdAt: review.createdAt,
-    culture: review.culture,
-    gastronomy: review.gastronomy,
-    safety: review.safety,
-    socialLife: review.socialLife,
-    transport: review.transport,
-    costOfLiving: review.costOfLiving,
-    user: review.user,
-    likeCount: review._count.likes,
-    likedByViewer: likedReviewIds.has(review.id),
-    replies: review.comments,
-  }));
+  // Each review can show when its author was in this city. One query for every
+  // author on the page rather than one per card.
+  const authorIds = [
+    ...new Set(
+      visibleReviews
+        .map((review) => review.user?.id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const authorVisits = authorIds.length
+    ? await prisma.visit.findMany({
+        where: { cityId: city.id, userId: { in: authorIds } },
+        select: { userId: true, startDate: true, endDate: true },
+      })
+    : [];
+  // Keyed by a plain object, not a Map — `Map` is the map component here.
+  const stayByUser: Record<
+    string,
+    { startDate: Date | null; endDate: Date | null }
+  > = {};
+  for (const visit of authorVisits) {
+    stayByUser[visit.userId] = {
+      startDate: visit.startDate,
+      endDate: visit.endDate,
+    };
+  }
+
+  const reviews: EngagedReview[] = visibleReviews.map((review) => {
+    const stay = review.user?.id ? stayByUser[review.user.id] : undefined;
+    return {
+      id: review.id,
+      content: review.content,
+      createdAt: review.createdAt,
+      culture: review.culture,
+      gastronomy: review.gastronomy,
+      safety: review.safety,
+      socialLife: review.socialLife,
+      transport: review.transport,
+      costOfLiving: review.costOfLiving,
+      user: review.user,
+      likeCount: review._count.likes,
+      likedByViewer: likedReviewIds.has(review.id),
+      replies: review.comments,
+      stayStart: stay?.startDate ?? null,
+      stayEnd: stay?.endDate ?? null,
+    };
+  });
 
   const cityImage = await fetchCityPhoto(city.name);
 

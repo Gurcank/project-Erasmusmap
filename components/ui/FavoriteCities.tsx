@@ -128,15 +128,6 @@ export default function FavoriteCities({
 
   return (
     <section>
-      <div className="mb-4">
-        <h2 className="font-display text-lg font-bold text-text">
-          {t.favoriteCities}
-        </h2>
-        {isOwnProfile && (
-          <p className="text-xs text-text-subtle">{t.favoriteCitiesHint}</p>
-        )}
-      </div>
-
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {slots.map((favorite, position) => {
           if (favorite) {

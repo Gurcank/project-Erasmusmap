@@ -5,10 +5,12 @@
 /*
  * Palette rationale: the interface sits on top of satellite imagery, so the
  * neutral ramp is desaturated and blue-leaning to let the map carry the color.
- * A single warm accent (amber) is the only saturated hue in the chrome — it
- * reads against satellite's cool blues and greens, and doubles as the map
- * marker color. Every value below was checked with a WCAG contrast script,
- * not by eye; the pairings and their ratios are noted on the semantic tokens.
+ * The accent is Erasmus+ azure. It is a brand choice, not a contrast-optimal
+ * one: a cool accent over a cool map separates less than the previous amber,
+ * so the accent is confined to solid chrome (buttons, focus ring, active tab)
+ * and is never drawn as a hairline on the map itself. Wishlist was moved off
+ * blue to violet so "want to go" stays distinct from the accent. Ratios below
+ * were checked with an OKLCH-to-sRGB WCAG script, not by eye.
  */
 @theme {
   --color-ink-50: oklch(0.985 0.002 250);
@@ -24,11 +26,15 @@
   --color-ink-900: oklch(0.205 0.017 262);
   --color-ink-950: oklch(0.145 0.014 264);
 
-  --color-accent-300: oklch(0.87 0.115 85);
-  --color-accent-400: oklch(0.82 0.14 78);
-  --color-accent-500: oklch(0.76 0.155 71);
-  --color-accent-600: oklch(0.68 0.15 64);
-  --color-accent-700: oklch(0.56 0.125 58);
+  --color-accent-300: oklch(0.86 0.075 233);
+  --color-accent-400: oklch(0.78 0.11 233);
+  --color-accent-500: oklch(0.7 0.14 233);
+  --color-accent-600: oklch(0.6 0.15 236);
+  --color-accent-700: oklch(0.5 0.13 240);
+
+  /* Rating stars are always gold, in both themes, by convention — they are
+     never the interactive accent. A numeric score sits next to every use. */
+  --color-star: oklch(0.78 0.16 82);
 
   /* Status hues carry meaning, so they always ship alongside an icon. */
   --color-visited-400: oklch(0.78 0.145 155);
@@ -36,10 +42,10 @@
   --color-visited-600: oklch(0.6 0.135 150);
   --color-visited-700: oklch(0.49 0.115 150);
 
-  --color-wish-400: oklch(0.76 0.115 235);
-  --color-wish-500: oklch(0.67 0.14 240);
-  --color-wish-600: oklch(0.57 0.155 245);
-  --color-wish-700: oklch(0.47 0.14 248);
+  --color-wish-400: oklch(0.72 0.15 300);
+  --color-wish-500: oklch(0.62 0.19 298);
+  --color-wish-600: oklch(0.54 0.2 296);
+  --color-wish-700: oklch(0.46 0.17 296);
 
   --color-danger-400: oklch(0.73 0.17 22);
   --color-danger-500: oklch(0.65 0.195 25);
@@ -107,9 +113,9 @@
   --text-subtle: var(--color-ink-500); /* 4.74:1 on canvas */
   --primary: var(--color-accent-600);
   --primary-hover: var(--color-accent-700);
-  --on-primary: var(--color-ink-950); /* 6.62:1 on primary */
-  --accent-text: var(--color-accent-700); /* 4.84:1 on surface */
-  --focus: var(--color-accent-700); /* 4.64:1 on canvas */
+  --on-primary: var(--color-ink-950); /* 5.25:1 on primary */
+  --accent-text: var(--color-accent-700); /* 5.81:1 on surface */
+  --focus: var(--color-accent-700); /* 5.57:1 on canvas */
 }
 
 .dark {
@@ -123,9 +129,9 @@
   --text-subtle: var(--color-ink-450); /* 5.29:1 on surface */
   --primary: var(--color-accent-500);
   --primary-hover: var(--color-accent-400);
-  --on-primary: var(--color-ink-950); /* 8.97:1 on primary */
-  --accent-text: var(--color-accent-400); /* 10.11:1 on surface */
-  --focus: var(--color-accent-500); /* 8.97:1 on canvas */
+  --on-primary: var(--color-ink-950); /* 7.60:1 on primary */
+  --accent-text: var(--color-accent-400); /* 9.14:1 on surface */
+  --focus: var(--color-accent-500); /* 7.60:1 on canvas */
 }
 
 body {
@@ -153,4 +159,56 @@ body {
 
 .mapboxgl-popup-content {
   padding: 0;
+}
+
+/*
+ * react-day-picker theming. The library ships structural CSS; only the tokens
+ * that carry brand colour and the surface text colour are overridden here so
+ * the calendar matches the rest of the chrome in both themes.
+ */
+.rdp-theme {
+  --rdp-accent-color: var(--primary);
+  --rdp-accent-background-color: color-mix(
+    in oklch,
+    var(--primary) 22%,
+    transparent
+  );
+  --rdp-today-color: var(--accent-text);
+  --rdp-day-width: 2.35rem;
+  --rdp-day-height: 2.35rem;
+  --rdp-selected-border: 2px solid var(--primary);
+  color: var(--text);
+  font-size: 0.875rem;
+}
+
+.rdp-theme .rdp-day_button:hover:not([disabled]) {
+  background: var(--surface-raised);
+}
+
+/* The span between the two picked dates: a blue wash, not the library's plain
+   white. Endpoints keep the solid accent fill. */
+.rdp-theme .rdp-range_middle {
+  background: color-mix(in oklch, var(--primary) 22%, transparent);
+}
+
+.rdp-theme .rdp-range_middle .rdp-day_button {
+  color: var(--text);
+}
+
+.rdp-theme .rdp-range_start .rdp-day_button,
+.rdp-theme .rdp-range_end .rdp-day_button,
+.rdp-theme .rdp-selected .rdp-day_button {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.rdp-theme .rdp-chevron {
+  fill: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rdp-theme * {
+    transition: none !important;
+    animation: none !important;
+  }
 }

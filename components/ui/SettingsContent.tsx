@@ -1,23 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Languages, Palette } from "lucide-react";
+import { ArrowLeft, Languages, Palette, UserX } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageSelect from "@/components/ui/LanguageSelect";
 import SubmitButton from "@/components/ui/SubmitButton";
 import ActionForm from "@/components/ui/ActionForm";
-import UserAvatar from "@/components/ui/UserAvatar";
 import type { FormAction } from "@/lib/action-result";
 
-type Props = {
-  name: string | null;
-  email: string;
+type BlockedUser = {
+  id: string;
   username: string | null;
-  role: string;
-  image: string | null;
+  name: string | null;
+};
+
+type Props = {
   profileUrl: string;
-  updateUsername: FormAction;
+  blockedUsers: BlockedUser[];
+  unblockUser: FormAction;
 };
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
@@ -29,13 +30,9 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 }
 
 export default function SettingsContent({
-  name,
-  email,
-  username,
-  role,
-  image,
   profileUrl,
-  updateUsername,
+  blockedUsers,
+  unblockUser,
 }: Props) {
   const t = useT();
 
@@ -56,60 +53,51 @@ export default function SettingsContent({
       </div>
 
       <section>
-        <SectionHeading>{t.accountSection}</SectionHeading>
-        <div className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
-          <div className="flex items-center justify-between gap-4 px-6 py-5">
-            <div className="flex items-center gap-3">
-              <UserAvatar src={image} label={name ?? email} size={44} />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-text">
-                  {name}
-                </p>
-                <p className="truncate text-xs text-text-subtle">{email}</p>
-              </div>
-            </div>
-            <span className="shrink-0 rounded-full bg-surface-raised px-3 py-1 text-xs font-medium text-text-muted">
-              {role === "ADMIN" ? t.admin : t.member}
-            </span>
-          </div>
-
-          <div className="px-6 py-5">
-            <ActionForm
-              action={updateUsername}
-              className="space-y-3"
-              errorClassName="text-xs text-danger-700 dark:text-danger-400"
-            >
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <label
-                  htmlFor="username"
-                  className="text-sm font-medium text-text"
+        <SectionHeading>{t.blockedUsersSection}</SectionHeading>
+        <div className="overflow-hidden rounded-card border border-border bg-surface">
+          {blockedUsers.length === 0 ? (
+            <p className="px-6 py-8 text-center text-sm text-text-subtle">
+              {t.noBlockedUsers}
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {blockedUsers.map((blocked) => (
+                <li
+                  key={blocked.id}
+                  className="flex items-center justify-between gap-4 px-6 py-4"
                 >
-                  {t.usernameLabel}
-                </label>
-                <span className="truncate text-xs text-text-subtle">
-                  erasmusmap.com/u/
-                  <span className="text-accent-text">{username ?? "…"}</span>
-                </span>
-              </div>
-              <div className="flex gap-3">
-                <input
-                  id="username"
-                  name="username"
-                  defaultValue={username ?? ""}
-                  maxLength={20}
-                  placeholder="kullanici-adi"
-                  className="flex-1 rounded-control border border-border-strong bg-surface px-4 py-2.5 text-sm text-text transition-colors placeholder:text-text-subtle focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
-                />
-                <SubmitButton
-                  pendingText={t.updatingBtn}
-                  className="rounded-control bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
-                >
-                  {t.updateBtn}
-                </SubmitButton>
-              </div>
-              <p className="text-xs text-text-subtle">{t.usernameHint}</p>
-            </ActionForm>
-          </div>
+                  <div className="flex min-w-0 items-center gap-3">
+                    {/* No avatar: a blocked user's photo stays hidden. */}
+                    <span
+                      aria-hidden="true"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-raised text-text-subtle ring-1 ring-border"
+                    >
+                      <UserX size={16} aria-hidden="true" />
+                    </span>
+                    <span className="truncate text-sm font-medium text-text">
+                      {blocked.username ?? blocked.name ?? "—"}
+                    </span>
+                  </div>
+                  <ActionForm
+                    action={unblockUser}
+                    errorClassName="text-xs text-danger-700 dark:text-danger-400"
+                  >
+                    <input
+                      type="hidden"
+                      name="targetUserId"
+                      value={blocked.id}
+                    />
+                    <SubmitButton
+                      pendingText={t.saving}
+                      className="shrink-0 rounded-control border border-border-strong px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:bg-surface-raised hover:text-text disabled:opacity-50"
+                    >
+                      {t.unblockUser}
+                    </SubmitButton>
+                  </ActionForm>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </section>
 

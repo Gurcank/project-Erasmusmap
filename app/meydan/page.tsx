@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import MapBackground from "@/components/map/Map";
 import SquareContent from "@/components/ui/SquareContent";
 import { getTrendingCities, getTrendingReviews } from "@/lib/trending";
+import { getFollowingFeed } from "@/lib/feed";
 import { requireActiveUser } from "@/lib/auth-guards";
+import { getHiddenUserIds } from "@/lib/social";
 import { deleteReview } from "@/lib/actions";
 import {
   addReviewComment,
@@ -26,13 +29,16 @@ export const metadata: Metadata = {
 };
 
 export default async function SquarePage() {
-  const [cities, trending, viewer] = await Promise.all([
+  const viewer = await requireActiveUser();
+  const viewerId = viewer.ok ? viewer.user.id : null;
+
+  const [cities, trending, hiddenUserIds, feed] = await Promise.all([
     getTrendingCities(),
-    getTrendingReviews(),
-    requireActiveUser(),
+    getTrendingReviews(viewerId),
+    getHiddenUserIds(viewerId).then((ids) => new Set(ids)),
+    getFollowingFeed(viewerId),
   ]);
 
-  const viewerId = viewer.ok ? viewer.user.id : null;
   const reviewIds = trending.map((review) => review.id);
 
   // Replies and the viewer's own likes are fetched in two queries rather than
@@ -65,6 +71,7 @@ export default async function SquarePage() {
   const likedReviewIds = new Set(viewerLikes.map((like) => like.reviewId));
   const repliesByReview = new Map<string, ReplyRow[]>();
   for (const reply of replies) {
+    if (reply.user && hiddenUserIds.has(reply.user.id)) continue;
     const bucket = repliesByReview.get(reply.reviewId);
     if (bucket) bucket.push(reply);
     else repliesByReview.set(reply.reviewId, [reply]);
@@ -81,6 +88,8 @@ export default async function SquarePage() {
     transport: review.transport,
     costOfLiving: review.costOfLiving,
     city: { name: review.cityName, slug: review.citySlug },
+    stayStart: review.stayStart,
+    stayEnd: review.stayEnd,
     user: review.authorId
       ? {
           id: review.authorId,
@@ -100,17 +109,25 @@ export default async function SquarePage() {
   }));
 
   return (
-    <div className="min-h-screen bg-canvas pt-24">
-      <SquareContent
-        cities={cities}
-        reviews={reviews}
-        viewerId={viewerId}
-        isAdmin={viewer.ok && viewer.user.role === "ADMIN"}
-        toggleReviewLike={toggleReviewLike}
-        addReviewComment={addReviewComment}
-        deleteReviewComment={deleteReviewComment}
-        deleteReview={deleteReview}
-      />
+    <div className="relative min-h-screen">
+      <div className="fixed inset-0 -z-10">
+        <MapBackground isStatic />
+      </div>
+      <div className="relative z-10 min-h-screen bg-canvas/90 pt-24 backdrop-blur-sm">
+        <SquareContent
+          cities={cities}
+          reviews={reviews}
+          feed={feed.reviews}
+          feedFollowingCount={feed.followingCount}
+          viewerSignedIn={viewerId !== null}
+          viewerId={viewerId}
+          isAdmin={viewer.ok && viewer.user.role === "ADMIN"}
+          toggleReviewLike={toggleReviewLike}
+          addReviewComment={addReviewComment}
+          deleteReviewComment={deleteReviewComment}
+          deleteReview={deleteReview}
+        />
+      </div>
     </div>
   );
 }

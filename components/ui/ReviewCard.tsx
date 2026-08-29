@@ -2,12 +2,13 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, Star, Trash2 } from "lucide-react";
+import { CalendarDays, Heart, MessageCircle, Star, Trash2 } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import UserAvatar from "@/components/ui/UserAvatar";
 import Rating from "@/components/ui/Rating";
 import SubmitButton from "@/components/ui/SubmitButton";
 import ActionForm from "@/components/ui/ActionForm";
+import { formatStayRange } from "@/lib/format";
 import { averageRating, toStars } from "@/lib/review";
 import { MAX_REPLY_LENGTH } from "@/lib/engagement";
 import type { EngagedReview } from "@/types";
@@ -53,6 +54,7 @@ export default function ReviewCard({
   const author = review.user?.username ?? review.user?.name ?? "—";
   const isSignedIn = viewerId !== null;
   const replyCount = review.replies.length;
+  const stayRange = formatStayRange(review.stayStart, review.stayEnd);
 
   const categories = [
     { label: t.cost, value: review.costOfLiving },
@@ -84,12 +86,6 @@ export default function ReviewCard({
             </p>
             <p className="text-xs text-text-subtle">
               {new Date(review.createdAt).toLocaleDateString("tr-TR")}
-              {review.city && (
-                <>
-                  {" · "}
-                  <span className="text-accent-text">{review.city.name}</span>
-                </>
-              )}
             </p>
           </div>
         </Link>
@@ -99,7 +95,7 @@ export default function ReviewCard({
             <Star
               size={15}
               aria-hidden="true"
-              className="fill-accent-500 text-accent-500"
+              className="fill-star text-star"
             />
             {averageRating(review).toFixed(1)}
           </span>
@@ -130,9 +126,21 @@ export default function ReviewCard({
         </Link>
       )}
 
-      <p className="max-w-prose leading-relaxed text-text-muted">
-        {review.content}
-      </p>
+      {stayRange && (
+        <p
+          aria-label={t.stayAriaLabel}
+          className="mb-3 flex items-center gap-1.5 text-xs text-text-subtle"
+        >
+          <CalendarDays size={13} aria-hidden="true" />
+          <span className="tabular-nums">{stayRange}</span>
+        </p>
+      )}
+
+      {review.content && (
+        <p className="max-w-prose leading-relaxed text-text-muted">
+          {review.content}
+        </p>
+      )}
 
       <div className="mt-4 flex flex-wrap gap-2">
         {categories.map(({ label, value }) => (

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   // Runtime queries go through the transaction pooler (port 6543).
   url       = env("DATABASE_URL")
   // Migrations need a session connection (port 5432): the pooler cannot hold
@@ -26,7 +26,7 @@ model City {
   latitude   Float?
   longitude  Float?
   population Int?
-  geonameId  Int?    @unique
+  geonameId  Int?   @unique
 
   // Cached Unsplash result: fetching a photo per request cannot serve the
   // trending lists or profile favourites.
@@ -40,7 +40,6 @@ model City {
   visits    Visit[]
   wishlists WishlistItem[]
   favorites FavoriteCity[]
-
 }
 
 model Review {
@@ -175,7 +174,7 @@ model User {
   id String @id @default(uuid())
 
   /// Shown as the user typed it, so display casing is preserved.
-  username String? @unique
+  username      String? @unique
   /// Lowercase mirror of `username`. Uniqueness and every lookup go through
   /// this column, so "Ada" and "ada" cannot both exist.
   usernameLower String? @unique
@@ -186,6 +185,8 @@ model User {
   emailVerified DateTime?
   image         String?
   bio           String?   @db.Text
+  /// Free-text "where I'm based", shown on the profile header. Optional.
+  location      String?
   role          Role      @default(USER)
   banned        Boolean   @default(false)
 
@@ -198,8 +199,48 @@ model User {
   reviewLikes    ReviewLike[]
   reviewComments ReviewComment[]
 
+  /// People this user follows / who follow this user.
+  following Follow[] @relation("follower")
+  followers Follow[] @relation("following")
+  /// People this user has blocked / who have blocked this user.
+  blocking  Block[]  @relation("blocker")
+  blockedBy Block[]  @relation("blocked")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// A directed follow edge. `followerId` follows `followingId`.
+model Follow {
+  id String @id @default(uuid())
+
+  followerId String
+  follower   User   @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+
+  followingId String
+  following   User   @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+/// A directed block edge. `blockerId` no longer sees `blockedId` anywhere, and
+/// neither can follow the other.
+model Block {
+  id String @id @default(uuid())
+
+  blockerId String
+  blocker   User   @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+
+  blockedId String
+  blocked   User   @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
 }
 
 model Account {
