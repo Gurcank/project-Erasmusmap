@@ -21,7 +21,7 @@
 - 🗺️ Uydu görüntülü interaktif Avrupa haritası — şehir sınırları, hover'da yükselme
 - ⭐ Şehir değerlendirme sistemi — 6 kategori: Kültür, Gastronomi, Güvenlik, Sosyal Hayat, Ulaşım, Yaşam Maliyeti
 - 👤 Kullanıcı profili, ziyaret edilen şehirler ve gitmek istenenler
-- 🔐 Google ve e-posta/şifre ile giriş
+- 🔐 Google ile giriş — şifre saklanmaz
 - 🌐 Türkçe / İngilizce dil desteği
 - 🌙 Koyu / Açık tema
 

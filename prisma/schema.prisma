@@ -216,7 +216,6 @@ model User {
 
   name          String?
   email         String    @unique
-  password      String? // Credentials login için
   emailVerified DateTime?
   image         String?
   /// Object key of the avatar inside the Storage bucket, when the image is one

@@ -1,7 +1,5 @@
 import { z } from "zod";
 import { MAX_BIO_LENGTH } from "@/lib/profile";
-import { normalizeEmail } from "@/lib/email";
-import { getWeakPasswordReason, passwordSchema } from "@/lib/password";
 import {
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
@@ -38,34 +36,6 @@ export const usernameSchema = z
   .min(USERNAME_MIN_LENGTH, `En az ${USERNAME_MIN_LENGTH} karakter olmalı`)
   .max(USERNAME_MAX_LENGTH, `En fazla ${USERNAME_MAX_LENGTH} karakter olmalı`)
   .regex(USERNAME_PATTERN, "Sadece harf, rakam, _ ve - kullanılabilir");
-
-// The address is lowercased here rather than at each call site, so every path
-// that parses a registration stores and looks up the same canonical value.
-export const emailSchema = z
-  .string({ error: "Email ve şifre gerekli" })
-  .trim()
-  .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Geçerli bir email adresi gir")
-  .transform(normalizeEmail);
-
-export const registerSchema = z
-  .object({
-    name: z
-      .string({ error: "Geçersiz ad" })
-      .trim()
-      .max(NAME_MAX_LENGTH, `Ad en fazla ${NAME_MAX_LENGTH} karakter olabilir`)
-      .optional()
-      .default(""),
-    email: emailSchema,
-    password: passwordSchema,
-  })
-  // Checked on the whole object because the rule reads both fields: a password
-  // containing the account's own address is weak however long it is.
-  .superRefine((value, context) => {
-    const reason = getWeakPasswordReason(value.password, value.email);
-    if (reason) {
-      context.addIssue({ code: "custom", message: reason, path: ["password"] });
-    }
-  });
 
 export const visitSchema = z.object({
   cityId: z.string({ error: "Invalid cityId" }).min(1, "Invalid cityId"),
