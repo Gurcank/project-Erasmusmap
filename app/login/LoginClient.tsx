@@ -6,6 +6,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import AuthShell from "@/components/ui/AuthShell";
+import GlassButton from "@/components/ui/GlassButton";
+
+// Shown when next-auth reports a failure with no message of its own.
+const GENERIC_SIGN_IN_ERROR = "Email veya şifre hatalı";
 
 const FIELD_CLASS =
   "w-full rounded-control border border-ink-50/20 bg-ink-50/10 px-4 py-3 text-ink-50 transition-colors placeholder:text-ink-300 focus-visible:border-accent-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-400";
@@ -44,7 +48,12 @@ export default function LoginClient() {
       });
 
       if (result?.error) {
-        setError("Email veya şifre hatalı");
+        // Passed through rather than replaced: every credentials failure now
+        // answers with the same generic message server-side, so the only
+        // distinctions that reach here — rate limited, suspended — are ones
+        // the person needs to read. Overwriting them told someone who had hit
+        // the login limit that their password was wrong.
+        setError(result.error || GENERIC_SIGN_IN_ERROR);
         setIsSubmitting(false);
       } else {
         router.replace("/");
@@ -59,13 +68,14 @@ export default function LoginClient() {
 
   return (
     <AuthShell title="Giriş Yap">
-      <button
-        type="button"
+      <GlassButton
         onClick={() => signIn("google", { callbackUrl: "/" })}
-        className="w-full cursor-pointer rounded-control bg-ink-50 py-3 font-semibold text-ink-950 transition-colors hover:bg-ink-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400"
+        variant="contrast"
+        size="lg"
+        fullWidth
       >
         Google ile devam et
-      </button>
+      </GlassButton>
 
       <div className="my-6 flex items-center gap-4">
         <span className="h-px flex-1 bg-ink-50/20" />
@@ -99,10 +109,13 @@ export default function LoginClient() {
           </p>
         )}
 
-        <button
+        <GlassButton
           type="submit"
           disabled={isSubmitting}
-          className="mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-control bg-primary py-3 font-semibold text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 disabled:cursor-not-allowed disabled:opacity-60"
+          variant="primary"
+          size="lg"
+          fullWidth
+          className="mt-1"
         >
           {isSubmitting && (
             <Loader2
@@ -112,7 +125,7 @@ export default function LoginClient() {
             />
           )}
           {isSubmitting ? "Giriş yapılıyor…" : "Email ile giriş yap"}
-        </button>
+        </GlassButton>
 
         <p className="mt-2 text-center text-sm text-ink-300">
           Hesabın yok mu?{" "}

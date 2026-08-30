@@ -55,8 +55,16 @@ describe("parseRatings", () => {
     ).toThrow();
   });
 
-  it("rejects an unrated category", () => {
-    expect(() => parseRatings(ratingsFormData({ culture: "" }))).toThrow();
+  // Leaving a category blank is how a review stays text-only, so an empty
+  // field is stored as null rather than rejected.
+  it("stores an unrated category as null", () => {
+    expect(parseRatings(ratingsFormData({ culture: "" })).culture).toBeNull();
+  });
+
+  it("stores a missing category as null", () => {
+    const formData = ratingsFormData({});
+    formData.delete("culture");
+    expect(parseRatings(formData).culture).toBeNull();
   });
 });
 

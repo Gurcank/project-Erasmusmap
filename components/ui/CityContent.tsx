@@ -8,6 +8,7 @@ import StarInput from "@/components/ui/StarInput";
 import SubmitButton from "@/components/ui/SubmitButton";
 import ActionForm from "@/components/ui/ActionForm";
 import ReviewCard from "@/components/ui/ReviewCard";
+import VisitDates from "@/components/ui/VisitDates";
 import Rating from "@/components/ui/Rating";
 import type { EngagedReview, CategoryRatings } from "@/types";
 import { toStars } from "@/lib/review";
@@ -35,6 +36,9 @@ type Props = {
   toggleReviewLike: FormAction;
   addReviewComment: FormAction;
   deleteReviewComment: FormAction;
+  toggleCommentLike: FormAction;
+  updateOwnReview: FormAction;
+  deleteOwnReview: FormAction;
 };
 
 export default function CityContent({
@@ -59,6 +63,9 @@ export default function CityContent({
   toggleReviewLike,
   addReviewComment,
   deleteReviewComment,
+  toggleCommentLike,
+  updateOwnReview,
+  deleteOwnReview,
 }: Props) {
   const t = useT();
 
@@ -76,22 +83,19 @@ export default function CityContent({
   ].map((row) => ({ ...row, stars: toStars(row.value) }));
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-16 md:px-8">
-      <h1 className="mb-6 font-display text-display font-bold text-text lg:text-hero">
-        {cityName}
-      </h1>
-
-      {/* Visited / wishlist sit above the ratings, not beside the photo. */}
-      <div className="mb-8">
+    <div className="mx-auto max-w-7xl px-6 pt-24 pb-16 md:px-8">
+      {/* City name and the visited / wishlist actions share the top row; the
+          actions stay above the ratings, never beside the photo. */}
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
+        <h1 className="font-display text-display font-bold text-on-backdrop lg:text-hero">
+          {cityName}
+        </h1>
         <CityActions
           cityId={cityId}
           isVisited={isVisited}
           isWishlisted={isWishlisted}
-          startDate={visitStartDate}
-          endDate={visitEndDate}
           toggleVisit={toggleVisit}
           toggleWishlist={toggleWishlist}
-          saveVisitDates={saveVisitDates}
         />
       </div>
 
@@ -117,7 +121,7 @@ export default function CityContent({
           )}
         </div>
 
-        <div className="flex min-h-[22rem] flex-col gap-5 rounded-panel border border-border bg-surface p-6 md:p-8">
+        <div className="flex min-h-[22rem] flex-col gap-5 rounded-panel glass border border-border bg-surface p-6 md:p-8">
           <h2 className="font-display text-xl font-semibold text-text">
             {t.cityRatings}
           </h2>
@@ -142,46 +146,56 @@ export default function CityContent({
         </div>
       </div>
 
-      <ActionForm
-        action={submitReview}
-        className="mx-auto max-w-4xl space-y-6 rounded-panel border border-border bg-surface p-6 md:p-8"
-        errorClassName="text-center text-sm text-danger-700 dark:text-danger-400"
-      >
-        <h2 className="text-center font-display text-xl font-semibold text-text">
-          {t.rateCity}
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <StarInput label={t.cost} name="costOfLiving" />
-          <StarInput label={t.safety} name="safety" />
-          <StarInput label={t.social} name="socialLife" />
-          <StarInput label={t.culture} name="culture" />
-          <StarInput label={t.gastronomy} name="gastronomy" />
-          <StarInput label={t.transport} name="transport" />
-        </div>
-        <textarea
-          name="content"
-          aria-label={t.writeReview}
-          placeholder={t.writeReview}
-          rows={4}
-          className="w-full resize-none rounded-card border border-border-strong bg-surface-raised px-4 py-3 text-text transition-colors placeholder:text-text-subtle focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
+      {/* The review form and the stay dates are one row from lg up and stack
+          below it. Both are always there: recording when you were somewhere is
+          not gated on having pressed "I went", and the panel matching the
+          form's height is what makes the row read as one block. */}
+      <div className="mx-auto grid max-w-6xl items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <ActionForm
+          action={submitReview}
+          className="glass flex flex-col gap-6 rounded-panel border border-border bg-surface p-6 md:p-8"
+          errorClassName="text-center text-sm text-danger-700 dark:text-danger-400"
+        >
+          <h2 className="text-center font-display text-xl font-semibold text-text">
+            {t.rateCity}
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <StarInput label={t.cost} name="costOfLiving" />
+            <StarInput label={t.safety} name="safety" />
+            <StarInput label={t.social} name="socialLife" />
+            <StarInput label={t.culture} name="culture" />
+            <StarInput label={t.gastronomy} name="gastronomy" />
+            <StarInput label={t.transport} name="transport" />
+          </div>
+          <textarea
+            name="content"
+            aria-label={t.writeReview}
+            placeholder={t.writeReview}
+            rows={4}
+            className="field min-h-32 w-full flex-1 resize-none rounded-card px-4 py-3"
+          />
+          <div className="flex justify-center">
+            <SubmitButton pendingText={t.submittingReview} variant="primary">
+              {t.submitReview}
+            </SubmitButton>
+          </div>
+        </ActionForm>
+
+        <VisitDates
+          cityId={cityId}
+          startDate={visitStartDate}
+          endDate={visitEndDate}
+          saveVisitDates={saveVisitDates}
         />
-        <div className="flex justify-center">
-          <SubmitButton
-            pendingText={t.submittingReview}
-            className="rounded-control bg-primary px-6 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
-          >
-            {t.submitReview}
-          </SubmitButton>
-        </div>
-      </ActionForm>
+      </div>
 
       <section className="mt-16">
-        <h2 className="mb-8 font-display text-2xl font-bold text-text">
+        <h2 className="mb-8 font-display text-2xl font-bold text-on-backdrop">
           {t.allReviews}
         </h2>
 
         {reviews.length === 0 ? (
-          <p className="rounded-panel border border-dashed border-border-strong px-6 py-12 text-center text-text-subtle">
+          <p className="rounded-panel border border-dashed border-ink-50/25 px-6 py-12 text-center text-on-backdrop-muted">
             {t.noReviews}
           </p>
         ) : (
@@ -195,7 +209,10 @@ export default function CityContent({
                 toggleReviewLike={toggleReviewLike}
                 addReviewComment={addReviewComment}
                 deleteReviewComment={deleteReviewComment}
+                toggleCommentLike={toggleCommentLike}
                 deleteReview={deleteReview}
+                updateOwnReview={updateOwnReview}
+                deleteOwnReview={deleteOwnReview}
               />
             ))}
           </div>

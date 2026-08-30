@@ -47,13 +47,14 @@ model Review {
   content String
 
   // Stored on a 1–10 scale so half stars are exact integers: 7 means 3.5
-  // stars. See lib/review.ts for the conversion helpers.
-  culture      Int
-  gastronomy   Int
-  safety       Int
-  socialLife   Int
-  transport    Int
-  costOfLiving Int
+  // stars. See lib/review.ts for the conversion helpers. All optional — a
+  // review can be text only, and an unrated category is left out of averages.
+  culture      Int?
+  gastronomy   Int?
+  safety       Int?
+  socialLife   Int?
+  transport    Int?
+  costOfLiving Int?
 
   cityId String
   city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
@@ -62,6 +63,9 @@ model Review {
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   isApproved Boolean @default(false)
+
+  /// Set by the moderation filter — see ReviewComment.flagged.
+  flagged Boolean @default(false)
 
   likes    ReviewLike[]
   comments ReviewComment[]
@@ -151,7 +155,11 @@ model ReviewLike {
   @@index([reviewId])
 }
 
-/// A reply to a review. Single level: replies cannot themselves be replied to.
+/// A comment on a review, with one level of replies underneath it.
+///
+/// A reply always points at a top-level comment, never at another reply:
+/// replying to a reply attaches to the same parent, the way Instagram does it,
+/// so a thread can never nest past two levels.
 model ReviewComment {
   id String @id @default(uuid())
 
@@ -163,11 +171,38 @@ model ReviewComment {
 
   content String
 
+  parentId String?
+  parent   ReviewComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  ReviewComment[] @relation("CommentReplies")
+
+  likes ReviewCommentLike[]
+
+  /// Set by the moderation filter for content a person should look at. The
+  /// comment stays visible; this only surfaces it in the admin panel.
+  flagged Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([reviewId, createdAt])
   @@index([userId])
+  @@index([parentId])
+  @@index([flagged])
+}
+
+model ReviewCommentLike {
+  id String @id @default(uuid())
+
+  commentId String
+  comment   ReviewComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId])
+  @@index([commentId])
 }
 
 model User {
@@ -184,6 +219,11 @@ model User {
   password      String? // Credentials login için
   emailVerified DateTime?
   image         String?
+  /// Object key of the avatar inside the Storage bucket, when the image is one
+  /// we host. The key is random rather than the user id: the bucket is public,
+  /// so a key built from the id published that id on every profile page and
+  /// made the whole bucket enumerable to anyone holding a list of ids.
+  imagePath     String?
   bio           String?   @db.Text
   /// Free-text "where I'm based", shown on the profile header. Optional.
   location      String?
@@ -196,8 +236,9 @@ model User {
   visits         Visit[]
   wishlist       WishlistItem[]
   favoriteCities FavoriteCity[]
-  reviewLikes    ReviewLike[]
-  reviewComments ReviewComment[]
+  reviewLikes        ReviewLike[]
+  reviewComments     ReviewComment[]
+  reviewCommentLikes ReviewCommentLike[]
 
   /// People this user follows / who follow this user.
   following Follow[] @relation("follower")

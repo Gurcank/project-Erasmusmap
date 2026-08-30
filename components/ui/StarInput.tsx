@@ -7,6 +7,8 @@ import { MAX_STARS, toRatingValue } from "@/lib/review";
 type Props = {
   label: string;
   name: string;
+  /** Pre-selected stars (0–5), for editing an existing review. */
+  defaultStars?: number;
 };
 
 const STEP = 0.5;
@@ -19,8 +21,8 @@ const STEP = 0.5;
  * for free, and because the track spans exactly the five stars, clicking the
  * left half of a star lands on its half step.
  */
-export default function StarInput({ label, name }: Props) {
-  const [stars, setStars] = useState(0);
+export default function StarInput({ label, name, defaultStars = 0 }: Props) {
+  const [stars, setStars] = useState(defaultStars);
   const [preview, setPreview] = useState<number | null>(null);
   const labelId = useId();
 

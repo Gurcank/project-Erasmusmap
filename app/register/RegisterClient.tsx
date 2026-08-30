@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import AuthShell from "@/components/ui/AuthShell";
+import GlassButton from "@/components/ui/GlassButton";
 
 const FIELD_CLASS =
   "w-full rounded-control border border-ink-50/20 bg-ink-50/10 px-4 py-3 text-ink-50 transition-colors placeholder:text-ink-300 focus-visible:border-accent-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-400";
@@ -105,10 +106,13 @@ export default function RegisterClient() {
           </p>
         )}
 
-        <button
+        <GlassButton
           type="submit"
           disabled={!passwordsMatch || isSubmitting}
-          className="mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-control bg-primary py-3 font-semibold text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 disabled:cursor-not-allowed disabled:opacity-60"
+          variant="primary"
+          size="lg"
+          fullWidth
+          className="mt-1"
         >
           {isSubmitting && (
             <Loader2
@@ -118,7 +122,7 @@ export default function RegisterClient() {
             />
           )}
           {isSubmitting ? "Kaydediliyor…" : "Kayıt ol"}
-        </button>
+        </GlassButton>
 
         <p className="mt-2 text-center text-sm text-ink-300">
           Zaten hesabın var mı?{" "}

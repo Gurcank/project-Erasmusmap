@@ -2,9 +2,10 @@
 
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
+import GlassButton from "@/components/ui/GlassButton";
 
-type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type"> & {
+type Props = Omit<ComponentProps<typeof GlassButton>, "type"> & {
   /** Replaces the label while submitting. Omit to show only the spinner. */
   pendingText?: ReactNode;
 };
@@ -13,18 +14,12 @@ export default function SubmitButton({
   pendingText,
   children,
   disabled,
-  className = "",
   ...props
 }: Props) {
   const { pending } = useFormStatus();
 
   return (
-    <button
-      type="submit"
-      disabled={pending || disabled}
-      className={`inline-flex cursor-pointer items-center justify-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed ${className}`}
-      {...props}
-    >
+    <GlassButton type="submit" disabled={pending || disabled} {...props}>
       {pending ? (
         <>
           <Loader2
@@ -37,6 +32,6 @@ export default function SubmitButton({
       ) : (
         children
       )}
-    </button>
+    </GlassButton>
   );
 }

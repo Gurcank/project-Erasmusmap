@@ -5,12 +5,13 @@
 /*
  * Palette rationale: the interface sits on top of satellite imagery, so the
  * neutral ramp is desaturated and blue-leaning to let the map carry the color.
- * The accent is Erasmus+ azure. It is a brand choice, not a contrast-optimal
- * one: a cool accent over a cool map separates less than the previous amber,
- * so the accent is confined to solid chrome (buttons, focus ring, active tab)
- * and is never drawn as a hairline on the map itself. Wishlist was moved off
- * blue to violet so "want to go" stays distinct from the accent. Ratios below
- * were checked with an OKLCH-to-sRGB WCAG script, not by eye.
+ * The accent is #1E8E42 green, and "visited" is the same green — the brand
+ * colour and "I have been here" are the same idea, so the palette says it once.
+ * "Want to go" is #FF6632 orange: warm against that green, and unmistakable
+ * next to it for the most common red-green colour vision deficiencies, which
+ * leave the blue-yellow axis intact. Both buttons stay transparent until they
+ * are switched on. Ratios below were checked with an OKLCH-to-sRGB WCAG
+ * script against the real backdrop, not by eye.
  */
 @theme {
   --color-ink-50: oklch(0.985 0.002 250);
@@ -26,26 +27,33 @@
   --color-ink-900: oklch(0.205 0.017 262);
   --color-ink-950: oklch(0.145 0.014 264);
 
-  --color-accent-300: oklch(0.86 0.075 233);
-  --color-accent-400: oklch(0.78 0.11 233);
-  --color-accent-500: oklch(0.7 0.14 233);
-  --color-accent-600: oklch(0.6 0.15 236);
-  --color-accent-700: oklch(0.5 0.13 240);
+  /* #1E8E42 is the brand green; it lands exactly on the 600 step. The 700 step
+     is not "600 but darker" — it is the tone that still clears 4.5:1 as text on
+     a translucent panel over the backdrop, which is measurably darker. */
+  --color-accent-300: oklch(0.86 0.075 152);
+  --color-accent-400: oklch(0.76 0.115 151);
+  --color-accent-500: oklch(0.665 0.135 150);
+  --color-accent-600: oklch(0.5691 0.1486 149);
+  --color-accent-700: oklch(0.44 0.115 149);
 
   /* Rating stars are always gold, in both themes, by convention — they are
      never the interactive accent. A numeric score sits next to every use. */
   --color-star: oklch(0.78 0.16 82);
 
-  /* Status hues carry meaning, so they always ship alongside an icon. */
-  --color-visited-400: oklch(0.78 0.145 155);
-  --color-visited-500: oklch(0.7 0.15 152);
-  --color-visited-600: oklch(0.6 0.135 150);
-  --color-visited-700: oklch(0.49 0.115 150);
+  /* Status hues carry meaning, so they always ship alongside an icon. Both
+     buttons are transparent until they are on; these are the "on" colours.
+     Visited deliberately *is* the accent green rather than a second green next
+     to it — one green means "been there", and it is the brand. */
+  --color-visited-400: oklch(0.76 0.115 151);
+  --color-visited-500: oklch(0.665 0.135 150);
+  --color-visited-600: oklch(0.5691 0.1486 149);
+  --color-visited-700: oklch(0.44 0.115 149);
 
-  --color-wish-400: oklch(0.72 0.15 300);
-  --color-wish-500: oklch(0.62 0.19 298);
-  --color-wish-600: oklch(0.54 0.2 296);
-  --color-wish-700: oklch(0.46 0.17 296);
+  /* #FF6632 lands exactly on the 500 step. */
+  --color-wish-400: oklch(0.78 0.155 45);
+  --color-wish-500: oklch(0.6979 0.1975 38.2);
+  --color-wish-600: oklch(0.61 0.19 34);
+  --color-wish-700: oklch(0.47 0.15 32);
 
   --color-danger-400: oklch(0.73 0.17 22);
   --color-danger-500: oklch(0.65 0.195 25);
@@ -75,6 +83,13 @@
   --shadow-floating:
     0 4px 6px -1px oklch(0.145 0.014 264 / 0.08),
     0 2px 4px -2px oklch(0.145 0.014 264 / 0.06);
+  /* A switch reads as a knob in a groove, so the track is recessed and the
+     knob carries its own lift. Two more steps, not a new scale. */
+  --shadow-track: inset 0 1px 2px oklch(0.145 0.014 264 / 0.35);
+  --shadow-knob:
+    0 1px 2px oklch(0.145 0.014 264 / 0.4),
+    0 2px 6px oklch(0.145 0.014 264 / 0.25);
+
   --shadow-popover:
     0 12px 24px -6px oklch(0.145 0.014 264 / 0.18),
     0 4px 8px -4px oklch(0.145 0.014 264 / 0.12);
@@ -98,30 +113,62 @@
   --color-on-primary: var(--on-primary);
   --color-accent-text: var(--accent-text);
   --color-focus: var(--focus);
+  --color-glass-border: var(--glass-border);
+  --color-glass-highlight: var(--glass-highlight);
+  --color-on-backdrop: var(--on-backdrop);
+  --color-on-backdrop-muted: var(--on-backdrop-muted);
 }
 
 :root {
   --canvas: var(--color-ink-50);
-  --surface: #fff;
-  --surface-raised: #fff;
+  /* Surfaces float over the satellite backdrop, so they carry alpha and rely on
+     the `glass` blur underneath them for legibility. Alphas below are the
+     lowest that keep --text at 4.5:1 over the brightest terrain in
+     /globe-backdrop.jpg, measured rather than eyeballed. */
+  --surface: oklch(1 0 0 / 0.8);
+  /* Was identical to --surface, which left every hover state invisible in the
+     light theme. One step down the ramp so raised reads as raised. */
+  --surface-raised: oklch(0.965 0.004 250 / 0.85);
   /* Hairline only — decorative, exempt from the 3:1 component rule. */
   --border: var(--color-ink-200);
   /* Input and control edges: 3.22:1 on canvas. */
   --border-strong: var(--color-ink-450);
   --text: var(--color-ink-900); /* 17.16:1 on canvas */
   --text-muted: var(--color-ink-600); /* 7.27:1 on surface */
-  --text-subtle: var(--color-ink-500); /* 4.74:1 on canvas */
-  --primary: var(--color-accent-600);
-  --primary-hover: var(--color-accent-700);
-  --on-primary: var(--color-ink-950); /* 5.25:1 on primary */
-  --accent-text: var(--color-accent-700); /* 5.81:1 on surface */
-  --focus: var(--color-accent-700); /* 5.57:1 on canvas */
+  /* 4.61:1 through the 0.8-alpha panel over the brightest backdrop terrain.
+     Same value as --text-muted on purpose: with the panel translucent over a
+     dark image there is no lighter grey that still clears 4.5:1, and keeping
+     the glass is worth more here than a third tier of grey. */
+  --text-subtle: var(--color-ink-600);
+  --primary: var(--color-accent-600); /* #1E8E42 */
+  /* Lightens rather than darkens: --on-primary is near-black, and a darker
+     green would take it from 4.72:1 to 3.07:1. */
+  --primary-hover: var(--color-accent-500);
+  --on-primary: var(--color-ink-950); /* 4.72:1 on primary */
+  --accent-text: var(--color-accent-700); /* 4.50:1 through a glass panel */
+  --focus: var(--color-accent-700);
+
+  /* Rim of a glass panel: a bright catch at the lit edge fading to a plain
+     hairline. Decorative, so exempt from the 3:1 component rule. */
+  --glass-border: oklch(1 0 0 / 0.7);
+  --glass-highlight: oklch(1 0 0 / 0.95);
+  --glass-blur: 20px;
+
+  /* The satellite backdrop is the same dark image in both themes — the scrim
+     over it never inverts to white — so anything sitting straight on it (page
+     titles, section headings, empty states) is light in both. Panels keep the
+     theme-aware --text ramp; these two are deliberately not redefined in .dark.
+     Measured against the brightest terrain at the shipped scrim: 3.94:1 for
+     --on-backdrop, so the one bright patch near the Alps is below AA — see the
+     note in GlobeBackground. */
+  --on-backdrop: var(--color-ink-50);
+  --on-backdrop-muted: var(--color-ink-200);
 }
 
 .dark {
   --canvas: var(--color-ink-950);
-  --surface: var(--color-ink-900);
-  --surface-raised: var(--color-ink-800);
+  --surface: oklch(0.205 0.017 262 / 0.73);
+  --surface-raised: oklch(0.278 0.019 260 / 0.72);
   --border: var(--color-ink-800);
   --border-strong: var(--color-ink-500); /* 3.54:1 on surface */
   --text: var(--color-ink-50); /* 17.16:1 on surface */
@@ -129,15 +176,210 @@
   --text-subtle: var(--color-ink-450); /* 5.29:1 on surface */
   --primary: var(--color-accent-500);
   --primary-hover: var(--color-accent-400);
-  --on-primary: var(--color-ink-950); /* 7.60:1 on primary */
-  --accent-text: var(--color-accent-400); /* 9.14:1 on surface */
-  --focus: var(--color-accent-500); /* 7.60:1 on canvas */
+  --on-primary: var(--color-ink-950); /* 6.87:1 on primary */
+  --accent-text: var(--color-accent-400); /* 7.54:1 through a glass panel */
+  --focus: var(--color-accent-500);
+
+  /* Dimmer than the light theme's: a white rim at full strength over a
+     near-black panel reads as a drawn outline, not as an edge catching light. */
+  --glass-border: oklch(1 0 0 / 0.16);
+  --glass-highlight: oklch(1 0 0 / 0.55);
+  --glass-blur: 24px;
+}
+
+/* Without backdrop-filter the fill is the only thing between body copy and the
+   terrain underneath it, so it goes near-opaque rather than leaving text
+   unreadable. The rim and the shimmer still work — they are painted, not
+   filtered. */
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  :root {
+    --surface: oklch(1 0 0 / 0.97);
+    --surface-raised: oklch(0.965 0.004 250 / 0.97);
+  }
+
+  .dark {
+    --surface: oklch(0.205 0.017 262 / 0.97);
+    --surface-raised: oklch(0.278 0.019 260 / 0.97);
+  }
+}
+
+/* The canvas colour lives on <html> as the ground behind the fixed
+   GlobeBackground; <body> stays transparent so that image shows through. */
+html {
+  background: var(--canvas);
 }
 
 body {
-  background: var(--canvas);
+  background: transparent;
   color: var(--text);
   font-family: var(--font-sans);
+}
+
+/*
+ * Glass layer, split in three so a plain card can take the blur without the
+ * jewellery: `glass` is the blur that makes a translucent fill readable,
+ * `glass-edge` draws the lit rim, `glass-shimmer` sends a highlight
+ * travelling around that rim. The shimmer is the same idea as the hovered
+ * region outline on the map (components/map/Map.tsx), so chrome and map speak
+ * one language.
+ *
+ * Both rims are gradients clipped to the border box with a mask — a
+ * `border-color` is one flat colour and cannot vary along the edge.
+ */
+@utility glass {
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.35);
+}
+
+@utility glass-edge {
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      160deg,
+      var(--glass-highlight) 0%,
+      var(--glass-border) 38%,
+      transparent 62%,
+      var(--glass-border) 100%
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+@utility glass-shimmer {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    padding: 1px;
+    /* Two opposed bands so the rim is never dark all the way round. */
+    background: conic-gradient(
+      from var(--shimmer-angle),
+      transparent 0deg,
+      var(--glass-highlight) 16deg,
+      transparent 40deg,
+      transparent 180deg,
+      var(--glass-highlight) 196deg,
+      transparent 220deg,
+      transparent 360deg
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+
+    @media (prefers-reduced-motion: no-preference) {
+      animation: glass-shimmer-travel 9s linear infinite;
+    }
+  }
+}
+
+/*
+ * One text field. Every input and textarea in the app used to carry the same
+ * eight utilities inline, which is how they drifted apart. `:focus-within`
+ * rather than `:focus` so this works both on the control itself and on a
+ * wrapper holding a control plus a button — the comment composer is the latter.
+ */
+@utility field {
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--text);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+
+  &::placeholder {
+    color: var(--text-subtle);
+  }
+
+  &:focus-within {
+    border-color: var(--primary);
+    /* A soft ring instead of the focus outline: the outline is reserved for
+       keyboard focus, and this also fires for a pointer click. */
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 22%, transparent);
+  }
+
+  &:focus-within:has(:focus-visible) {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+@utility glass-sweep {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+
+  /* A band of light crossing the face on hover. Sits above the fill and below
+     the label, which GlassButton keeps in its own stacking context. */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 38%,
+      var(--glass-highlight) 50%,
+      transparent 62%
+    );
+    translate: -110% 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    @media (prefers-reduced-motion: no-preference) {
+      animation: glass-sweep-pass 650ms ease-out;
+    }
+  }
+}
+
+@keyframes glass-sweep-pass {
+  from {
+    translate: -110% 0;
+    opacity: 0.85;
+  }
+  to {
+    translate: 110% 0;
+    opacity: 0;
+  }
+}
+
+/* An angle can only be animated once it is registered as one; without this the
+   conic gradient jumps between keyframes instead of sweeping. */
+@property --shimmer-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes glass-shimmer-travel {
+  to {
+    --shimmer-angle: 360deg;
+  }
 }
 
 /* Map tooltip lives outside React, so it is styled here rather than inline. */
@@ -159,56 +401,4 @@ body {
 
 .mapboxgl-popup-content {
   padding: 0;
-}
-
-/*
- * react-day-picker theming. The library ships structural CSS; only the tokens
- * that carry brand colour and the surface text colour are overridden here so
- * the calendar matches the rest of the chrome in both themes.
- */
-.rdp-theme {
-  --rdp-accent-color: var(--primary);
-  --rdp-accent-background-color: color-mix(
-    in oklch,
-    var(--primary) 22%,
-    transparent
-  );
-  --rdp-today-color: var(--accent-text);
-  --rdp-day-width: 2.35rem;
-  --rdp-day-height: 2.35rem;
-  --rdp-selected-border: 2px solid var(--primary);
-  color: var(--text);
-  font-size: 0.875rem;
-}
-
-.rdp-theme .rdp-day_button:hover:not([disabled]) {
-  background: var(--surface-raised);
-}
-
-/* The span between the two picked dates: a blue wash, not the library's plain
-   white. Endpoints keep the solid accent fill. */
-.rdp-theme .rdp-range_middle {
-  background: color-mix(in oklch, var(--primary) 22%, transparent);
-}
-
-.rdp-theme .rdp-range_middle .rdp-day_button {
-  color: var(--text);
-}
-
-.rdp-theme .rdp-range_start .rdp-day_button,
-.rdp-theme .rdp-range_end .rdp-day_button,
-.rdp-theme .rdp-selected .rdp-day_button {
-  background: var(--primary);
-  color: var(--on-primary);
-}
-
-.rdp-theme .rdp-chevron {
-  fill: var(--text-muted);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rdp-theme * {
-    transition: none !important;
-    animation: none !important;
-  }
 }

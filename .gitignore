@@ -50,3 +50,10 @@ next-env.d.ts
 
 # raw Overpass dumps cached by scripts/build-railways.ts (regenerable, large)
 /data/osm-rail-cache
+
+# NUTS and geoBoundaries dumps cached by scripts/build-map-regions.ts
+# (downloaded on demand, tens of MB)
+/data/boundaries/nuts-01m-l3.geojson
+/data/boundaries/nuts-01m-l3-2021.geojson
+/data/boundaries/gb-*-adm1.geojson
+/data/boundaries/kktc-districts-osm.json

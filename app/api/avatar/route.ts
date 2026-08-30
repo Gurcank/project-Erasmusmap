@@ -2,11 +2,32 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveUser } from "@/lib/auth-guards";
-import { AVATAR_ALLOWED_TYPES, AVATAR_MAX_UPLOAD_BYTES } from "@/lib/avatar";
+import {
+  AVATAR_ALLOWED_TYPES,
+  AVATAR_MAX_REQUEST_BYTES,
+  AVATAR_MAX_UPLOAD_BYTES,
+} from "@/lib/avatar";
 import { normalizeAvatar } from "@/lib/avatar-processing";
-import { deleteAvatar, isStorageConfigured, uploadAvatar } from "@/lib/storage";
+import {
+  avatarPathFromUrl,
+  deleteAvatarObject,
+  isStorageConfigured,
+  uploadAvatar,
+} from "@/lib/storage";
 
 const STORAGE_UNAVAILABLE = "Fotoğraf yükleme şu anda kullanılamıyor";
+
+/**
+ * The object to remove when an avatar is replaced or cleared. `imagePath` is
+ * authoritative; the URL is only consulted for rows written before that column
+ * existed, and yields null for an avatar hosted elsewhere.
+ */
+function storedAvatarPath(
+  user: { image: string | null; imagePath: string | null } | null,
+): string | null {
+  if (!user) return null;
+  return user.imagePath ?? (user.image ? avatarPathFromUrl(user.image) : null);
+}
 
 export async function POST(req: Request) {
   const auth = await requireActiveUser();
@@ -20,6 +41,21 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: "Çok fazla istek. Lütfen biraz sonra tekrar dene." },
       { status: 429 },
+    );
+  }
+
+  // Read before the body is: formData() buffers the entire upload in memory,
+  // so checking the file size afterwards means the memory has already been
+  // spent. Content-Length is client-supplied and may be absent on a chunked
+  // request, which is why the file-size check below stays as well.
+  const declaredLength = Number(req.headers.get("content-length"));
+  if (
+    Number.isFinite(declaredLength) &&
+    declaredLength > AVATAR_MAX_REQUEST_BYTES
+  ) {
+    return NextResponse.json(
+      { error: "Fotoğraf en fazla 2MB olabilir" },
+      { status: 413 },
     );
   }
 
@@ -54,15 +90,33 @@ export async function POST(req: Request) {
   }
 
   try {
-    const image = await uploadAvatar(auth.user.id, normalized);
+    const previous = await prisma.user.findUnique({
+      where: { id: auth.user.id },
+      select: { image: true, imagePath: true },
+    });
+
+    const stored = await uploadAvatar(normalized);
 
     await prisma.user.update({
       where: { id: auth.user.id },
-      data: { image },
+      data: { image: stored.url, imagePath: stored.path },
     });
 
-    return NextResponse.json({ image });
-  } catch {
+    // Only after the row points at the new object, and best effort: a leftover
+    // file is untidy, whereas a row pointing at a deleted one is a broken
+    // avatar on every page the account appears.
+    const stale = storedAvatarPath(previous);
+    if (stale && stale !== stored.path) {
+      await deleteAvatarObject(stale).catch(() => undefined);
+    }
+
+    return NextResponse.json({ image: stored.url });
+  } catch (error) {
+    // Storage misconfiguration (a SUPABASE_URL with a path on it, a private
+    // bucket) fails here and is indistinguishable from any other 500 at the
+    // client. Log it, or the next diagnosis has to be run against the live
+    // Storage API.
+    console.error("Avatar upload failed", error);
     return NextResponse.json({ error: "Bir hata oluştu" }, { status: 500 });
   }
 }
@@ -80,15 +134,21 @@ export async function DELETE() {
   }
 
   try {
+    const current = await prisma.user.findUnique({
+      where: { id: auth.user.id },
+      select: { image: true, imagePath: true },
+    });
+    const path = storedAvatarPath(current);
+
     // Storage may hold nothing for an OAuth avatar or an already-cleared one;
-    // clearing the column is what matters, so a missing object is not an error.
-    if (isStorageConfigured()) {
-      await deleteAvatar(auth.user.id).catch(() => undefined);
+    // clearing the columns is what matters, so a missing object is not an error.
+    if (path && isStorageConfigured()) {
+      await deleteAvatarObject(path).catch(() => undefined);
     }
 
     await prisma.user.update({
       where: { id: auth.user.id },
-      data: { image: null },
+      data: { image: null, imagePath: null },
     });
 
     return NextResponse.json({ success: true });

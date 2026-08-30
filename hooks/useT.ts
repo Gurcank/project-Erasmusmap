@@ -1,27 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getTranslations, OFFERED_LANGUAGES, type Lang } from "@/lib/i18n";
-
-const VALID_CODES = new Set<string>(
-  OFFERED_LANGUAGES.map((language) => language.code),
-);
+import { useSyncExternalStore } from "react";
+import { getTranslations } from "@/lib/i18n";
+import { DEFAULT_LANG, readLang, subscribeToLang } from "@/lib/lang";
 
 export function useT() {
-  const [lang, setLang] = useState<Lang>("tr");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("lang");
-    if (saved && VALID_CODES.has(saved)) setLang(saved as Lang);
-
-    const handleLangChange = (event: Event) => {
-      const next = (event as CustomEvent<Lang>).detail;
-      if (VALID_CODES.has(next)) setLang(next);
-    };
-
-    window.addEventListener("langChange", handleLangChange);
-    return () => window.removeEventListener("langChange", handleLangChange);
-  }, []);
+  // The server cannot read localStorage, so it renders the default and the
+  // client swaps in the stored language during hydration.
+  const lang = useSyncExternalStore(
+    subscribeToLang,
+    readLang,
+    () => DEFAULT_LANG,
+  );
 
   return getTranslations(lang);
 }

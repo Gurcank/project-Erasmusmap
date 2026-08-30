@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft, Languages, Palette, UserX } from "lucide-react";
+import { Languages, Palette, UserX } from "lucide-react";
 import { useT } from "@/hooks/useT";
-import ThemeToggle from "@/components/ui/ThemeToggle";
+import ThemeSelect from "@/components/ui/ThemeSelect";
 import LanguageSelect from "@/components/ui/LanguageSelect";
 import SubmitButton from "@/components/ui/SubmitButton";
 import ActionForm from "@/components/ui/ActionForm";
@@ -16,45 +15,30 @@ type BlockedUser = {
 };
 
 type Props = {
-  profileUrl: string;
   blockedUsers: BlockedUser[];
   unblockUser: FormAction;
 };
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mb-3 px-1 text-xs font-semibold tracking-widest text-text-subtle uppercase">
+    <h2 className="mb-3 px-1 text-xs font-semibold tracking-widest text-on-backdrop-muted uppercase">
       {children}
     </h2>
   );
 }
 
-export default function SettingsContent({
-  profileUrl,
-  blockedUsers,
-  unblockUser,
-}: Props) {
+export default function SettingsContent({ blockedUsers, unblockUser }: Props) {
   const t = useT();
 
   return (
     <>
-      <div className="mb-8">
-        <Link
-          href={profileUrl}
-          className="mb-1 inline-flex items-center gap-1.5 text-sm text-text-subtle transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-        >
-          <ArrowLeft size={14} aria-hidden="true" />
-          {t.backToProfile}
-        </Link>
-        <h1 className="font-display text-display font-bold text-text">
-          {t.settingsTitle}
-        </h1>
-        <p className="mt-1 text-sm text-text-muted">{t.settingsDesc}</p>
-      </div>
+      <h1 className="mb-8 font-display text-display font-bold text-on-backdrop">
+        {t.settingsTitle}
+      </h1>
 
       <section>
         <SectionHeading>{t.blockedUsersSection}</SectionHeading>
-        <div className="overflow-hidden rounded-card border border-border bg-surface">
+        <div className="overflow-hidden rounded-card glass border border-border bg-surface">
           {blockedUsers.length === 0 ? (
             <p className="px-6 py-8 text-center text-sm text-text-subtle">
               {t.noBlockedUsers}
@@ -89,7 +73,8 @@ export default function SettingsContent({
                     />
                     <SubmitButton
                       pendingText={t.saving}
-                      className="shrink-0 rounded-control border border-border-strong px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:bg-surface-raised hover:text-text disabled:opacity-50"
+                      size="sm"
+                      className="shrink-0"
                     >
                       {t.unblockUser}
                     </SubmitButton>
@@ -103,7 +88,7 @@ export default function SettingsContent({
 
       <section>
         <SectionHeading>{t.appearanceSection}</SectionHeading>
-        <div className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
+        <div className="divide-y divide-border overflow-hidden rounded-card glass border border-border bg-surface">
           <div className="flex items-center justify-between gap-4 px-6 py-5">
             <div className="flex items-center gap-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-control bg-surface-raised text-text-muted">
@@ -114,7 +99,7 @@ export default function SettingsContent({
                 <p className="text-xs text-text-subtle">{t.themeDesc}</p>
               </div>
             </div>
-            <ThemeToggle />
+            <ThemeSelect />
           </div>
 
           <div className="flex items-center justify-between gap-4 px-6 py-5">

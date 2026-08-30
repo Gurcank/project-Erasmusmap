@@ -22,6 +22,8 @@ export type ReviewAuthor = {
   username: string | null;
 };
 
+// City-level averages: every category resolves to a number (an unrated one
+// defaults to 0), so this stays non-nullable.
 export type CategoryRatings = {
   culture: number;
   gastronomy: number;
@@ -31,42 +33,48 @@ export type CategoryRatings = {
   costOfLiving: number;
 };
 
-export type CityReview = CategoryRatings & {
+// A single review's ratings: any category may be unset, so a stored value is
+// a number or null.
+export type ReviewRatings = {
+  culture: number | null;
+  gastronomy: number | null;
+  safety: number | null;
+  socialLife: number | null;
+  transport: number | null;
+  costOfLiving: number | null;
+};
+
+export type CityReview = ReviewRatings & {
   id: string;
   content: string;
   createdAt: Date;
   user: ReviewAuthor | null;
 };
 
-export type ProfileReview = CategoryRatings & {
-  id: string;
-  content: string;
-  createdAt: Date;
-  city: {
-    name: string;
-    slug: string;
-  };
-  /** The reviewer's recorded stay in this city, if they gave dates. */
-  stayStart?: Date | null;
-  stayEnd?: Date | null;
-};
-
-export type ReviewReply = {
-  id: string;
-  content: string;
-  createdAt: Date;
-  user: ReviewAuthor | null;
-};
-
-/** A review with everything the shared card renders. */
-export type EngagedReview = CategoryRatings & {
+/**
+ * A comment on a review. Two levels only: a top-level comment carries its
+ * replies, and a reply's own `replies` is always empty — replying to a reply
+ * attaches to the same parent, the way Instagram does it.
+ */
+export type ReviewComment = {
   id: string;
   content: string;
   createdAt: Date;
   user: ReviewAuthor | null;
   likeCount: number;
   likedByViewer: boolean;
-  replies: ReviewReply[];
+  replies: ReviewComment[];
+};
+
+/** A review with everything the shared card renders. */
+export type EngagedReview = ReviewRatings & {
+  id: string;
+  content: string;
+  createdAt: Date;
+  user: ReviewAuthor | null;
+  likeCount: number;
+  likedByViewer: boolean;
+  comments: ReviewComment[];
   /** Set when the card is shown away from the city's own page. */
   city?: { name: string; slug: string };
   /** The reviewer's recorded stay in this city, if they gave dates. */

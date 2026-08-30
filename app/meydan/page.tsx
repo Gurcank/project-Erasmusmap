@@ -1,26 +1,32 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import MapBackground from "@/components/map/Map";
 import SquareContent from "@/components/ui/SquareContent";
 import { getTrendingCities, getTrendingReviews } from "@/lib/trending";
 import { getFollowingFeed } from "@/lib/feed";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { getHiddenUserIds } from "@/lib/social";
+import {
+  buildCommentTree,
+  COMMENT_QUERY,
+  COMMENT_SELECT,
+  getLikedCommentIds,
+  type CommentRow,
+} from "@/lib/review-shape";
 import { deleteReview } from "@/lib/actions";
 import {
   addReviewComment,
+  toggleCommentLike,
+  deleteOwnReview,
   deleteReviewComment,
   toggleReviewLike,
+  updateOwnReview,
 } from "@/lib/square-actions";
-import type { EngagedReview, ReviewAuthor } from "@/types";
+import type { EngagedReview } from "@/types";
 
 type ReplyRow = {
   id: string;
   reviewId: string;
-  content: string;
-  createdAt: Date;
-  user: ReviewAuthor | null;
-};
+} & CommentRow;
 
 export const metadata: Metadata = {
   title: "Meydan",
@@ -41,23 +47,15 @@ export default async function SquarePage() {
 
   const reviewIds = trending.map((review) => review.id);
 
-  // Replies and the viewer's own likes are fetched in two queries rather than
+  // Comments and the viewer's own likes are fetched in two queries rather than
   // per review, which would be a query per card.
   const [replies, viewerLikes]: [ReplyRow[], { reviewId: string }[]] =
     await Promise.all([
       reviewIds.length
         ? prisma.reviewComment.findMany({
             where: { reviewId: { in: reviewIds } },
-            orderBy: { createdAt: "asc" },
-            select: {
-              id: true,
-              reviewId: true,
-              content: true,
-              createdAt: true,
-              user: {
-                select: { id: true, name: true, username: true, image: true },
-              },
-            },
+            orderBy: COMMENT_QUERY.orderBy,
+            select: { ...COMMENT_SELECT, reviewId: true },
           })
         : [],
       viewerId && reviewIds.length
@@ -69,9 +67,13 @@ export default async function SquarePage() {
     ]);
 
   const likedReviewIds = new Set(viewerLikes.map((like) => like.reviewId));
+  const likedCommentIds = await getLikedCommentIds(
+    replies.map((reply) => reply.id),
+    viewerId,
+  );
+  // buildCommentTree drops the hidden authors, so the buckets stay raw.
   const repliesByReview = new Map<string, ReplyRow[]>();
   for (const reply of replies) {
-    if (reply.user && hiddenUserIds.has(reply.user.id)) continue;
     const bucket = repliesByReview.get(reply.reviewId);
     if (bucket) bucket.push(reply);
     else repliesByReview.set(reply.reviewId, [reply]);
@@ -100,34 +102,31 @@ export default async function SquarePage() {
       : null,
     likeCount: review.likeCount,
     likedByViewer: likedReviewIds.has(review.id),
-    replies: (repliesByReview.get(review.id) ?? []).map((reply) => ({
-      id: reply.id,
-      content: reply.content,
-      createdAt: reply.createdAt,
-      user: reply.user,
-    })),
+    comments: buildCommentTree(
+      repliesByReview.get(review.id) ?? [],
+      likedCommentIds,
+      hiddenUserIds,
+    ),
   }));
 
   return (
-    <div className="relative min-h-screen">
-      <div className="fixed inset-0 -z-10">
-        <MapBackground isStatic />
-      </div>
-      <div className="relative z-10 min-h-screen bg-canvas/90 pt-24 backdrop-blur-sm">
-        <SquareContent
-          cities={cities}
-          reviews={reviews}
-          feed={feed.reviews}
-          feedFollowingCount={feed.followingCount}
-          viewerSignedIn={viewerId !== null}
-          viewerId={viewerId}
-          isAdmin={viewer.ok && viewer.user.role === "ADMIN"}
-          toggleReviewLike={toggleReviewLike}
-          addReviewComment={addReviewComment}
-          deleteReviewComment={deleteReviewComment}
-          deleteReview={deleteReview}
-        />
-      </div>
+    <div className="min-h-screen pt-24">
+      <SquareContent
+        cities={cities}
+        reviews={reviews}
+        feed={feed.reviews}
+        feedFollowingCount={feed.followingCount}
+        viewerSignedIn={viewerId !== null}
+        viewerId={viewerId}
+        isAdmin={viewer.ok && viewer.user.role === "ADMIN"}
+        toggleReviewLike={toggleReviewLike}
+        addReviewComment={addReviewComment}
+        toggleCommentLike={toggleCommentLike}
+        deleteReviewComment={deleteReviewComment}
+        deleteReview={deleteReview}
+        updateOwnReview={updateOwnReview}
+        deleteOwnReview={deleteOwnReview}
+      />
     </div>
   );
 }

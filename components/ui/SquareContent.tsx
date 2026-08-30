@@ -20,7 +20,10 @@ type Props = {
   toggleReviewLike: FormAction;
   addReviewComment: FormAction;
   deleteReviewComment: FormAction;
+  toggleCommentLike: FormAction;
   deleteReview: FormAction;
+  updateOwnReview: FormAction;
+  deleteOwnReview: FormAction;
 };
 
 function CityTile({ city, rank }: { city: TrendingCity; rank: number }) {
@@ -28,7 +31,7 @@ function CityTile({ city, rank }: { city: TrendingCity; rank: number }) {
   return (
     <Link
       href={`/c/${city.slug}`}
-      className="group flex flex-col overflow-hidden rounded-card border border-border bg-surface transition-colors hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+      className="group flex flex-col overflow-hidden rounded-card glass border border-border bg-surface transition-colors hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
     >
       <div className="relative aspect-[4/3] bg-surface-raised">
         {city.imageUrl ? (
@@ -85,26 +88,28 @@ export default function SquareContent({
   toggleReviewLike,
   addReviewComment,
   deleteReviewComment,
+  toggleCommentLike,
   deleteReview,
+  updateOwnReview,
+  deleteOwnReview,
 }: Props) {
   const t = useT();
 
   return (
     <div className="mx-auto max-w-5xl space-y-12 px-6 pb-20">
       <header>
-        <h1 className="font-display text-display font-bold text-text">
+        <h1 className="font-display text-display font-bold text-on-backdrop">
           {t.squareTitle}
         </h1>
-        <p className="mt-1 text-text-muted">{t.squareDesc}</p>
       </header>
 
       {viewerSignedIn && (
         <section>
-          <h2 className="mb-4 font-display text-lg font-bold text-text">
+          <h2 className="mb-4 font-display text-lg font-bold text-on-backdrop">
             {t.feedTitle}
           </h2>
           {feed.length === 0 ? (
-            <p className="rounded-card border border-dashed border-border-strong px-4 py-10 text-center text-sm text-text-subtle">
+            <p className="rounded-card border border-dashed border-ink-50/25 px-4 py-10 text-center text-sm text-on-backdrop-muted">
               {feedFollowingCount === 0
                 ? t.feedEmptyNoFollows
                 : t.feedEmptyNoReviews}
@@ -120,7 +125,10 @@ export default function SquareContent({
                   toggleReviewLike={toggleReviewLike}
                   addReviewComment={addReviewComment}
                   deleteReviewComment={deleteReviewComment}
+                  toggleCommentLike={toggleCommentLike}
                   deleteReview={deleteReview}
+                  updateOwnReview={updateOwnReview}
+                  deleteOwnReview={deleteOwnReview}
                 />
               ))}
             </div>
@@ -129,11 +137,11 @@ export default function SquareContent({
       )}
 
       <section>
-        <h2 className="mb-4 font-display text-lg font-bold text-text">
+        <h2 className="mb-4 font-display text-lg font-bold text-on-backdrop">
           {t.trendingCities}
         </h2>
         {cities.length === 0 ? (
-          <p className="rounded-card border border-dashed border-border-strong px-4 py-10 text-center text-sm text-text-subtle">
+          <p className="rounded-card border border-dashed border-ink-50/25 px-4 py-10 text-center text-sm text-on-backdrop-muted">
             {t.noTrendingCities}
           </p>
         ) : (
@@ -146,11 +154,11 @@ export default function SquareContent({
       </section>
 
       <section>
-        <h2 className="mb-4 font-display text-lg font-bold text-text">
+        <h2 className="mb-4 font-display text-lg font-bold text-on-backdrop">
           {t.trendingReviews}
         </h2>
         {reviews.length === 0 ? (
-          <p className="rounded-card border border-dashed border-border-strong px-4 py-10 text-center text-sm text-text-subtle">
+          <p className="rounded-card border border-dashed border-ink-50/25 px-4 py-10 text-center text-sm text-on-backdrop-muted">
             {t.noTrendingReviews}
           </p>
         ) : (
@@ -164,7 +172,10 @@ export default function SquareContent({
                 toggleReviewLike={toggleReviewLike}
                 addReviewComment={addReviewComment}
                 deleteReviewComment={deleteReviewComment}
+                toggleCommentLike={toggleCommentLike}
                 deleteReview={deleteReview}
+                updateOwnReview={updateOwnReview}
+                deleteOwnReview={deleteOwnReview}
               />
             ))}
           </div>

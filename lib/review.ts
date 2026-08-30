@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { CategoryRatings } from "@/types";
+import type { ReviewRatings } from "@/types";
 
 export const RATING_FIELDS = [
   "culture",
@@ -23,12 +23,20 @@ const RATING_ERROR = "Puanlar 0,5 ile 5 yıldız arasında olmalı";
  * Ratings are stored as integers on a 1–10 scale rather than as floats on a
  * 1–5 one: half stars stay exact, and averages never accumulate
  * floating-point error.
+ *
+ * Empty or absent is stored as null — a review can leave a category, or every
+ * category, unrated. A value that is present still has to be an integer 1–10.
  */
-const ratingField = z.coerce
-  .number({ error: RATING_ERROR })
-  .int(RATING_ERROR)
-  .min(1, RATING_ERROR)
-  .max(MAX_RATING_VALUE, RATING_ERROR);
+const ratingField = z.preprocess(
+  (value) =>
+    value === "" || value === null || value === undefined ? null : value,
+  z.coerce
+    .number({ error: RATING_ERROR })
+    .int(RATING_ERROR)
+    .min(1, RATING_ERROR)
+    .max(MAX_RATING_VALUE, RATING_ERROR)
+    .nullable(),
+);
 
 export const ratingsSchema = z.object(
   Object.fromEntries(
@@ -61,7 +69,7 @@ function firstIssueMessage(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Geçersiz veri";
 }
 
-export function parseRatings(formData: FormData): CategoryRatings {
+export function parseRatings(formData: FormData): ReviewRatings {
   const raw = Object.fromEntries(
     RATING_FIELDS.map((field) => [field, formData.get(field)]),
   );
@@ -80,10 +88,16 @@ export function parseReviewContent(formData: FormData): string {
 }
 
 /**
- * Average of the six categories, returned in stars so callers can render it
- * directly. Input is in stored units.
+ * Average of the rated categories, returned in stars so callers can render it
+ * directly. Input is in stored units. Unrated categories are skipped; a review
+ * with no ratings at all returns null so the caller can hide the score.
  */
-export function averageRating(ratings: CategoryRatings): number {
-  const total = RATING_FIELDS.reduce((sum, field) => sum + ratings[field], 0);
-  return toStars(total / RATING_FIELDS.length);
+export function averageRating(ratings: ReviewRatings): number | null {
+  const values = RATING_FIELDS.map((field) => ratings[field]).filter(
+    (value): value is number => value !== null,
+  );
+  if (values.length === 0) return null;
+
+  const total = values.reduce((sum, value) => sum + value, 0);
+  return toStars(total / values.length);
 }

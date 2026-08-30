@@ -6,11 +6,32 @@ import type { ProfileTab } from "@/components/ui/ProfileContent";
 import { deleteReview } from "@/lib/actions";
 import { addFavoriteCity, removeFavoriteCity } from "@/lib/profile-actions";
 import { toggleBlock, toggleFollow } from "@/lib/social-actions";
+import { toggleWishlist } from "@/lib/city-actions";
+import {
+  addReviewComment,
+  toggleCommentLike,
+  deleteOwnReview,
+  deleteReviewComment,
+  toggleReviewLike,
+  updateOwnReview,
+} from "@/lib/square-actions";
+import {
+  countCitiesThisYear,
+  getLikedReviews,
+  getProfileComments,
+  getProfileReviews,
+} from "@/lib/profile-reviews";
 import { isBlockedBetween } from "@/lib/social";
 import { MAX_FAVORITE_CITIES } from "@/lib/profile";
 import { requireActiveUser } from "@/lib/auth-guards";
 
-const TABS: ProfileTab[] = ["visited", "wishlist", "reviews"];
+const TABS: ProfileTab[] = [
+  "visited",
+  "wishlist",
+  "reviews",
+  "comments",
+  "liked",
+];
 
 export async function generateMetadata({
   params,
@@ -54,10 +75,6 @@ export default async function ProfilePage({
     prisma.user.findUnique({
       where: { usernameLower: username.toLowerCase() },
       include: {
-        reviews: {
-          orderBy: { createdAt: "desc" },
-          include: { city: { select: { name: true, slug: true } } },
-        },
         visits: {
           orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
           select: {
@@ -124,24 +141,23 @@ export default async function ProfilePage({
       : null,
   ]);
 
-  // The reviews tab shows the stay the user recorded for each reviewed city.
-  const stayByCitySlug = new Map(
-    user.visits.map((visit) => [
-      visit.city.slug,
-      { startDate: visit.startDate, endDate: visit.endDate },
-    ]),
-  );
-  const reviews = user.reviews.map((review) => {
-    const stay = stayByCitySlug.get(review.city.slug);
-    return {
-      ...review,
-      stayStart: stay?.startDate ?? null,
-      stayEnd: stay?.endDate ?? null,
-    };
-  });
+  // Counts drive the tab badges, so both are always needed; the lists
+  // themselves are heavy, so only the open tab's is actually loaded.
+  const [reviewCount, likedCount] = await Promise.all([
+    prisma.review.count({ where: { userId: user.id } }),
+    prisma.reviewLike.count({ where: { userId: user.id } }),
+  ]);
+
+  const citiesThisYear = await countCitiesThisYear(user.id);
+  const reviews =
+    activeTab === "reviews" ? await getProfileReviews(user.id, viewerId) : [];
+  const profileComments =
+    activeTab === "comments" ? await getProfileComments(user.id, viewerId) : [];
+  const likedReviews =
+    activeTab === "liked" ? await getLikedReviews(user.id, viewerId) : [];
 
   return (
-    <div className="min-h-screen bg-canvas pt-24">
+    <div className="min-h-screen pt-24">
       <ProfileContent
         userId={user.id}
         username={user.username ?? ""}
@@ -155,6 +171,7 @@ export default async function ProfilePage({
         followingCount={followingCount}
         toggleFollow={toggleFollow}
         toggleBlock={toggleBlock}
+        toggleWishlist={toggleWishlist}
         activeTab={activeTab}
         maxFavorites={MAX_FAVORITE_CITIES}
         favorites={user.favoriteCities.map((favorite) => ({
@@ -172,7 +189,19 @@ export default async function ProfilePage({
         }))}
         wishlist={user.wishlist.map((item) => item.city)}
         reviews={reviews}
+        comments={profileComments}
+        citiesThisYear={citiesThisYear}
+        reviewCount={reviewCount}
+        likedReviews={likedReviews}
+        likedCount={likedCount}
+        viewerId={viewerId}
         deleteReview={deleteReview}
+        toggleReviewLike={toggleReviewLike}
+        addReviewComment={addReviewComment}
+        toggleCommentLike={toggleCommentLike}
+        deleteReviewComment={deleteReviewComment}
+        updateOwnReview={updateOwnReview}
+        deleteOwnReview={deleteOwnReview}
         addFavoriteCity={addFavoriteCity}
         removeFavoriteCity={removeFavoriteCity}
       />

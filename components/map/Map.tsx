@@ -5,11 +5,14 @@ import mapboxgl from "@/lib/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useRouter } from "next/navigation";
 import MapControls from "@/components/map/MapControls";
-import { RAIL_CATEGORY_COLORS, RAIL_DRAW_ORDER } from "@/lib/rail-colors";
-
-type MapProps = {
-  isStatic?: boolean;
-};
+import SpaceParticles from "@/components/ui/SpaceParticles";
+import {
+  RAIL_DRAW_ORDER,
+  RAIL_GROUP_COLORS,
+  RAIL_GROUP_OF,
+  RAIL_GROUP_WIDTH_SCALE,
+  type RawRailCategory,
+} from "@/lib/rail-colors";
 
 // Satellite imagery with nothing drawn over it but national borders. Province
 // outlines and the region fill only appear while a region is hovered. Rail,
@@ -68,29 +71,103 @@ const ROAD_LINE_PREFIXES = ["road-", "tunnel-", "bridge-"];
 const RAIL_SOURCE = "railways";
 const RAIL_LAYER = "overlay-rail";
 
-// `["match", ["get","c"], "highspeed", <col>, ..., <mainline col>]` — mainline
-// is the falls-through default so the match always has an output.
+// Every raw `c` value maps through its group (see lib/rail-colors.ts) to a
+// colour, a paint order and a width multiplier. `train` is the falls-through
+// default so each match always has an output.
+const RAW_RAIL_CATEGORIES = Object.keys(RAIL_GROUP_OF) as RawRailCategory[];
+
 const RAIL_COLOR_EXPRESSION = [
   "match",
   ["get", "c"],
-  ...RAIL_DRAW_ORDER.filter((category) => category !== "rail").flatMap(
-    (category) => [category, RAIL_CATEGORY_COLORS[category]],
-  ),
-  RAIL_CATEGORY_COLORS.rail,
+  ...RAW_RAIL_CATEGORIES.flatMap((category) => [
+    category,
+    RAIL_GROUP_COLORS[RAIL_GROUP_OF[category]],
+  ]),
+  RAIL_GROUP_COLORS.train,
 ] as unknown as mapboxgl.Expression;
 
-// Index in the draw order = line-sort-key: mainline (0) painted first, the
-// flagship high-speed network last so it sits on top at junctions.
+// line-sort-key = index of the group in the draw order: the backbone painted
+// first, the high-speed network last so it sits on top at junctions.
 const RAIL_SORT_KEY_EXPRESSION = [
   "match",
   ["get", "c"],
-  ...RAIL_DRAW_ORDER.flatMap((category, index) => [category, index]),
+  ...RAW_RAIL_CATEGORIES.flatMap((category) => [
+    category,
+    RAIL_DRAW_ORDER.indexOf(RAIL_GROUP_OF[category]),
+  ]),
   0,
 ] as unknown as mapboxgl.Expression;
 
-// The basemap's own airport symbol layer. Always on; only its zoom floor is
-// lowered (see below).
-const AIRPORT_LAYER = "airport-label";
+// Per-group multiplier on the zoom width ramp below.
+const RAIL_WIDTH_SCALE_EXPRESSION = [
+  "match",
+  ["get", "c"],
+  ...RAW_RAIL_CATEGORIES.flatMap((category) => [
+    category,
+    RAIL_GROUP_WIDTH_SCALE[RAIL_GROUP_OF[category]],
+  ]),
+  1,
+] as unknown as mapboxgl.Expression;
+
+// Zoom ramp for rail line width. The per-group multiplier has to sit inside
+// each stop's output: Mapbox only accepts a `zoom` expression as the input of a
+// top-level `step` or `interpolate`, so wrapping the ramp in a `*` — which is
+// what this used to do — is rejected when the layer is added.
+const RAIL_WIDTH_EXPRESSION = [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  3,
+  ["*", RAIL_WIDTH_SCALE_EXPRESSION, 0.5],
+  7,
+  ["*", RAIL_WIDTH_SCALE_EXPRESSION, 1.4],
+  11,
+  ["*", RAIL_WIDTH_SCALE_EXPRESSION, 2.6],
+  14,
+  ["*", RAIL_WIDTH_SCALE_EXPRESSION, 3.6],
+] as unknown as mapboxgl.Expression;
+
+// The basemap's own airport layer only carries data from about zoom 8, and only
+// commercial fields at that. The "airports" toggle (default off) hides it and
+// paints public/map/airports.geojson instead — scheduled-service airports with
+// an IATA code, see scripts/build-airports.ts — as plane markers at every zoom.
+const BASEMAP_AIRPORT_LAYER = "airport-label";
+const AIRPORT_SOURCE = "airports";
+const AIRPORT_LAYER = "overlay-airport";
+const AIRPORT_ICON = "airport-marker";
+// Sky blue: legible over dark imagery and distinct from every rail colour.
+const AIRPORT_COLOR = "#7dd3fc";
+// Plane glyph drawn once and registered with the map (map.addImage). Keeping it
+// inline avoids depending on whatever the basemap sprite happens to ship.
+const AIRPORT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"><path d="M13.4 9V3.5a1.4 1.4 0 0 0-2.8 0V9L2 14v2l8.6-2.6V19L8 20.6V22l4-1.2 4 1.2v-1.4L13.4 19v-5.6L22 16v-2z" fill="${AIRPORT_COLOR}" stroke="#0b0e14" stroke-width="0.9" stroke-linejoin="round"/></svg>`;
+
+// Territory labels the basemap gets wrong for this audience: it splits
+// Palestine into "West Bank" / "Gaza Strip", and labels the TRNC as "Northern
+// Cyprus". Those basemap labels are filtered out of country-label and replaced
+// with the two points below.
+const TERRITORY_LABEL_SOURCE = "territory-labels";
+const TERRITORY_LABEL_LAYER = "territory-labels";
+const HIDDEN_COUNTRY_LABELS = [
+  "West Bank",
+  "Gaza Strip",
+  "Northern Cyprus",
+  "N. Cyprus",
+];
+const TERRITORY_LABELS: GeoJSON.FeatureCollection = {
+  type: "FeatureCollection",
+  features: [
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [35.2, 31.95] },
+      properties: { name: "Palestine" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [33.72, 35.28] },
+      properties: { name: "KKTC" },
+    },
+  ],
+};
 
 // A gentle light wash on the hovered region — the region reads as lifting into
 // focus, not glowing.
@@ -161,12 +238,12 @@ const EMPTY_GEOJSON: GeoJSON.FeatureCollection = {
   features: [],
 };
 
-export default function Map({ isStatic = false }: MapProps) {
+export default function Map() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const router = useRouter();
-  // Set together once the style has loaded: the flag that shows the control,
-  // and the motorway layer ids it toggles (only knowable after parsing).
+  // Set once the style has loaded: the flag that shows the control and the
+  // motorway layer ids it toggles (only knowable after parsing the style).
   const [controls, setControls] = useState<{
     ready: boolean;
     motorwayLayerIds: string[];
@@ -175,16 +252,20 @@ export default function Map({ isStatic = false }: MapProps) {
   // layer so there is no add / flip race. The geojson is only fetched the
   // first time it is switched on.
   const [railwaysOn, setRailwaysOn] = useState(false);
+  // The airport layer is added hidden on load; this only flips its visibility.
+  const [airportsOn, setAirportsOn] = useState(false);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    if (railwaysOn && !map.getSource(RAIL_SOURCE)) {
-      map.addSource(RAIL_SOURCE, {
-        type: "geojson",
-        data: "/map/railways.geojson",
-      });
+    if (railwaysOn && !map.getLayer(RAIL_LAYER)) {
+      if (!map.getSource(RAIL_SOURCE)) {
+        map.addSource(RAIL_SOURCE, {
+          type: "geojson",
+          data: "/map/railways.geojson",
+        });
+      }
       map.addLayer(
         {
           id: RAIL_LAYER,
@@ -198,20 +279,8 @@ export default function Map({ isStatic = false }: MapProps) {
           },
           paint: {
             "line-color": RAIL_COLOR_EXPRESSION,
-            "line-width": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              3,
-              0.5,
-              7,
-              1.4,
-              11,
-              2.6,
-              14,
-              3.6,
-            ],
-            "line-opacity": ["match", ["get", "c"], "rail", 0.7, 0.95],
+            "line-width": RAIL_WIDTH_EXPRESSION,
+            "line-opacity": 0.9,
           },
         },
         map.getLayer(REGION_HIT_LAYER) ? REGION_HIT_LAYER : undefined,
@@ -223,6 +292,16 @@ export default function Map({ isStatic = false }: MapProps) {
       map.setLayoutProperty(RAIL_LAYER, "visibility", visibility);
     }
   }, [railwaysOn]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const visibility = airportsOn ? "visible" : "none";
+    if (map.getLayer(AIRPORT_LAYER)) {
+      map.setLayoutProperty(AIRPORT_LAYER, "visibility", visibility);
+    }
+  }, [airportsOn]);
 
   useEffect(() => {
     if (mapRef.current || !containerRef.current) return;
@@ -239,20 +318,21 @@ export default function Map({ isStatic = false }: MapProps) {
       zoom: INITIAL_ZOOM,
       pitch: INITIAL_PITCH,
       maxPitch: 0,
-      interactive: !isStatic,
     });
 
     mapRef.current = map;
 
     let shimmerFrame = 0;
 
-    map.on("load", () => {
+    map.on("load", async () => {
       map.setFog({
         color: "#0b0e14",
         "high-color": "#132033",
         "horizon-blend": 0.04,
-        "space-color": "#05070b",
-        "star-intensity": 0.5,
+        // Transparent, so SpaceParticles below the canvas becomes the space.
+        // Mapbox's own star field goes with it — two of them read as noise.
+        "space-color": "rgba(0, 0, 0, 0)",
+        "star-intensity": 0,
       });
 
       // Hide every below-country label (see HIDDEN_LABEL_KEYWORDS), the whole
@@ -269,6 +349,8 @@ export default function Map({ isStatic = false }: MapProps) {
         // admin-1-boundary and admin-1-boundary-bg — the only sub-national
         // outlines the style ships. Province borders only exist on hover now.
         const isProvinceBorder = layer.id.startsWith("admin-1-boundary");
+        // The basemap airport layer is replaced by the all-zoom overlay below.
+        const isBasemapAirport = layer.id === BASEMAP_AIRPORT_LAYER;
 
         if (
           layer.type === "line" &&
@@ -278,7 +360,12 @@ export default function Map({ isStatic = false }: MapProps) {
           motorwayLayerIds.push(layer.id);
         }
 
-        if (isHiddenLabel || isRoadLine || isProvinceBorder) {
+        if (
+          isHiddenLabel ||
+          isRoadLine ||
+          isProvinceBorder ||
+          isBasemapAirport
+        ) {
           map.setLayoutProperty(layer.id, "visibility", "none");
           continue;
         }
@@ -295,19 +382,71 @@ export default function Map({ isStatic = false }: MapProps) {
         }
       }
 
-      // Airports are always on — no toggle. The basemap ships the layer at
-      // minzoom 8; drop the floor to 4 so airports appear as soon as a country
-      // fills the view. (The `airport_label` tiles carry no data much below
-      // that, so a lower floor would not add anything.)
-      if (map.getLayer(AIRPORT_LAYER)) {
-        map.setLayerZoomRange(AIRPORT_LAYER, 4, 24);
+      // Drop the basemap's "West Bank" / "Gaza Strip" / "Northern Cyprus"
+      // labels (by ISO code where there is one, then by English name) and paint
+      // the replacements from TERRITORY_LABELS.
+      if (map.getLayer("country-label")) {
+        const current = map.getFilter("country-label");
+        map.setFilter("country-label", [
+          "all",
+          current as unknown as boolean,
+          ["!=", ["get", "iso_3166_1"], "PS"],
+          ["!", ["in", ["get", "name_en"], ["literal", HIDDEN_COUNTRY_LABELS]]],
+        ] as unknown as mapboxgl.Expression);
       }
+      map.addSource(TERRITORY_LABEL_SOURCE, {
+        type: "geojson",
+        data: TERRITORY_LABELS,
+      });
+      map.addLayer({
+        id: TERRITORY_LABEL_LAYER,
+        type: "symbol",
+        source: TERRITORY_LABEL_SOURCE,
+        layout: {
+          "text-field": ["get", "name"],
+          "text-size": 13,
+          "text-max-width": 6,
+          "text-letter-spacing": 0.05,
+        },
+        paint: {
+          "text-color": LABEL_COLOR,
+          "text-halo-color": LABEL_HALO,
+          "text-halo-width": 1.4,
+        },
+      });
+
+      // Fetched here instead of handed to the source as a URL: the hover
+      // outline is looked up from this same array by feature id, so the map
+      // and the lookup have to share one parsed copy.
+      let regionCollection: GeoJSON.FeatureCollection;
+      try {
+        regionCollection = await fetch("/map/regions.geojson").then(
+          (response) => {
+            if (!response.ok) {
+              throw new Error(`regions.geojson: HTTP ${response.status}`);
+            }
+            return response.json() as Promise<GeoJSON.FeatureCollection>;
+          },
+        );
+      } catch (error) {
+        console.error("Map region layer failed to load", error);
+        setControls({ ready: true, motorwayLayerIds });
+        return;
+      }
+
+      // Ids by array index: they drive both the hover feature-state and the
+      // outline lookup below, and stay stable across tiling (the same rule
+      // Mapbox's `generateId` uses).
+      regionCollection.features.forEach((feature, index) => {
+        feature.id = index;
+      });
+      const regionGeometries = regionCollection.features.map(
+        (feature) => feature.geometry,
+      );
 
       map.addSource(REGION_SOURCE, {
         type: "geojson",
-        data: "/map/regions.geojson",
-        // Required for feature-state, which drives the hover.
-        generateId: true,
+        data: regionCollection,
       });
 
       map.addSource(LABEL_SOURCE, {
@@ -385,10 +524,6 @@ export default function Map({ isStatic = false }: MapProps) {
           "text-halo-width": 1.4,
         },
       });
-
-      // Decorative background maps stop here: bare satellite, no interaction,
-      // no layer control.
-      if (isStatic) return;
 
       map.addSource(HIGHLIGHT_SOURCE, {
         type: "geojson",
@@ -490,7 +625,14 @@ export default function Map({ isStatic = false }: MapProps) {
             properties: {},
             geometry: {
               type: "MultiLineString",
-              coordinates: ringsOf(feature.geometry),
+              // Full outline from the parsed source copy. `feature.geometry`
+              // off a rendered-feature query is clipped to the tile under the
+              // pointer, so the shimmer traced a different partial edge
+              // depending on which side the pointer entered from and broke off
+              // at tile seams near the coast.
+              coordinates: ringsOf(
+                regionGeometries[feature.id] ?? feature.geometry,
+              ),
             },
           });
 
@@ -513,6 +655,65 @@ export default function Map({ isStatic = false }: MapProps) {
         if (typeof slug === "string") router.push(`/c/${slug}`);
       });
 
+      // Airport overlay (added hidden; the [airportsOn] effect flips visibility).
+      // A plane marker at every zoom, the IATA code once the camera is close.
+      // `icon-allow-overlap: false` lets collision thin the field to the major
+      // hubs at continental zoom and fill in as the camera moves closer.
+      try {
+        if (!map.hasImage(AIRPORT_ICON)) {
+          const icon = new Image();
+          await new Promise<void>((resolve, reject) => {
+            icon.onload = () => resolve();
+            icon.onerror = () => reject(new Error("airport icon failed"));
+            icon.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+              AIRPORT_ICON_SVG,
+            )}`;
+          });
+          map.addImage(AIRPORT_ICON, icon, { pixelRatio: 2 });
+        }
+
+        map.addSource(AIRPORT_SOURCE, {
+          type: "geojson",
+          data: "/map/airports.geojson",
+        });
+        map.addLayer({
+          id: AIRPORT_LAYER,
+          type: "symbol",
+          source: AIRPORT_SOURCE,
+          layout: {
+            // Added hidden: the visibility effect runs before the style has
+            // loaded, so the layer itself has to carry the default.
+            visibility: "none",
+            "icon-image": AIRPORT_ICON,
+            "icon-size": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              3,
+              0.55,
+              7,
+              0.8,
+              11,
+              1,
+            ],
+            "icon-allow-overlap": false,
+            "icon-padding": 3,
+            "text-field": ["step", ["zoom"], "", 5, ["get", "iata"]],
+            "text-size": ["interpolate", ["linear"], ["zoom"], 5, 10, 9, 12],
+            "text-offset": [0, 1.1],
+            "text-anchor": "top",
+            "text-optional": true,
+          },
+          paint: {
+            "text-color": AIRPORT_COLOR,
+            "text-halo-color": LABEL_HALO,
+            "text-halo-width": 1.2,
+          },
+        });
+      } catch (error) {
+        console.error("Airport overlay failed to load", error);
+      }
+
       setControls({ ready: true, motorwayLayerIds });
     });
 
@@ -526,16 +727,16 @@ export default function Map({ isStatic = false }: MapProps) {
   }, []);
 
   return (
-    <div className="relative h-screen w-full">
-      <div ref={containerRef} className="h-full w-full" />
-      {!isStatic && (
-        <MapControls
-          mapRef={mapRef}
-          ready={controls.ready}
-          motorwayLayerIds={controls.motorwayLayerIds}
-          onRailwaysToggle={setRailwaysOn}
-        />
-      )}
+    <div className="relative h-screen w-full bg-ink-950">
+      <SpaceParticles />
+      <div ref={containerRef} className="relative h-full w-full" />
+      <MapControls
+        mapRef={mapRef}
+        ready={controls.ready}
+        motorwayLayerIds={controls.motorwayLayerIds}
+        onRailwaysToggle={setRailwaysOn}
+        onAirportsToggle={setAirportsOn}
+      />
     </div>
   );
 }

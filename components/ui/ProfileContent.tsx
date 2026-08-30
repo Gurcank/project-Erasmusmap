@@ -2,28 +2,24 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  CalendarDays,
-  Check,
-  Copy,
-  MoreHorizontal,
-  Star,
-  Trash2,
-  UserMinus,
-} from "lucide-react";
+import { Check, Copy, MoreHorizontal, UserMinus } from "lucide-react";
 import { useT } from "@/hooks/useT";
-import { formatStayRange } from "@/lib/format";
 import SubmitButton from "@/components/ui/SubmitButton";
+import GlassButton, { GlassLink } from "@/components/ui/GlassButton";
 import ActionForm from "@/components/ui/ActionForm";
 import UserAvatar from "@/components/ui/UserAvatar";
 import AvatarModal from "@/components/ui/AvatarModal";
+import ReviewCard from "@/components/ui/ReviewCard";
 import FavoriteCities from "@/components/ui/FavoriteCities";
+import CityCard from "@/components/ui/CityCard";
+import WishlistEditor from "@/components/ui/WishlistEditor";
 import type { FavoriteCity } from "@/components/ui/FavoriteCities";
-import type { CitySuggestion, ProfileReview } from "@/types";
-import { averageRating } from "@/lib/review";
+import type { CitySuggestion, EngagedReview } from "@/types";
+import type { ProfileComment } from "@/lib/profile-reviews";
 import type { FormAction } from "@/lib/action-result";
 
-export type ProfileTab = "visited" | "wishlist" | "reviews";
+export type ProfileTab =
+  "visited" | "wishlist" | "reviews" | "comments" | "liked";
 
 export type VisitedCity = CitySuggestion & {
   startDate: Date | null;
@@ -43,13 +39,29 @@ type Props = {
   followingCount: number;
   toggleFollow: FormAction;
   toggleBlock: FormAction;
+  toggleWishlist: FormAction;
   activeTab: ProfileTab;
   favorites: FavoriteCity[];
   maxFavorites: number;
   visitedCities: VisitedCity[];
   wishlist: CitySuggestion[];
-  reviews: ProfileReview[];
+  /** Only the open tab's list is loaded; the counts below drive both badges. */
+  reviews: EngagedReview[];
+  comments: ProfileComment[];
+  /** Cities engaged with this calendar year — counted on the server. */
+  citiesThisYear: number;
+  reviewCount: number;
+  likedReviews: EngagedReview[];
+  likedCount: number;
+  /** Null when signed out — likes and replies are then read-only. */
+  viewerId: string | null;
   deleteReview: FormAction;
+  toggleReviewLike: FormAction;
+  addReviewComment: FormAction;
+  deleteReviewComment: FormAction;
+  toggleCommentLike: FormAction;
+  updateOwnReview: FormAction;
+  deleteOwnReview: FormAction;
   addFavoriteCity: FormAction;
   removeFavoriteCity: FormAction;
 };
@@ -81,11 +93,9 @@ function FollowButton({
       <SubmitButton
         aria-pressed={isFollowing}
         aria-label={isFollowing ? t.unfollow : t.follow}
-        className={`rounded-control px-4 py-1.5 text-xs font-semibold tracking-wide uppercase transition-colors ${
-          isFollowing
-            ? "border border-border-strong text-text hover:border-danger-600 hover:text-danger-700 dark:hover:text-danger-400"
-            : "bg-primary text-on-primary hover:bg-primary-hover"
-        }`}
+        variant={isFollowing ? "secondary" : "primary"}
+        size="sm"
+        className="tracking-wide uppercase"
       >
         {isFollowing ? t.followingState : t.follow}
       </SubmitButton>
@@ -116,10 +126,6 @@ function ProfileMenu({
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [blockState, blockAction] = useActionState(
-    block?.toggleBlock ?? (async () => ({ ok: true as const })),
-    null,
-  );
 
   useEffect(() => {
     if (!open) return;
@@ -155,20 +161,19 @@ function ProfileMenu({
 
   return (
     <div ref={rootRef} className="relative">
-      <button
-        type="button"
+      <GlassButton
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t.profileMenu}
-        className="flex h-8 w-8 items-center justify-center rounded-control border border-border-strong text-text-muted transition-colors hover:bg-surface-raised hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        size="iconSm"
       >
         <MoreHorizontal size={16} aria-hidden="true" />
-      </button>
+      </GlassButton>
       {open && (
         <div
           role="menu"
-          className="absolute left-0 z-20 mt-1 min-w-[12rem] rounded-control border border-border bg-surface p-1 shadow-popover"
+          className="absolute left-0 z-20 mt-1 min-w-[12rem] rounded-control glass border border-border bg-surface p-1 shadow-popover"
         >
           <button
             type="button"
@@ -189,11 +194,11 @@ function ProfileMenu({
           </button>
 
           {block && (
-            <form
-              action={blockAction}
-              onSubmit={(event) => {
-                if (!window.confirm(t.confirmBlock)) event.preventDefault();
-              }}
+            <ActionForm
+              action={block.toggleBlock}
+              confirmMessage={t.confirmBlock}
+              confirmLabel={t.blockUser}
+              errorClassName="px-3 pb-1 text-xs text-danger-700 dark:text-danger-400"
             >
               <input type="hidden" name="targetUserId" value={block.userId} />
               <button
@@ -204,47 +209,11 @@ function ProfileMenu({
                 <UserMinus size={14} aria-hidden="true" />
                 {t.blockUser}
               </button>
-              {blockState && !blockState.ok && (
-                <p className="px-3 py-1 text-xs text-danger-700 dark:text-danger-400">
-                  {blockState.error}
-                </p>
-              )}
-            </form>
+            </ActionForm>
           )}
         </div>
       )}
     </div>
-  );
-}
-
-function CityLink({
-  slug,
-  name,
-  country,
-  meta,
-}: {
-  slug: string;
-  name: string;
-  country: string;
-  meta?: string;
-}) {
-  return (
-    <Link
-      href={`/c/${slug}`}
-      className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3 transition-colors hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-    >
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-medium text-text">
-          {name}
-        </span>
-        <span className="text-xs text-text-subtle">{country}</span>
-      </span>
-      {meta && (
-        <span className="shrink-0 text-xs text-text-muted tabular-nums">
-          {meta}
-        </span>
-      )}
-    </Link>
   );
 }
 
@@ -261,13 +230,26 @@ export default function ProfileContent({
   followingCount,
   toggleFollow,
   toggleBlock,
+  toggleWishlist,
   activeTab,
   favorites,
   maxFavorites,
   visitedCities,
   wishlist,
   reviews,
+  comments,
+  citiesThisYear,
+  reviewCount,
+  likedReviews,
+  likedCount,
+  viewerId,
   deleteReview,
+  toggleReviewLike,
+  addReviewComment,
+  deleteReviewComment,
+  toggleCommentLike,
+  updateOwnReview,
+  deleteOwnReview,
   addFavoriteCity,
   removeFavoriteCity,
 }: Props) {
@@ -277,15 +259,31 @@ export default function ProfileContent({
   const tabs: { key: ProfileTab; label: string; count: number }[] = [
     { key: "visited", label: t.tabVisited, count: visitedCities.length },
     { key: "wishlist", label: t.tabWishlist, count: wishlist.length },
-    { key: "reviews", label: t.tabReviews, count: reviews.length },
+    { key: "reviews", label: t.tabReviews, count: reviewCount },
+    { key: "comments", label: t.tabComments, count: comments.length },
+    { key: "liked", label: t.tabLiked, count: likedCount },
   ];
 
-  const currentYear = new Date().getUTCFullYear();
-  const citiesThisYear = visitedCities.filter(
-    (city) =>
-      city.startDate &&
-      new Date(city.startDate).getUTCFullYear() === currentYear,
-  ).length;
+  // Both review tabs render the same card with the same actions.
+  const reviewList = (items: EngagedReview[]) => (
+    <div className="space-y-4">
+      {items.map((review) => (
+        <ReviewCard
+          key={review.id}
+          review={review}
+          viewerId={viewerId}
+          isAdmin={isAdmin}
+          toggleReviewLike={toggleReviewLike}
+          addReviewComment={addReviewComment}
+          deleteReviewComment={deleteReviewComment}
+          toggleCommentLike={toggleCommentLike}
+          deleteReview={deleteReview}
+          updateOwnReview={updateOwnReview}
+          deleteOwnReview={deleteOwnReview}
+        />
+      ))}
+    </div>
+  );
 
   const stats = [
     { label: t.statCities, value: visitedCities.length },
@@ -301,29 +299,31 @@ export default function ProfileContent({
     <div className="mx-auto max-w-5xl space-y-10 px-6 pb-20">
       <header className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
         <div className="flex items-start gap-4 sm:gap-5">
-          <button
-            type="button"
+          <GlassButton
             onClick={() => setAvatarOpen(true)}
             aria-label={t.viewPhoto}
             aria-haspopup="dialog"
-            className="shrink-0 cursor-pointer rounded-full transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            variant="ghost"
+            size="icon"
+            className="h-24 w-24 shrink-0 border-transparent p-0 hover:border-border-strong"
           >
             <UserAvatar src={image} label={username} size={96} />
-          </button>
+          </GlassButton>
 
           <div className="min-w-0 space-y-3 pt-1">
-            <h1 className="font-display text-2xl font-bold break-words text-text sm:text-3xl">
+            <h1 className="font-display text-2xl font-bold break-words text-on-backdrop sm:text-3xl">
               {username}
             </h1>
 
             <div className="flex flex-wrap items-center gap-2">
               {isOwnProfile ? (
-                <Link
+                <GlassLink
                   href="/account"
-                  className="rounded-control border border-border-strong px-3 py-1.5 text-xs font-semibold tracking-wide text-text uppercase transition-colors hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                  size="sm"
+                  className="tracking-wide uppercase"
                 >
                   {t.editProfile}
-                </Link>
+                </GlassLink>
               ) : (
                 showSocialControls && (
                   <FollowButton
@@ -339,33 +339,24 @@ export default function ProfileContent({
               />
             </div>
 
-            {bio ? (
-              <p className="max-w-prose text-sm leading-relaxed text-text-muted">
+            {bio && (
+              <p className="max-w-prose text-sm leading-relaxed text-on-backdrop-muted">
                 {bio}
               </p>
-            ) : (
-              isOwnProfile && (
-                <Link
-                  href="/account"
-                  className="inline-block text-sm text-accent-text transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                >
-                  {t.noBioClick}
-                </Link>
-              )
             )}
           </div>
         </div>
 
-        <dl className="flex shrink-0 divide-x divide-border self-start rounded-card border border-border">
+        <dl className="flex shrink-0 divide-x divide-ink-50/15 self-start rounded-card border border-ink-50/15">
           {stats.map((stat) => (
             <div
               key={stat.label}
               className="flex flex-col items-center px-4 py-2.5 sm:px-6"
             >
-              <dd className="font-display text-xl font-bold text-text tabular-nums">
+              <dd className="font-display text-xl font-bold text-on-backdrop tabular-nums">
                 {stat.value}
               </dd>
-              <dt className="mt-0.5 text-[0.65rem] font-semibold tracking-widest text-text-subtle uppercase">
+              <dt className="mt-0.5 text-[0.65rem] font-semibold tracking-widest text-on-backdrop-muted uppercase">
                 {stat.label}
               </dt>
             </div>
@@ -395,7 +386,7 @@ export default function ProfileContent({
           role="tablist"
           aria-label={t.profile}
           // Scrolls within itself on narrow screens rather than pushing the page wide.
-          className="mb-6 flex gap-1 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="mb-6 flex gap-1 overflow-x-auto border-b border-ink-50/15 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {tabs.map(({ key, label, count }) => (
             <Link
@@ -406,8 +397,8 @@ export default function ProfileContent({
               scroll={false}
               className={`-mb-px shrink-0 border-b-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
                 activeTab === key
-                  ? "border-primary text-text"
-                  : "border-transparent text-text-subtle hover:text-text"
+                  ? "border-primary text-on-backdrop"
+                  : "border-transparent text-on-backdrop-muted hover:text-on-backdrop"
               }`}
             >
               {label}
@@ -422,9 +413,9 @@ export default function ProfileContent({
           (visitedCities.length === 0 ? (
             <EmptyState>{t.noCities}</EmptyState>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
               {visitedCities.map((city) => (
-                <CityLink
+                <CityCard
                   key={city.id}
                   slug={city.slug}
                   name={city.name}
@@ -435,92 +426,62 @@ export default function ProfileContent({
           ))}
 
         {activeTab === "wishlist" &&
-          (wishlist.length === 0 ? (
+          (wishlist.length === 0 && !isOwnProfile ? (
             <EmptyState>{t.noWishlist}</EmptyState>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {wishlist.map((city) => (
-                <CityLink
-                  key={city.id}
-                  slug={city.slug}
-                  name={city.name}
-                  country={city.country}
-                />
+            <WishlistEditor
+              cities={wishlist}
+              isOwnProfile={isOwnProfile}
+              toggleWishlist={toggleWishlist}
+            />
+          ))}
+
+        {activeTab === "comments" &&
+          (comments.length === 0 ? (
+            <EmptyState>{t.noComments}</EmptyState>
+          ) : (
+            <ul className="space-y-3">
+              {comments.map((comment) => (
+                <li
+                  key={comment.id}
+                  className="glass rounded-card border border-border bg-surface p-4"
+                >
+                  <Link
+                    href={`/c/${comment.city.slug}`}
+                    className="font-display text-sm font-semibold text-text transition-colors hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                  >
+                    {comment.city.name}
+                  </Link>
+                  <p className="mt-1 text-sm leading-relaxed whitespace-pre-line text-text-muted">
+                    {comment.content}
+                  </p>
+                  <p className="mt-2 flex items-center gap-3 text-xs text-text-subtle">
+                    <span>
+                      {new Date(comment.createdAt).toLocaleDateString("tr-TR")}
+                    </span>
+                    {comment.likeCount > 0 && (
+                      <span className="tabular-nums">
+                        {comment.likeCount} {t.likesLabel}
+                      </span>
+                    )}
+                  </p>
+                </li>
               ))}
-            </div>
+            </ul>
           ))}
 
         {activeTab === "reviews" &&
           (reviews.length === 0 ? (
             <EmptyState>{t.noReviewsProfile}</EmptyState>
           ) : (
-            <div className="space-y-4">
-              {reviews.map((review) => (
-                <article
-                  key={review.id}
-                  className="rounded-card border border-border bg-surface p-5 transition-colors hover:border-border-strong"
-                >
-                  <div className="mb-3 flex items-start justify-between gap-4">
-                    <div>
-                      <Link
-                        href={`/c/${review.city.slug}`}
-                        className="font-display font-semibold text-text transition-colors hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                      >
-                        {review.city.name}
-                      </Link>
-                      <p className="text-xs text-text-subtle">
-                        {new Date(review.createdAt).toLocaleDateString("tr-TR")}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-3">
-                      <span className="flex items-center gap-1.5 font-semibold text-text">
-                        <Star
-                          size={14}
-                          aria-hidden="true"
-                          className="fill-star text-star"
-                        />
-                        {averageRating(review).toFixed(1)}
-                      </span>
-                      {isAdmin && (
-                        <ActionForm
-                          action={deleteReview}
-                          confirmMessage={t.confirmDeleteReview}
-                        >
-                          <input
-                            type="hidden"
-                            name="reviewId"
-                            value={review.id}
-                          />
-                          <SubmitButton
-                            title={t.adminDeleteReview}
-                            aria-label={t.adminDeleteReview}
-                            className="rounded-control p-1.5 text-text-subtle transition-colors hover:bg-surface-raised hover:text-danger-700 disabled:opacity-50 dark:hover:text-danger-400"
-                          >
-                            <Trash2 size={14} aria-hidden="true" />
-                          </SubmitButton>
-                        </ActionForm>
-                      )}
-                    </div>
-                  </div>
-                  {formatStayRange(review.stayStart, review.stayEnd) && (
-                    <p
-                      aria-label={t.stayAriaLabel}
-                      className="mb-2 flex items-center gap-1.5 text-xs text-text-subtle"
-                    >
-                      <CalendarDays size={13} aria-hidden="true" />
-                      <span className="tabular-nums">
-                        {formatStayRange(review.stayStart, review.stayEnd)}
-                      </span>
-                    </p>
-                  )}
-                  {review.content && (
-                    <p className="leading-relaxed text-text-muted">
-                      {review.content}
-                    </p>
-                  )}
-                </article>
-              ))}
-            </div>
+            reviewList(reviews)
+          ))}
+
+        {activeTab === "liked" &&
+          (likedReviews.length === 0 ? (
+            <EmptyState>{t.noLikedReviews}</EmptyState>
+          ) : (
+            reviewList(likedReviews)
           ))}
       </section>
     </div>

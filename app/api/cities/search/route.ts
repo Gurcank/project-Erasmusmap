@@ -1,11 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { latinize } from "@/lib/latinize";
+import { rateLimit } from "@/lib/rate-limit";
+import { getClientAddress } from "@/lib/request-ip";
 import primarySlugList from "@/prisma/data/primary-city-slugs.json";
 import type { CitySuggestion } from "@/types";
 
 const MIN_QUERY_LENGTH = 2;
 const RESULT_LIMIT = 8;
+const MAX_QUERY_LENGTH = 60;
+
+// Generous, because the navbar fires one request per typing pause: this is a
+// ceiling on scripted abuse of an unauthenticated endpoint that runs a
+// full-text scan, not a limit a person typing a city name can reach.
+const SEARCH_REQUESTS_PER_MINUTE = 60;
+
+// The city table changes when the seed runs, not between requests, so repeats
+// of a query are served by the CDN and never reach the database.
+const CACHE_CONTROL = "public, s-maxage=300, stale-while-revalidate=3600";
 
 // Search only surfaces the one city each map region resolves to — the "İstanbul
 // as a province/city" tier. Districts of a metropolis (Sancaktepe, Kadıköy) and
@@ -16,7 +28,24 @@ const PRIMARY_SLUGS = primarySlugList as string[];
 
 export async function GET(req: Request) {
   const query = new URL(req.url).searchParams.get("q")?.trim() ?? "";
-  if (query.length < MIN_QUERY_LENGTH) return NextResponse.json([]);
+  // Capped before the limiter so a long string cannot be used to build an
+  // expensive pattern, and rejected quietly — an over-long query has no
+  // results anyway.
+  if (query.length < MIN_QUERY_LENGTH || query.length > MAX_QUERY_LENGTH) {
+    return NextResponse.json([]);
+  }
+
+  if (
+    !(await rateLimit(
+      `city-search:${getClientAddress(req.headers)}`,
+      SEARCH_REQUESTS_PER_MINUTE,
+    ))
+  ) {
+    return NextResponse.json(
+      { error: "Çok fazla istek. Lütfen biraz sonra tekrar dene." },
+      { status: 429 },
+    );
+  }
 
   // Aliases are stored already lowercased and de-accented, so the query is
   // normalized the same way before matching them. The city's own name keeps
@@ -42,7 +71,9 @@ export async function GET(req: Request) {
       LIMIT ${RESULT_LIMIT}
     `;
 
-    return NextResponse.json(cities);
+    return NextResponse.json(cities, {
+      headers: { "Cache-Control": CACHE_CONTROL },
+    });
   } catch {
     return NextResponse.json({ error: "Arama yapılamadı" }, { status: 500 });
   }

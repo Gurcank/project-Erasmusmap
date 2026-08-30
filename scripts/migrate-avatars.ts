@@ -37,10 +37,10 @@ async function main() {
 
     try {
       const normalized = await normalizeAvatar(Buffer.from(base64, "base64"));
-      const url = await uploadAvatar(user.id, normalized);
+      const stored = await uploadAvatar(normalized);
       await prisma.user.update({
         where: { id: user.id },
-        data: { image: url },
+        data: { image: stored.url, imagePath: stored.path },
       });
       migrated++;
     } catch (error) {

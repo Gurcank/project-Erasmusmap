@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Loader2, Trash2, Upload } from "lucide-react";
 import { useT } from "@/hooks/useT";
+import GlassButton from "@/components/ui/GlassButton";
 import {
   AVATAR_ACCEPT_ATTRIBUTE,
   AVATAR_ALLOWED_TYPES,
@@ -118,25 +119,29 @@ export default function AvatarUploader({
 
       <div className="space-y-1.5">
         <div className="flex gap-2">
-          <button
-            type="button"
+          <GlassButton
             onClick={() => inputRef.current?.click()}
             disabled={isUploading}
-            className="flex cursor-pointer items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
+            variant="primary"
+            size="sm"
           >
             <Upload size={13} aria-hidden="true" />
-            {isUploading ? t.uploadingPhoto : t.changePhoto}
-          </button>
+            {isUploading
+              ? t.uploadingPhoto
+              : preview
+                ? t.changePhoto
+                : t.addPhoto}
+          </GlassButton>
           {preview && (
-            <button
-              type="button"
+            <GlassButton
               onClick={handleRemove}
               disabled={isUploading}
-              className="flex cursor-pointer items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:border-danger-600 hover:text-danger-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50 dark:hover:text-danger-400"
+              variant="danger"
+              size="sm"
             >
               <Trash2 size={13} aria-hidden="true" />
               {t.removePhoto}
-            </button>
+            </GlassButton>
           )}
         </div>
         <input

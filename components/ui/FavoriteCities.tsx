@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ImageOff, Loader2, Plus, Search, X } from "lucide-react";
 import { useT } from "@/hooks/useT";
+import GlassButton from "@/components/ui/GlassButton";
 import type { ActionResult, FormAction } from "@/lib/action-result";
 import type { CitySuggestion } from "@/types";
 
@@ -49,10 +50,10 @@ function CityCard({ favorite }: { favorite: FavoriteCity }) {
           </span>
         )}
       </div>
-      <p className="mt-2 truncate text-sm font-medium text-text">
+      <p className="mt-2 truncate text-sm font-medium text-on-backdrop">
         {favorite.name}
       </p>
-      <p className="text-xs text-text-subtle">{favorite.country}</p>
+      <p className="text-xs text-on-backdrop-muted">{favorite.country}</p>
     </Link>
   );
 }
@@ -144,13 +145,15 @@ export default function FavoriteCities({
                       name="cityId"
                       value={favorite.cityId}
                     />
-                    <button
+                    <GlassButton
                       type="submit"
                       aria-label={`${favorite.name} — ${t.removeFavorite}`}
-                      className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-ink-950/70 text-ink-50 transition-colors hover:bg-ink-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                      variant="ghost"
+                      size="iconSm"
+                      className="h-7 w-7 bg-ink-950/70 text-ink-50 hover:bg-ink-950 hover:text-ink-50"
                     >
                       <X size={14} aria-hidden="true" />
-                    </button>
+                    </GlassButton>
                   </form>
                 )}
               </div>
@@ -162,7 +165,7 @@ export default function FavoriteCities({
               <div
                 key={position}
                 aria-hidden="true"
-                className="aspect-[2/3] rounded-card border border-dashed border-border"
+                className="aspect-[2/3] rounded-card border border-dashed border-ink-50/20"
               />
             );
           }
@@ -172,7 +175,7 @@ export default function FavoriteCities({
               key={position}
               type="button"
               onClick={() => setPicking(true)}
-              className="flex aspect-[2/3] cursor-pointer flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border-strong text-text-subtle transition-colors hover:border-primary hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              className="glass flex aspect-[2/3] cursor-pointer flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border-strong text-text-subtle transition-colors hover:border-primary hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
               <Plus size={20} aria-hidden="true" />
               <span className="text-xs font-medium">{t.addFavorite}</span>
@@ -199,14 +202,14 @@ export default function FavoriteCities({
             >
               {t.pickCity}
             </label>
-            <button
-              type="button"
+            <GlassButton
               onClick={() => setPicking(false)}
               aria-label={t.cancel}
-              className="cursor-pointer rounded-control p-1 text-text-subtle transition-colors hover:bg-surface hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              variant="ghost"
+              size="iconSm"
             >
               <X size={16} aria-hidden="true" />
-            </button>
+            </GlassButton>
           </div>
 
           <div className="relative">
@@ -230,12 +233,12 @@ export default function FavoriteCities({
               autoFocus
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t.searchPlaceholder}
-              className="w-full rounded-control border border-border-strong bg-surface py-2.5 pr-3 pl-9 text-sm text-text placeholder:text-text-subtle focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
+              className="field w-full py-2.5 pr-3 pl-9 text-sm"
             />
           </div>
 
           {results.length > 0 && (
-            <ul className="mt-2 divide-y divide-border overflow-hidden rounded-control border border-border bg-surface">
+            <ul className="mt-2 divide-y divide-border overflow-hidden rounded-control glass border border-border bg-surface">
               {results.map((city) => (
                 <li key={city.id}>
                   <form action={addAction}>

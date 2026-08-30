@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { useT } from "@/hooks/useT";
+import GlassButton from "@/components/ui/GlassButton";
 import AvatarUploader from "@/components/ui/AvatarUploader";
 
 type Props = {
@@ -50,17 +51,18 @@ export default function AvatarModal({ image, label, isOwn, onClose }: Props) {
     >
       <div
         onClick={(event) => event.stopPropagation()}
-        className="relative w-full max-w-sm rounded-panel border border-border bg-surface p-6 shadow-popover"
+        className="relative w-full max-w-sm rounded-panel glass border border-border bg-surface p-6 shadow-popover"
       >
-        <button
+        <GlassButton
           ref={closeRef}
-          type="button"
           onClick={onClose}
           aria-label={t.closeDialog}
-          className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-control text-text-subtle transition-colors hover:bg-surface-raised hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          variant="ghost"
+          size="icon"
+          className="absolute top-3 right-3"
         >
           <X size={18} aria-hidden="true" />
-        </button>
+        </GlassButton>
 
         <div className="flex flex-col items-center gap-5 pt-2">
           {image ? (

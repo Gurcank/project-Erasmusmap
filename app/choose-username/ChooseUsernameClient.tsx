@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import AuthShell from "@/components/ui/AuthShell";
+import GlassButton from "@/components/ui/GlassButton";
 import { USERNAME_MAX_LENGTH, getUsernameError } from "@/lib/username";
 
 export default function ChooseUsernameClient() {
@@ -75,10 +76,13 @@ export default function ChooseUsernameClient() {
           </p>
         )}
 
-        <button
+        <GlassButton
           type="submit"
           disabled={isLoading || Boolean(validationError) || !username}
-          className="mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-control bg-primary py-3 font-semibold text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 disabled:cursor-not-allowed disabled:opacity-60"
+          variant="primary"
+          size="lg"
+          fullWidth
+          className="mt-1"
         >
           {isLoading && (
             <Loader2
@@ -88,7 +92,7 @@ export default function ChooseUsernameClient() {
             />
           )}
           {isLoading ? "Kaydediliyor…" : "Kaydet"}
-        </button>
+        </GlassButton>
       </form>
     </AuthShell>
   );

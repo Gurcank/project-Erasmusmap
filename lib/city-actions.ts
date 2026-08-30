@@ -37,7 +37,13 @@ async function revalidateCity(cityId: string, username: string | null) {
   if (username) revalidatePath(`/u/${username}`);
 }
 
-/** Adds or removes the visit. Dates on an existing visit are preserved. */
+/**
+ * Adds or removes the visit. Dates on an existing visit are preserved.
+ *
+ * Marking a city visited also drops it from the wishlist — having been
+ * somewhere answers wanting to go. The reverse is not true: removing a visit
+ * leaves the wishlist alone, and the wishlist can be set again afterwards.
+ */
 export async function toggleVisit(
   _previousState: ActionResult | null,
   formData: FormData,
@@ -56,7 +62,15 @@ export async function toggleVisit(
       if (existing) {
         await prisma.visit.delete({ where: { id: existing.id } });
       } else {
-        await prisma.visit.create({ data: { userId: user.id, cityId } });
+        // One transaction, so a city is never both visited and wishlisted
+        // because the second statement failed. deleteMany rather than delete:
+        // there may be no wishlist row to remove.
+        await prisma.$transaction([
+          prisma.visit.create({ data: { userId: user.id, cityId } }),
+          prisma.wishlistItem.deleteMany({
+            where: { userId: user.id, cityId },
+          }),
+        ]);
       }
     } catch (error) {
       // P2003 is a foreign key violation — the city id does not exist.

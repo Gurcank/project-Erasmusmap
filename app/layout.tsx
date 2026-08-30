@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Script from "next/script";
 import { Bricolage_Grotesque, Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import GlobeBackground from "@/components/ui/GlobeBackground";
 import Providers from "./providers";
 import { Analytics } from "@vercel/analytics/next";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
@@ -23,12 +25,13 @@ const bricolage = Bricolage_Grotesque({
   display: "swap",
 });
 
-// Runs before first paint so a visitor who chose the light theme never sees a
-// dark flash. Mirrors ThemeToggle's rule: dark unless "light" was stored.
+// Runs before first paint so nobody sees the wrong theme flash. Mirrors
+// lib/theme.ts: an explicit "light" or "dark" wins, anything else — including a
+// first visit — follows the operating system.
 // Delivered through next/script's beforeInteractive strategy: Next injects it
 // into the document head ahead of hydration, and React does not warn about a
 // raw inline <script> the way it does for one rendered as an element.
-const THEME_INIT_SCRIPT = `try{if(localStorage.getItem("theme")!=="light")document.documentElement.classList.add("dark")}catch(e){document.documentElement.classList.add("dark")}`;
+const THEME_INIT_SCRIPT = `(function(){var c="system";try{var s=localStorage.getItem("theme");if(s==="light"||s==="dark")c=s}catch(e){}var d=c==="dark"||(c==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light"})()`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -55,11 +58,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Set per request by proxy.ts. Reading it here is also what opts every route
+  // into dynamic rendering, which a nonce requires: a statically generated page
+  // is built without a request, so its scripts would carry a nonce from build
+  // time that no later response header matches.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html
       lang="tr"
@@ -67,9 +76,10 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="overflow-x-hidden antialiased">
-        <Script id="theme-init" strategy="beforeInteractive">
+        <Script id="theme-init" strategy="beforeInteractive" nonce={nonce}>
           {THEME_INIT_SCRIPT}
         </Script>
+        <GlobeBackground />
         <Providers>
           <Navbar />
           <main className="min-h-screen">{children}</main>

@@ -22,7 +22,7 @@ type Props = {
 };
 
 /**
- * The "Edit Profile" surface — photo, name, bio and username in one place. It
+ * The "Edit Profile" surface — photo, username and bio in one place. It
  * is deliberately separate from Settings (blocked users, theme, language): the
  * button on the profile header opens this, the navbar's Settings link opens the
  * other.
@@ -40,61 +40,37 @@ export default function AccountContent({
 }: Props) {
   const t = useT();
 
-  const inputClass =
-    "w-full rounded-control border border-border-strong bg-surface px-4 py-2.5 text-sm text-text transition-colors placeholder:text-text-subtle focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus";
-  const saveButtonClass =
-    "rounded-control bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50";
+  const inputClass = "field w-full px-4 py-2.5 text-sm";
 
   return (
     <>
       <div className="mb-8">
         <Link
           href={profileUrl}
-          className="mb-1 inline-flex items-center gap-1.5 text-sm text-text-subtle transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          className="mb-1 inline-flex items-center gap-1.5 text-sm text-on-backdrop-muted transition-colors hover:text-on-backdrop focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           <ArrowLeft size={14} aria-hidden="true" />
           {t.backToProfile}
         </Link>
-        <h1 className="font-display text-display font-bold text-text">
+        <h1 className="font-display text-display font-bold text-on-backdrop">
           {t.accountTitle}
         </h1>
       </div>
 
-      <div className="space-y-6 rounded-card border border-border bg-surface px-6 py-6">
-        <div className="flex items-center justify-between gap-4">
+      <div className="space-y-6 rounded-card glass border border-border bg-surface px-6 py-6">
+        {/* Identity row: the photo, who this account is, and what it can do.
+            Stacks on narrow screens so the email never squeezes the uploader. */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <AvatarUploader image={image} fallbackLabel={name ?? email} />
-          <span className="shrink-0 rounded-full bg-surface-raised px-3 py-1 text-xs font-medium text-text-muted">
-            {role === "ADMIN" ? t.admin : t.member}
-          </span>
-        </div>
-
-        <ActionForm
-          action={updateProfile}
-          className="space-y-4"
-          errorClassName="text-xs text-danger-700 dark:text-danger-400"
-        >
-          <div className="space-y-1.5">
-            <label htmlFor="bio" className="text-sm font-medium text-text">
-              {t.bioLabel}
-            </label>
-            <textarea
-              id="bio"
-              name="bio"
-              defaultValue={bio ?? ""}
-              maxLength={MAX_BIO_LENGTH}
-              rows={3}
-              placeholder={t.noBioClick}
-              className={`${inputClass} resize-none`}
-            />
-            <p className="text-xs text-text-subtle">
-              {t.bioHint.replace("{max}", String(MAX_BIO_LENGTH))}
-            </p>
+          <div className="flex min-w-0 flex-col gap-1.5 sm:items-end">
+            <span className="w-fit rounded-full bg-surface-raised px-3 py-1 text-xs font-medium text-text-muted">
+              {role === "ADMIN" ? t.admin : t.member}
+            </span>
+            <span className="max-w-full truncate text-xs text-text-subtle">
+              {email}
+            </span>
           </div>
-
-          <SubmitButton pendingText={t.saving} className={saveButtonClass}>
-            {t.saveProfile}
-          </SubmitButton>
-        </ActionForm>
+        </div>
 
         <ActionForm
           action={updateUsername}
@@ -119,15 +95,39 @@ export default function AccountContent({
               placeholder="kullanici-adi"
               className={`${inputClass} flex-1`}
             />
-            <SubmitButton
-              pendingText={t.updatingBtn}
-              className={saveButtonClass}
-            >
+            <SubmitButton pendingText={t.updatingBtn} variant="primary">
               {t.updateBtn}
             </SubmitButton>
           </div>
           <p className="text-xs text-text-subtle">{t.usernameHint}</p>
-          <p className="truncate text-xs text-text-subtle">{email}</p>
+        </ActionForm>
+
+        <ActionForm
+          action={updateProfile}
+          className="space-y-4 border-t border-border pt-6"
+          errorClassName="text-xs text-danger-700 dark:text-danger-400"
+        >
+          <div className="space-y-1.5">
+            <label htmlFor="bio" className="text-sm font-medium text-text">
+              {t.bioLabel}
+            </label>
+            <textarea
+              id="bio"
+              name="bio"
+              defaultValue={bio ?? ""}
+              maxLength={MAX_BIO_LENGTH}
+              rows={3}
+              placeholder={t.bioPlaceholder}
+              className={`${inputClass} resize-none`}
+            />
+            <p className="text-xs text-text-subtle">
+              {t.bioHint.replace("{max}", String(MAX_BIO_LENGTH))}
+            </p>
+          </div>
+
+          <SubmitButton pendingText={t.saving} variant="primary">
+            {t.saveProfile}
+          </SubmitButton>
         </ActionForm>
       </div>
     </>

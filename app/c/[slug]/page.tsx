@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import Map from "@/components/map/Map";
 import { revalidatePath } from "next/cache";
 import CityContent from "@/components/ui/CityContent";
 import { parseRatings, parseReviewContent, averageRating } from "@/lib/review";
@@ -11,8 +10,11 @@ import { rateLimit } from "@/lib/rate-limit";
 import { deleteReview } from "@/lib/actions";
 import {
   addReviewComment,
+  toggleCommentLike,
+  deleteOwnReview,
   deleteReviewComment,
   toggleReviewLike,
+  updateOwnReview,
 } from "@/lib/square-actions";
 import type { EngagedReview } from "@/types";
 import {
@@ -22,6 +24,12 @@ import {
 } from "@/lib/city-actions";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { getHiddenUserIds } from "@/lib/social";
+import { moderate } from "@/lib/moderation";
+import {
+  buildCommentTree,
+  COMMENT_QUERY,
+  getLikedCommentIds,
+} from "@/lib/review-shape";
 import { fetchCityPhoto } from "@/lib/unsplash";
 import { toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
@@ -68,17 +76,7 @@ export default async function CityPage({
             user: {
               select: { id: true, name: true, image: true, username: true },
             },
-            comments: {
-              orderBy: { createdAt: "asc" },
-              select: {
-                id: true,
-                content: true,
-                createdAt: true,
-                user: {
-                  select: { id: true, name: true, image: true, username: true },
-                },
-              },
-            },
+            comments: COMMENT_QUERY,
             _count: { select: { likes: true } },
           },
           orderBy: { createdAt: "desc" },
@@ -94,14 +92,9 @@ export default async function CityPage({
   const hiddenUserIds = new Set(
     await getHiddenUserIds(viewer.ok ? viewer.user.id : null),
   );
-  const visibleReviews = city.reviews
-    .filter((review) => !review.user || !hiddenUserIds.has(review.user.id))
-    .map((review) => ({
-      ...review,
-      comments: review.comments.filter(
-        (comment) => !comment.user || !hiddenUserIds.has(comment.user.id),
-      ),
-    }));
+  const visibleReviews = city.reviews.filter(
+    (review) => !review.user || !hiddenUserIds.has(review.user.id),
+  );
 
   const identity = viewer.ok
     ? { userId_cityId: { userId: viewer.user.id, cityId: city.id } }
@@ -135,7 +128,7 @@ export default async function CityPage({
         throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
 
       const ratings = parseRatings(formData);
-      const content = parseReviewContent(formData);
+      const moderated = moderate(parseReviewContent(formData));
 
       try {
         await prisma.review.create({
@@ -143,7 +136,8 @@ export default async function CityPage({
             cityId,
             userId: auth.user.id,
             ...ratings,
-            content,
+            content: moderated.text,
+            flagged: moderated.flagged,
             isApproved: true,
           },
         });
@@ -182,6 +176,10 @@ export default async function CityPage({
       })
     : [];
   const likedReviewIds = new Set(viewerLikes.map((like) => like.reviewId));
+  const likedCommentIds = await getLikedCommentIds(
+    visibleReviews.flatMap((review) => review.comments.map((c) => c.id)),
+    viewer.ok ? viewer.user.id : null,
+  );
 
   // Each review can show when its author was in this city. One query for every
   // author on the page rather than one per card.
@@ -225,13 +223,29 @@ export default async function CityPage({
       user: review.user,
       likeCount: review._count.likes,
       likedByViewer: likedReviewIds.has(review.id),
-      replies: review.comments,
+      comments: buildCommentTree(
+        review.comments,
+        likedCommentIds,
+        hiddenUserIds,
+      ),
       stayStart: stay?.startDate ?? null,
       stayEnd: stay?.endDate ?? null,
     };
   });
 
-  const cityImage = await fetchCityPhoto(city.name);
+  // The photo is cached on the City row so the trending lists and profile
+  // favourites have one without a per-request Unsplash call. Fetch and store
+  // it the first time someone opens the city; every later view reads the row.
+  let cityImage = city.imageUrl;
+  if (!cityImage) {
+    cityImage = await fetchCityPhoto(city.name);
+    if (cityImage) {
+      await prisma.city.update({
+        where: { id: city.id },
+        data: { imageUrl: cityImage },
+      });
+    }
+  }
 
   const ratingData = await prisma.review.aggregate({
     where: { cityId: city.id },
@@ -256,38 +270,36 @@ export default async function CityPage({
     transport: avg.transport ?? 0,
     costOfLiving: avg.costOfLiving ?? 0,
   };
-  const avgScore = reviewCount > 0 ? averageRating(ratings) : 0;
+  const avgScore = reviewCount > 0 ? (averageRating(ratings) ?? 0) : 0;
 
   return (
-    <div className="relative min-h-screen">
-      <div className="fixed inset-0 -z-10">
-        <Map isStatic />
-      </div>
-      <div className="relative z-10 min-h-screen bg-canvas/90 pt-16 backdrop-blur-sm">
-        <CityContent
-          cityId={city.id}
-          cityName={city.name}
-          cityImage={cityImage}
-          isVisited={visit !== null}
-          isWishlisted={wishlistItem !== null}
-          visitStartDate={visit?.startDate ?? null}
-          visitEndDate={visit?.endDate ?? null}
-          toggleVisit={toggleVisit}
-          toggleWishlist={toggleWishlist}
-          saveVisitDates={saveVisitDates}
-          reviewCount={reviewCount}
-          avgScore={avgScore}
-          categoryRatings={ratings}
-          reviews={reviews}
-          viewerId={viewer.ok ? viewer.user.id : null}
-          toggleReviewLike={toggleReviewLike}
-          addReviewComment={addReviewComment}
-          deleteReviewComment={deleteReviewComment}
-          submitReview={submitReview}
-          isAdmin={isAdmin}
-          deleteReview={deleteReview}
-        />
-      </div>
+    <div className="min-h-screen pt-16">
+      <CityContent
+        cityId={city.id}
+        cityName={city.name}
+        cityImage={cityImage}
+        isVisited={visit !== null}
+        isWishlisted={wishlistItem !== null}
+        visitStartDate={visit?.startDate ?? null}
+        visitEndDate={visit?.endDate ?? null}
+        toggleVisit={toggleVisit}
+        toggleWishlist={toggleWishlist}
+        saveVisitDates={saveVisitDates}
+        reviewCount={reviewCount}
+        avgScore={avgScore}
+        categoryRatings={ratings}
+        reviews={reviews}
+        viewerId={viewer.ok ? viewer.user.id : null}
+        toggleReviewLike={toggleReviewLike}
+        addReviewComment={addReviewComment}
+        toggleCommentLike={toggleCommentLike}
+        deleteReviewComment={deleteReviewComment}
+        submitReview={submitReview}
+        isAdmin={isAdmin}
+        deleteReview={deleteReview}
+        updateOwnReview={updateOwnReview}
+        deleteOwnReview={deleteOwnReview}
+      />
     </div>
   );
 }

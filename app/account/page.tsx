@@ -79,7 +79,7 @@ export default async function AccountPage() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas">
+    <div className="min-h-screen">
       <div className="mx-auto max-w-2xl space-y-6 px-6 pt-28 pb-24">
         <AccountContent
           name={user.name}

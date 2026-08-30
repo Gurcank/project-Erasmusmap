@@ -63,12 +63,12 @@ type TrendingReviewRow = {
   id: string;
   content: string;
   createdAt: Date;
-  culture: number;
-  gastronomy: number;
-  safety: number;
-  socialLife: number;
-  transport: number;
-  costOfLiving: number;
+  culture: number | null;
+  gastronomy: number | null;
+  safety: number | null;
+  socialLife: number | null;
+  transport: number | null;
+  costOfLiving: number | null;
   citySlug: string;
   cityName: string;
   authorId: string | null;

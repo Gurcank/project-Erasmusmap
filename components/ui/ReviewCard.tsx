@@ -1,16 +1,26 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Heart, MessageCircle, Star, Trash2 } from "lucide-react";
+import {
+  CalendarDays,
+  Heart,
+  MessageCircle,
+  Pencil,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { useT } from "@/hooks/useT";
 import UserAvatar from "@/components/ui/UserAvatar";
 import Rating from "@/components/ui/Rating";
+import StarInput from "@/components/ui/StarInput";
+import StayDateFields from "@/components/ui/StayDateFields";
+import CommentThread from "@/components/ui/CommentThread";
 import SubmitButton from "@/components/ui/SubmitButton";
+import GlassButton from "@/components/ui/GlassButton";
 import ActionForm from "@/components/ui/ActionForm";
 import { formatStayRange } from "@/lib/format";
-import { averageRating, toStars } from "@/lib/review";
-import { MAX_REPLY_LENGTH } from "@/lib/engagement";
+import { averageRating, MAX_REVIEW_LENGTH, toStars } from "@/lib/review";
 import type { EngagedReview } from "@/types";
 import type { ActionResult, FormAction } from "@/lib/action-result";
 
@@ -22,7 +32,11 @@ type Props = {
   toggleReviewLike: FormAction;
   addReviewComment: FormAction;
   deleteReviewComment: FormAction;
+  toggleCommentLike: FormAction;
   deleteReview: FormAction;
+  /** Author-only: edit and delete their own review. */
+  updateOwnReview: FormAction;
+  deleteOwnReview: FormAction;
 };
 
 function ActionError({ state }: { state: ActionResult | null }) {
@@ -44,29 +58,47 @@ export default function ReviewCard({
   toggleReviewLike,
   addReviewComment,
   deleteReviewComment,
+  toggleCommentLike,
   deleteReview,
+  updateOwnReview,
+  deleteOwnReview,
 }: Props) {
   const t = useT();
   const [likeState, likeAction] = useActionState(toggleReviewLike, null);
-  const [replyState, replyAction] = useActionState(addReviewComment, null);
+  const [editState, editAction] = useActionState(updateOwnReview, null);
   const [showReplies, setShowReplies] = useState(false);
+  const [editing, setEditing] = useState(false);
+
+  // A saved edit revalidates the page; collapse the form once it lands.
+  useEffect(() => {
+    if (editState?.ok) setEditing(false);
+  }, [editState]);
 
   const author = review.user?.username ?? review.user?.name ?? "—";
   const isSignedIn = viewerId !== null;
-  const replyCount = review.replies.length;
+  const isOwner = isSignedIn && review.user?.id === viewerId;
+  const commentCount = review.comments.reduce(
+    (sum, comment) => sum + 1 + comment.replies.length,
+    0,
+  );
   const stayRange = formatStayRange(review.stayStart, review.stayEnd);
+  const avg = averageRating(review);
 
-  const categories = [
-    { label: t.cost, value: review.costOfLiving },
-    { label: t.safety, value: review.safety },
-    { label: t.social, value: review.socialLife },
-    { label: t.culture, value: review.culture },
-    { label: t.gastronomy, value: review.gastronomy },
-    { label: t.transport, value: review.transport },
+  const editFields = [
+    { label: t.cost, name: "costOfLiving", value: review.costOfLiving },
+    { label: t.safety, name: "safety", value: review.safety },
+    { label: t.social, name: "socialLife", value: review.socialLife },
+    { label: t.culture, name: "culture", value: review.culture },
+    { label: t.gastronomy, name: "gastronomy", value: review.gastronomy },
+    { label: t.transport, name: "transport", value: review.transport },
   ];
+  const ratedCategories = editFields.filter(
+    (category): category is { label: string; name: string; value: number } =>
+      category.value !== null,
+  );
 
   return (
-    <article className="rounded-panel border border-border bg-surface p-6 transition-colors hover:border-border-strong">
+    <article className="rounded-panel glass border border-border bg-surface p-6 transition-colors hover:border-border-strong">
       <div className="mb-4 flex items-start justify-between gap-4">
         <Link
           href={review.user?.username ? `/u/${review.user.username}` : "#"}
@@ -78,10 +110,10 @@ export default function ReviewCard({
           <UserAvatar
             src={review.user?.image ?? null}
             label={author}
-            size={40}
+            size={36}
           />
           <div>
-            <p className="font-semibold text-text transition-colors group-hover:text-accent-text">
+            <p className="text-sm font-semibold text-text transition-colors group-hover:text-accent-text">
               {author}
             </p>
             <p className="text-xs text-text-subtle">
@@ -91,24 +123,40 @@ export default function ReviewCard({
         </Link>
 
         <div className="flex shrink-0 items-center gap-3">
-          <span className="flex items-center gap-1.5 font-semibold text-text">
-            <Star
-              size={15}
-              aria-hidden="true"
-              className="fill-star text-star"
-            />
-            {averageRating(review).toFixed(1)}
-          </span>
-          {isAdmin && (
+          {avg !== null && (
+            <span className="flex items-center gap-1.5 rounded-full bg-surface-raised/70 px-2.5 py-1 font-display text-lg font-semibold text-text tabular-nums">
+              <Star
+                size={17}
+                aria-hidden="true"
+                className="fill-star text-star"
+              />
+              {avg.toFixed(1)}
+            </span>
+          )}
+          {isOwner && !editing && (
+            <GlassButton
+              onClick={() => setEditing(true)}
+              title={t.editReview}
+              aria-label={t.editReview}
+              variant="ghost"
+              size="iconSm"
+            >
+              <Pencil size={15} aria-hidden="true" />
+            </GlassButton>
+          )}
+          {(isAdmin || (isOwner && !editing)) && (
             <ActionForm
-              action={deleteReview}
+              action={isAdmin ? deleteReview : deleteOwnReview}
               confirmMessage={t.confirmDeleteReview}
+              confirmLabel={t.adminDeleteReview}
             >
               <input type="hidden" name="reviewId" value={review.id} />
               <SubmitButton
                 title={t.adminDeleteReview}
                 aria-label={t.adminDeleteReview}
-                className="rounded-control p-1.5 text-text-subtle transition-colors hover:bg-surface-raised hover:text-danger-700 disabled:opacity-50 dark:hover:text-danger-400"
+                variant="ghost"
+                size="iconSm"
+                className="hover:text-danger-700 dark:hover:text-danger-400"
               >
                 <Trash2 size={15} aria-hidden="true" />
               </SubmitButton>
@@ -120,7 +168,7 @@ export default function ReviewCard({
       {review.city && (
         <Link
           href={`/c/${review.city.slug}`}
-          className="mb-3 inline-block font-display text-lg font-semibold text-text transition-colors hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          className="mb-2 inline-block font-display text-lg font-bold text-text transition-colors hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           {review.city.name}
         </Link>
@@ -136,27 +184,66 @@ export default function ReviewCard({
         </p>
       )}
 
-      {review.content && (
-        <p className="max-w-prose leading-relaxed text-text-muted">
-          {review.content}
-        </p>
-      )}
+      {editing ? (
+        <form action={editAction} className="mt-4 space-y-4">
+          <input type="hidden" name="reviewId" value={review.id} />
+          <div className="grid gap-3 sm:grid-cols-2">
+            {editFields.map(({ label, name, value }) => (
+              <StarInput
+                key={name}
+                label={label}
+                name={name}
+                defaultStars={value === null ? 0 : toStars(value)}
+              />
+            ))}
+          </div>
+          <textarea
+            name="content"
+            defaultValue={review.content}
+            rows={4}
+            maxLength={MAX_REVIEW_LENGTH}
+            aria-label={t.writeReview}
+            placeholder={t.writeReview}
+            className="field w-full resize-none rounded-card px-4 py-3 text-sm"
+          />
+          <StayDateFields start={review.stayStart} end={review.stayEnd} />
+          <div className="flex items-center gap-2">
+            <SubmitButton pendingText={t.submittingReview} variant="primary">
+              {t.saveReview}
+            </SubmitButton>
+            <GlassButton onClick={() => setEditing(false)} variant="ghost">
+              {t.cancel}
+            </GlassButton>
+          </div>
+          <ActionError state={editState} />
+        </form>
+      ) : (
+        <>
+          {review.content && (
+            <p className="max-w-prose leading-relaxed whitespace-pre-line text-text-muted">
+              {review.content}
+            </p>
+          )}
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        {categories.map(({ label, value }) => (
-          <span
-            key={label}
-            className="flex items-center gap-1.5 rounded-control bg-surface-raised px-2.5 py-1 text-xs text-text-muted"
-          >
-            {label}
-            <Rating
-              value={toStars(value)}
-              label={`${label}: 5 üzerinden ${toStars(value)}`}
-              size={11}
-            />
-          </span>
-        ))}
-      </div>
+          {ratedCategories.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {ratedCategories.map(({ label, value }) => (
+                <span
+                  key={label}
+                  className="flex items-center gap-1.5 rounded-control bg-surface-raised px-2.5 py-1 text-xs text-text-muted"
+                >
+                  {label}
+                  <Rating
+                    value={toStars(value)}
+                    label={`${label}: 5 üzerinden ${toStars(value)}`}
+                    size={11}
+                  />
+                </span>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
       <div className="mt-4 flex items-center gap-2 border-t border-border pt-4">
         <form action={likeAction}>
@@ -166,11 +253,13 @@ export default function ReviewCard({
             aria-pressed={review.likedByViewer}
             aria-label={review.likedByViewer ? t.liked : t.like}
             title={isSignedIn ? undefined : t.loginToInteract}
-            className={`rounded-control px-2.5 py-1.5 text-sm transition-colors ${
+            variant="ghost"
+            size="sm"
+            className={
               review.likedByViewer
                 ? "text-danger-700 dark:text-danger-400"
-                : "text-text-subtle hover:bg-surface-raised hover:text-text"
-            }`}
+                : undefined
+            }
           >
             <Heart
               size={15}
@@ -181,88 +270,30 @@ export default function ReviewCard({
           </SubmitButton>
         </form>
 
-        <button
-          type="button"
+        <GlassButton
           onClick={() => setShowReplies((open) => !open)}
           aria-expanded={showReplies}
-          className="flex cursor-pointer items-center gap-1.5 rounded-control px-2.5 py-1.5 text-sm text-text-subtle transition-colors hover:bg-surface-raised hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          variant="ghost"
+          size="sm"
         >
           <MessageCircle size={15} aria-hidden="true" />
-          <span className="tabular-nums">{replyCount}</span>
+          <span className="tabular-nums">{commentCount}</span>
           <span className="sr-only">{t.replies}</span>
-        </button>
+        </GlassButton>
       </div>
 
       <ActionError state={likeState} />
 
       {showReplies && (
-        <div className="mt-4 space-y-3 border-t border-border pt-4">
-          {review.replies.map((reply) => {
-            const replyAuthor = reply.user?.username ?? reply.user?.name ?? "—";
-            const canDelete = isAdmin || reply.user?.id === viewerId;
-            return (
-              <div key={reply.id} className="flex items-start gap-3">
-                <UserAvatar
-                  src={reply.user?.image ?? null}
-                  label={replyAuthor}
-                  size={28}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm">
-                    <span className="font-semibold text-text">
-                      {replyAuthor}
-                    </span>
-                    <span className="ml-2 text-xs text-text-subtle">
-                      {new Date(reply.createdAt).toLocaleDateString("tr-TR")}
-                    </span>
-                  </p>
-                  <p className="text-sm leading-relaxed text-text-muted">
-                    {reply.content}
-                  </p>
-                </div>
-                {canDelete && (
-                  <ActionForm
-                    action={deleteReviewComment}
-                    confirmMessage={t.confirmDeleteReply}
-                  >
-                    <input type="hidden" name="commentId" value={reply.id} />
-                    <SubmitButton
-                      title={t.deleteReply}
-                      aria-label={t.deleteReply}
-                      className="rounded-control p-1 text-text-subtle transition-colors hover:text-danger-700 disabled:opacity-50 dark:hover:text-danger-400"
-                    >
-                      <Trash2 size={13} aria-hidden="true" />
-                    </SubmitButton>
-                  </ActionForm>
-                )}
-              </div>
-            );
-          })}
-
-          {isSignedIn ? (
-            <form action={replyAction} className="flex items-start gap-2">
-              <input type="hidden" name="reviewId" value={review.id} />
-              <textarea
-                name="content"
-                rows={2}
-                maxLength={MAX_REPLY_LENGTH}
-                aria-label={t.writeReply}
-                placeholder={t.writeReply}
-                className="flex-1 resize-none rounded-control border border-border-strong bg-surface-raised px-3 py-2 text-sm text-text placeholder:text-text-subtle focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
-              />
-              <SubmitButton
-                pendingText={t.sendReply}
-                className="rounded-control bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
-              >
-                {t.sendReply}
-              </SubmitButton>
-            </form>
-          ) : (
-            <p className="text-sm text-text-subtle">{t.loginToInteract}</p>
-          )}
-
-          <ActionError state={replyState} />
-        </div>
+        <CommentThread
+          reviewId={review.id}
+          comments={review.comments}
+          viewerId={viewerId}
+          isAdmin={isAdmin}
+          addReviewComment={addReviewComment}
+          deleteReviewComment={deleteReviewComment}
+          toggleCommentLike={toggleCommentLike}
+        />
       )}
     </article>
   );

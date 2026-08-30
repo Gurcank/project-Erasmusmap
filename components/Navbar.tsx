@@ -5,18 +5,19 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import {
+  Globe,
   Landmark,
   Loader2,
   LogOut,
-  Menu,
   Search,
   Settings,
   Shield,
   User,
-  X,
 } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import UserAvatar from "@/components/ui/UserAvatar";
+import HamburgerIcon from "@/components/ui/HamburgerIcon";
+import GlassButton, { GlassLink } from "@/components/ui/GlassButton";
 import type { CitySuggestion } from "@/types";
 
 const MIN_QUERY_LENGTH = 2;
@@ -130,8 +131,15 @@ export default function Navbar() {
     ? `/u/${session.user.username}`
     : "/choose-username";
 
+  // The map is the home page. It used to be reachable only through the
+  // wordmark, which reads as "go to the start" rather than as a destination.
+  const navLinks = [
+    { href: "/", label: t.mapNav, icon: Globe },
+    { href: "/meydan", label: t.square, icon: Landmark },
+  ];
+
   const suggestionList = (
-    <div className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-card border border-border bg-surface shadow-popover">
+    <div className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-card glass border border-border bg-surface shadow-popover">
       {suggestions.length === 0 ? (
         <p className="px-5 py-3 text-sm text-text-subtle">
           {isSearching ? t.searching : t.noResults}
@@ -182,11 +190,11 @@ export default function Navbar() {
   );
 
   return (
-    <header className="fixed top-0 left-0 z-50 w-full">
-      <div className="border-b border-border bg-canvas/85 backdrop-blur-xl">
+    <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-6 md:pt-4">
+      <div className="glass glass-edge glass-shimmer mx-auto max-w-6xl rounded-[1.75rem] bg-surface shadow-popover">
         <nav
           aria-label="Site navigasyonu"
-          className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3.5"
+          className="flex items-center justify-between gap-4 px-4 py-2.5 md:px-5 md:py-3"
         >
           <Link
             href="/"
@@ -195,16 +203,22 @@ export default function Navbar() {
             Erasmus<span className="text-accent-text">Map</span>
           </Link>
 
-          <Link
-            href="/meydan"
-            className={`hidden shrink-0 rounded-control px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus md:block ${
-              pathname === "/meydan"
-                ? "bg-surface-raised text-text"
-                : "text-text-muted hover:text-text"
-            }`}
-          >
-            {t.square}
-          </Link>
+          <div className="hidden shrink-0 items-center gap-1 md:flex">
+            {navLinks.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                aria-current={pathname === href ? "page" : undefined}
+                className={`rounded-control px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
+                  pathname === href
+                    ? "bg-surface-raised text-text"
+                    : "text-text-muted hover:text-text"
+                }`}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
 
           <div
             ref={searchRef}
@@ -217,33 +231,31 @@ export default function Navbar() {
           <div className="flex items-center gap-2">
             <div ref={profileRef} className="relative hidden md:block">
               {!session ? (
-                <Link
-                  href="/login"
-                  className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                >
+                <GlassLink href="/login" variant="primary">
                   {t.login}
-                </Link>
+                </GlassLink>
               ) : (
-                <button
-                  type="button"
+                <GlassButton
                   onClick={() => setProfileOpen(!profileOpen)}
                   aria-label={t.profile}
                   aria-haspopup="menu"
                   aria-expanded={profileOpen}
-                  className="flex cursor-pointer rounded-full ring-2 ring-transparent transition-shadow hover:ring-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                  variant="ghost"
+                  size="icon"
+                  className="border-transparent p-0 hover:border-border-strong"
                 >
                   <UserAvatar
                     src={session.user?.image ?? null}
                     label={session.user?.username ?? session.user?.name ?? "?"}
                     size={36}
                   />
-                </button>
+                </GlassButton>
               )}
 
               {profileOpen && session && (
                 <div
                   role="menu"
-                  className="absolute right-0 mt-3 w-52 overflow-hidden rounded-card border border-border bg-surface shadow-popover"
+                  className="absolute right-0 mt-3 w-52 overflow-hidden rounded-card glass border border-border bg-surface shadow-popover"
                 >
                   <Link
                     href={profileHref}
@@ -284,65 +296,69 @@ export default function Navbar() {
               )}
             </div>
 
-            <button
-              type="button"
+            <GlassButton
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label={t.menu}
               aria-expanded={menuOpen}
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-control text-text transition-colors hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus md:hidden"
+              variant="ghost"
+              size="icon"
+              className="text-text md:hidden"
             >
-              {menuOpen ? (
-                <X size={20} aria-hidden="true" />
-              ) : (
-                <Menu size={20} aria-hidden="true" />
-              )}
-            </button>
+              <HamburgerIcon open={menuOpen} />
+            </GlassButton>
           </div>
         </nav>
-
-        {menuOpen && (
-          <div className="space-y-4 px-6 pb-6 md:hidden">
-            <div className="relative">
-              {searchField(true)}
-              {showSuggestions && suggestionList}
-            </div>
-
-            <Link
-              href="/meydan"
-              className="flex items-center gap-2.5 rounded-control border border-border-strong px-4 py-3 text-text"
-            >
-              <Landmark size={16} aria-hidden="true" />
-              {t.square}
-            </Link>
-
-            {!session ? (
-              <Link
-                href="/login"
-                className="block rounded-control bg-primary px-5 py-3 text-center font-semibold text-on-primary"
-              >
-                {t.login}
-              </Link>
-            ) : (
-              <div className="space-y-2">
-                <Link
-                  href={profileHref}
-                  className="flex items-center gap-2.5 rounded-control border border-border-strong px-4 py-3 text-text"
-                >
-                  <User size={16} aria-hidden="true" />
-                  {t.profile}
-                </Link>
-                <Link
-                  href="/settings"
-                  className="flex items-center gap-2.5 rounded-control border border-border-strong px-4 py-3 text-text"
-                >
-                  <Settings size={16} aria-hidden="true" />
-                  {t.settings}
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
       </div>
+
+      {menuOpen && (
+        <div className="glass glass-edge mx-auto mt-2 max-w-6xl space-y-4 rounded-panel bg-surface p-5 shadow-popover md:hidden">
+          <div className="relative">
+            {searchField(true)}
+            {showSuggestions && suggestionList}
+          </div>
+
+          <div className="space-y-2">
+            {navLinks.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                aria-current={pathname === href ? "page" : undefined}
+                className={`glass glass-edge flex items-center gap-2.5 rounded-full border px-4 py-3 text-text ${
+                  pathname === href
+                    ? "border-primary bg-surface-raised"
+                    : "border-border-strong"
+                }`}
+              >
+                <Icon size={16} aria-hidden="true" />
+                {label}
+              </Link>
+            ))}
+          </div>
+
+          {!session ? (
+            <GlassLink href="/login" variant="primary" size="lg" fullWidth>
+              {t.login}
+            </GlassLink>
+          ) : (
+            <div className="space-y-2">
+              <Link
+                href={profileHref}
+                className="glass glass-edge flex items-center gap-2.5 rounded-full border border-border-strong px-4 py-3 text-text"
+              >
+                <User size={16} aria-hidden="true" />
+                {t.profile}
+              </Link>
+              <Link
+                href="/settings"
+                className="glass glass-edge flex items-center gap-2.5 rounded-full border border-border-strong px-4 py-3 text-text"
+              >
+                <Settings size={16} aria-hidden="true" />
+                {t.settings}
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
 }

@@ -4,13 +4,12 @@ import bcrypt from "bcrypt";
 import { rateLimit } from "@/lib/rate-limit";
 import { generateUniqueUsername } from "@/lib/user";
 import { parseRequestBody, registerSchema } from "@/lib/schemas";
-
-const BCRYPT_SALT_ROUNDS = 10;
+import { BCRYPT_SALT_ROUNDS } from "@/lib/password";
+import { getClientAddress } from "@/lib/request-ip";
 
 export async function POST(req: Request) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (!(await rateLimit(`register:${ip}`, 5))) {
+  const clientAddress = getClientAddress(req.headers);
+  if (!(await rateLimit(`register:${clientAddress}`, 5))) {
     return NextResponse.json(
       { error: "Çok fazla deneme. Lütfen biraz sonra tekrar dene." },
       { status: 429 },
