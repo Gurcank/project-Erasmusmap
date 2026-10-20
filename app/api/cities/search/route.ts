@@ -55,7 +55,7 @@ export async function GET(req: Request) {
 
   try {
     const cities = await prisma.$queryRaw<CitySuggestion[]>`
-      SELECT id, name, slug, country
+      SELECT id, name, slug, country, latitude, longitude
       FROM "City"
       WHERE slug = ANY(${PRIMARY_SLUGS})
         AND (

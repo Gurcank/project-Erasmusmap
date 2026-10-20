@@ -91,3 +91,38 @@ export function avatarPathFromUrl(url: string): string | null {
     return null;
   }
 }
+
+// ─── Trip photos ─────────────────────────────────────────────────────────────
+
+const TRIP_MEDIA_BUCKET = "trip-media";
+
+/**
+ * Stores a trip photo under a fresh random key, like avatars.
+ *
+ * The bucket is public, so a photo on a private trip is reachable by anyone
+ * holding its URL — and only by them: the 128-bit key cannot be guessed or
+ * enumerated, and the URL is only ever rendered to the trip's owner while the
+ * trip is private. Signed URLs would close that last gap at the cost of
+ * re-signing on every render; for travel snapshots the trade is accepted.
+ */
+export async function uploadTripPhoto(body: Buffer): Promise<StoredAvatar> {
+  const client = getStorageClient();
+  if (!client) throw new Error("Storage yapılandırılmamış");
+
+  const path = newAvatarPath();
+  const { error } = await client.storage
+    .from(TRIP_MEDIA_BUCKET)
+    .upload(path, body, { contentType: "image/webp", upsert: false });
+  if (error) throw error;
+
+  const { data } = client.storage.from(TRIP_MEDIA_BUCKET).getPublicUrl(path);
+  return { url: data.publicUrl, path };
+}
+
+export async function deleteTripPhotoObject(path: string): Promise<void> {
+  const client = getStorageClient();
+  if (!client) throw new Error("Storage yapılandırılmamış");
+
+  const { error } = await client.storage.from(TRIP_MEDIA_BUCKET).remove([path]);
+  if (error) throw error;
+}

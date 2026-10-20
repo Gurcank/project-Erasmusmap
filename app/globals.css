@@ -117,9 +117,30 @@
   --color-glass-highlight: var(--glass-highlight);
   --color-on-backdrop: var(--on-backdrop);
   --color-on-backdrop-muted: var(--on-backdrop-muted);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --color-series-5: var(--series-5);
+  --color-series-6: var(--series-6);
+  --color-series-7: var(--series-7);
+  --color-series-8: var(--series-8);
 }
 
 :root {
+  /* Categorical series for the trip planner charts, calendar and route, in
+     fixed order (validated set: dataviz reference palette). Identity only —
+     always shown next to a label, never alone. */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #6250d6;
+  --series-8: #e34948;
+  --chart-grid: oklch(0.6 0.01 255 / 0.25);
+
   --canvas: var(--color-ink-50);
   /* Surfaces float over the satellite backdrop, so they carry alpha and rely on
      the `glass` blur underneath them for legibility. Alphas below are the
@@ -166,6 +187,16 @@
 }
 
 .dark {
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --series-7: #9085e9;
+  --series-8: #e66767;
+  --chart-grid: oklch(0.7 0.01 255 / 0.18);
+
   --canvas: var(--color-ink-950);
   --surface: oklch(0.205 0.017 262 / 0.73);
   --surface-raised: oklch(0.278 0.019 260 / 0.72);

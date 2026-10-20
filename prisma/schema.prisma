@@ -40,6 +40,12 @@ model City {
   visits    Visit[]
   wishlists WishlistItem[]
   favorites FavoriteCity[]
+
+  tripItems    TripItem[]    @relation("TripItemCity")
+  tripItemsTo  TripItem[]    @relation("TripItemToCity")
+  tripExpenses TripExpense[]
+  tripCities   TripCity[]
+  tripPhotos   TripPhoto[]
 }
 
 model Review {
@@ -61,8 +67,6 @@ model Review {
 
   userId String?
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  isApproved Boolean @default(false)
 
   /// Set by the moderation filter — see ReviewComment.flagged.
   flagged Boolean @default(false)
@@ -229,12 +233,12 @@ model User {
   role          Role      @default(USER)
   banned        Boolean   @default(false)
 
-  accounts       Account[]
-  sessions       Session[]
-  reviews        Review[]
-  visits         Visit[]
-  wishlist       WishlistItem[]
-  favoriteCities FavoriteCity[]
+  accounts           Account[]
+  sessions           Session[]
+  reviews            Review[]
+  visits             Visit[]
+  wishlist           WishlistItem[]
+  favoriteCities     FavoriteCity[]
   reviewLikes        ReviewLike[]
   reviewComments     ReviewComment[]
   reviewCommentLikes ReviewCommentLike[]
@@ -245,6 +249,8 @@ model User {
   /// People this user has blocked / who have blocked this user.
   blocking  Block[]  @relation("blocker")
   blockedBy Block[]  @relation("blocked")
+
+  trips Trip[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -314,4 +320,170 @@ model Session {
 enum Role {
   USER
   ADMIN
+}
+
+// ─── Trip planner ────────────────────────────────────────────────────────────
+//
+// Times are stored as local wall-clock time: a DateTime is read as if it were
+// UTC and never converted, so "Hamburg 08:00" shows as 08:00 wherever the page
+// is opened. Money is stored in minor units (cents) as Int, never as a float.
+
+enum TripVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum TripItemType {
+  TRANSPORT
+  STAY
+  ACTIVITY
+  NOTE
+}
+
+enum TransportMode {
+  BUS
+  TRAIN
+  FLIGHT
+  CAR
+  FERRY
+  WALK
+  OTHER
+}
+
+enum ExpenseCategory {
+  TRANSPORT
+  ACCOMMODATION
+  FOOD
+  ACTIVITIES
+  SHOPPING
+  OTHER
+}
+
+model Trip {
+  id          String  @id @default(uuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String? @db.Text
+
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+
+  /// Total budget in minor units of `currency`.
+  budget     Int
+  /// ISO 4217 code. One currency per trip; there is no conversion.
+  currency   String         @db.VarChar(3)
+  visibility TripVisibility @default(PRIVATE)
+
+  items    TripItem[]
+  expenses TripExpense[]
+  cities   TripCity[]
+  photos   TripPhoto[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+/// One entry on the timeline. For TRANSPORT the city/place/lat/lng fields are
+/// the departure and the to* fields the arrival; every other type uses only the
+/// first set.
+model TripItem {
+  id     String       @id @default(uuid())
+  tripId String
+  trip   Trip         @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  type   TripItemType
+  title  String
+
+  startAt DateTime
+  endAt   DateTime?
+
+  cityId    String?
+  city      City?   @relation("TripItemCity", fields: [cityId], references: [id], onDelete: SetNull)
+  placeName String?
+  lat       Float?
+  lng       Float?
+
+  toCityId    String?
+  toCity      City?          @relation("TripItemToCity", fields: [toCityId], references: [id], onDelete: SetNull)
+  toPlaceName String?
+  toLat       Float?
+  toLng       Float?
+  mode        TransportMode?
+
+  bookingRef String?
+  notes      String? @db.Text
+
+  /// The cost of this item, when one was entered. The budget only ever reads
+  /// TripExpense, so a cost lives there rather than on this row.
+  expense TripExpense?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tripId, startAt])
+}
+
+/// Planned spending for a day. `category` null is a lump sum for the day.
+model TripExpense {
+  id       String           @id @default(uuid())
+  tripId   String
+  trip     Trip             @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  date     DateTime         @db.Date
+  amount   Int
+  category ExpenseCategory?
+  cityId   String?
+  city     City?            @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  note     String?
+  itemId   String?          @unique
+  item     TripItem?        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tripId, date])
+}
+
+/// A city on the trip, with the traveller's own notes and to-do list.
+model TripCity {
+  id       String     @id @default(uuid())
+  tripId   String
+  trip     Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  cityId   String
+  city     City       @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  notes    String?    @db.Text
+  position Int        @default(0)
+  todos    TripTodo[]
+
+  @@unique([tripId, cityId])
+}
+
+model TripTodo {
+  id         String   @id @default(uuid())
+  tripCityId String
+  tripCity   TripCity @relation(fields: [tripCityId], references: [id], onDelete: Cascade)
+  title      String
+  done       Boolean  @default(false)
+  position   Int      @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([tripCityId])
+}
+
+model TripPhoto {
+  id      String  @id @default(uuid())
+  tripId  String
+  trip    Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  cityId  String?
+  city    City?   @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  /// Object key in the trip-media bucket, random — see lib/storage.ts.
+  path    String
+  url     String
+  caption String?
+
+  createdAt DateTime @default(now())
+
+  @@index([tripId])
 }

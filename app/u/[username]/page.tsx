@@ -24,6 +24,7 @@ import {
 import { isBlockedBetween } from "@/lib/social";
 import { MAX_FAVORITE_CITIES } from "@/lib/profile";
 import { requireActiveUser } from "@/lib/auth-guards";
+import { getUserTrips } from "@/lib/trips";
 
 const TABS: ProfileTab[] = [
   "visited",
@@ -31,6 +32,7 @@ const TABS: ProfileTab[] = [
   "reviews",
   "comments",
   "liked",
+  "trips",
 ];
 
 export async function generateMetadata({
@@ -155,6 +157,16 @@ export default async function ProfilePage({
     activeTab === "comments" ? await getProfileComments(user.id, viewerId) : [];
   const likedReviews =
     activeTab === "liked" ? await getLikedReviews(user.id, viewerId) : [];
+  // A private plan is only ever listed on its owner's own profile.
+  const [trips, tripCount] = await Promise.all([
+    activeTab === "trips" ? getUserTrips(user.id, isOwnProfile) : [],
+    prisma.trip.count({
+      where: {
+        userId: user.id,
+        ...(isOwnProfile ? {} : { visibility: "PUBLIC" as const }),
+      },
+    }),
+  ]);
 
   return (
     <div className="min-h-screen pt-24">
@@ -194,6 +206,8 @@ export default async function ProfilePage({
         reviewCount={reviewCount}
         likedReviews={likedReviews}
         likedCount={likedCount}
+        trips={trips}
+        tripCount={tripCount}
         viewerId={viewerId}
         deleteReview={deleteReview}
         toggleReviewLike={toggleReviewLike}

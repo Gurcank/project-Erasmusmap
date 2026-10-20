@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import CityContent from "@/components/ui/CityContent";
-import { parseRatings, parseReviewContent, averageRating } from "@/lib/review";
+import { averageRating } from "@/lib/review";
 import type { CategoryRatings } from "@/types";
-import { rateLimit } from "@/lib/rate-limit";
 import { deleteReview } from "@/lib/actions";
 import {
   addReviewComment,
@@ -19,22 +17,22 @@ import {
 import type { EngagedReview } from "@/types";
 import {
   saveVisitDates,
+  submitReview as submitCityReview,
   toggleVisit,
   toggleWishlist,
 } from "@/lib/city-actions";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { getHiddenUserIds } from "@/lib/social";
-import { moderate } from "@/lib/moderation";
 import {
   buildCommentTree,
   COMMENT_QUERY,
   getLikedCommentIds,
 } from "@/lib/review-shape";
 import { fetchCityPhoto } from "@/lib/unsplash";
-import { toActionResult } from "@/lib/action-result";
-import type { ActionResult } from "@/lib/action-result";
 
-const DUPLICATE_REVIEW_MESSAGE = "Bu şehre zaten yorum yaptınız.";
+// Reviews are loaded a page at a time; `?reviews=N` asks for the first N pages.
+const REVIEWS_PAGE_SIZE = 10;
+const MAX_REVIEW_PAGES = 20;
 
 export async function generateMetadata({
   params,
@@ -62,27 +60,20 @@ export async function generateMetadata({
 
 export default async function CityPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ reviews?: string }>;
 }) {
   const { slug } = await params;
+  const { reviews: reviewPagesParam } = await searchParams;
+  const pages = Math.min(
+    MAX_REVIEW_PAGES,
+    Math.max(1, Math.floor(Number(reviewPagesParam)) || 1),
+  );
 
   const [city, viewer] = await Promise.all([
-    prisma.city.findUnique({
-      where: { slug },
-      include: {
-        reviews: {
-          include: {
-            user: {
-              select: { id: true, name: true, image: true, username: true },
-            },
-            comments: COMMENT_QUERY,
-            _count: { select: { likes: true } },
-          },
-          orderBy: { createdAt: "desc" },
-        },
-      },
-    }),
+    prisma.city.findUnique({ where: { slug } }),
     requireActiveUser(),
   ]);
 
@@ -92,9 +83,28 @@ export default async function CityPage({
   const hiddenUserIds = new Set(
     await getHiddenUserIds(viewer.ok ? viewer.user.id : null),
   );
-  const visibleReviews = city.reviews.filter(
-    (review) => !review.user || !hiddenUserIds.has(review.user.id),
-  );
+  const hiddenList = [...hiddenUserIds];
+
+  // One row more than shown, to know whether another page exists.
+  const fetchedReviews = await prisma.review.findMany({
+    where: {
+      cityId: city.id,
+      ...(hiddenList.length
+        ? { OR: [{ userId: null }, { userId: { notIn: hiddenList } }] }
+        : {}),
+    },
+    include: {
+      user: {
+        select: { id: true, name: true, image: true, username: true },
+      },
+      comments: COMMENT_QUERY,
+      _count: { select: { likes: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: pages * REVIEWS_PAGE_SIZE + 1,
+  });
+  const hasMoreReviews = fetchedReviews.length > pages * REVIEWS_PAGE_SIZE;
+  const visibleReviews = fetchedReviews.slice(0, pages * REVIEWS_PAGE_SIZE);
 
   const identity = viewer.ok
     ? { userId_cityId: { userId: viewer.user.id, cityId: city.id } }
@@ -113,56 +123,7 @@ export default async function CityPage({
       ])
     : [null, null];
   const isAdmin = viewer.ok && viewer.user.role === "ADMIN";
-  const cityId = city.id;
-
-  async function submitReview(
-    _previousState: ActionResult | null,
-    formData: FormData,
-  ): Promise<ActionResult> {
-    "use server";
-    return toActionResult(async () => {
-      const auth = await requireActiveUser();
-      if (!auth.ok) throw new Error(auth.error);
-
-      if (!(await rateLimit(`review:${auth.user.email}`)))
-        throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
-
-      const ratings = parseRatings(formData);
-      const moderated = moderate(parseReviewContent(formData));
-
-      try {
-        await prisma.review.create({
-          data: {
-            cityId,
-            userId: auth.user.id,
-            ...ratings,
-            content: moderated.text,
-            flagged: moderated.flagged,
-            isApproved: true,
-          },
-        });
-      } catch (error) {
-        // The unique index is the real guard against a double submission; a
-        // pre-check would still lose the race between two concurrent requests.
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === "P2002"
-        ) {
-          throw new Error(DUPLICATE_REVIEW_MESSAGE);
-        }
-        throw error;
-      }
-
-      // Reviewing a city implies having been there. upsert keeps any dates
-      // the user already recorded for that visit.
-      await prisma.visit.upsert({
-        where: { userId_cityId: { userId: auth.user.id, cityId } },
-        create: { userId: auth.user.id, cityId },
-        update: {},
-      });
-      revalidatePath(`/c/${slug}`);
-    });
-  }
+  const submitReview = submitCityReview.bind(null, city.id);
 
   // One query for the viewer's likes across every review on the page, rather
   // than one per card.
@@ -234,17 +195,18 @@ export default async function CityPage({
   });
 
   // The photo is cached on the City row so the trending lists and profile
-  // favourites have one without a per-request Unsplash call. Fetch and store
-  // it the first time someone opens the city; every later view reads the row.
-  let cityImage = city.imageUrl;
+  // favourites have one without a per-request Unsplash call. Fetching it is
+  // deferred until the response has been sent, so the first visitor to a city
+  // does not wait on Unsplash; the photo shows from the next view on.
+  const cityImage = city.imageUrl;
   if (!cityImage) {
-    cityImage = await fetchCityPhoto(city.name);
-    if (cityImage) {
-      await prisma.city.update({
-        where: { id: city.id },
-        data: { imageUrl: cityImage },
-      });
-    }
+    const { id, name } = city;
+    after(async () => {
+      const photo = await fetchCityPhoto(name);
+      if (photo) {
+        await prisma.city.update({ where: { id }, data: { imageUrl: photo } });
+      }
+    });
   }
 
   const ratingData = await prisma.review.aggregate({
@@ -289,6 +251,9 @@ export default async function CityPage({
         avgScore={avgScore}
         categoryRatings={ratings}
         reviews={reviews}
+        moreReviewsHref={
+          hasMoreReviews ? `/c/${slug}?reviews=${pages + 1}` : null
+        }
         viewerId={viewer.ok ? viewer.user.id : null}
         toggleReviewLike={toggleReviewLike}
         addReviewComment={addReviewComment}

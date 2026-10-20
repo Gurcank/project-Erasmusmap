@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ImageOff } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import CityActions from "@/components/ui/CityActions";
@@ -29,6 +30,7 @@ type Props = {
   avgScore: number;
   categoryRatings: CategoryRatings;
   reviews: EngagedReview[];
+  moreReviewsHref: string | null;
   submitReview: FormAction;
   isAdmin: boolean;
   viewerId: string | null;
@@ -56,6 +58,7 @@ export default function CityContent({
   avgScore,
   categoryRatings,
   reviews,
+  moreReviewsHref,
   submitReview,
   isAdmin,
   viewerId,
@@ -199,23 +202,36 @@ export default function CityContent({
             {t.noReviews}
           </p>
         ) : (
-          <div className="flex flex-col gap-5">
-            {reviews.map((review) => (
-              <ReviewCard
-                key={review.id}
-                review={review}
-                viewerId={viewerId}
-                isAdmin={isAdmin}
-                toggleReviewLike={toggleReviewLike}
-                addReviewComment={addReviewComment}
-                deleteReviewComment={deleteReviewComment}
-                toggleCommentLike={toggleCommentLike}
-                deleteReview={deleteReview}
-                updateOwnReview={updateOwnReview}
-                deleteOwnReview={deleteOwnReview}
-              />
-            ))}
-          </div>
+          <>
+            <div className="flex flex-col gap-5">
+              {reviews.map((review) => (
+                <ReviewCard
+                  key={review.id}
+                  review={review}
+                  viewerId={viewerId}
+                  isAdmin={isAdmin}
+                  toggleReviewLike={toggleReviewLike}
+                  addReviewComment={addReviewComment}
+                  deleteReviewComment={deleteReviewComment}
+                  toggleCommentLike={toggleCommentLike}
+                  deleteReview={deleteReview}
+                  updateOwnReview={updateOwnReview}
+                  deleteOwnReview={deleteOwnReview}
+                />
+              ))}
+            </div>
+            {moreReviewsHref && (
+              <div className="mt-6 text-center">
+                <Link
+                  href={moreReviewsHref}
+                  scroll={false}
+                  className="inline-block rounded-full border border-ink-50/25 px-5 py-2 text-sm font-medium text-on-backdrop transition hover:bg-ink-50/10"
+                >
+                  {t.showMoreReviews}
+                </Link>
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>

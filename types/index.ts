@@ -13,6 +13,9 @@ export type CitySuggestion = {
   name: string;
   slug: string;
   country: string;
+  /** Used by the trip planner to bias place search towards the city. */
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type ReviewAuthor = {
