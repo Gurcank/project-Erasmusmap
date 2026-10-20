@@ -17,9 +17,12 @@ import type { FavoriteCity } from "@/components/ui/FavoriteCities";
 import type { CitySuggestion, EngagedReview } from "@/types";
 import type { ProfileComment } from "@/lib/profile-reviews";
 import type { FormAction } from "@/lib/action-result";
+import type { TripSummary } from "@/lib/trip-types";
+import TripCard from "@/components/trips/TripCard";
+import { useTripT } from "@/hooks/useTripT";
 
 export type ProfileTab =
-  "visited" | "wishlist" | "reviews" | "comments" | "liked";
+  "visited" | "wishlist" | "reviews" | "comments" | "liked" | "trips";
 
 export type VisitedCity = CitySuggestion & {
   startDate: Date | null;
@@ -53,6 +56,9 @@ type Props = {
   reviewCount: number;
   likedReviews: EngagedReview[];
   likedCount: number;
+  /** Public trips, plus private ones on the owner's own profile. */
+  trips: TripSummary[];
+  tripCount: number;
   /** Null when signed out — likes and replies are then read-only. */
   viewerId: string | null;
   deleteReview: FormAction;
@@ -242,6 +248,8 @@ export default function ProfileContent({
   reviewCount,
   likedReviews,
   likedCount,
+  trips,
+  tripCount,
   viewerId,
   deleteReview,
   toggleReviewLike,
@@ -254,6 +262,7 @@ export default function ProfileContent({
   removeFavoriteCity,
 }: Props) {
   const t = useT();
+  const { tt } = useTripT();
   const [avatarOpen, setAvatarOpen] = useState(false);
 
   const tabs: { key: ProfileTab; label: string; count: number }[] = [
@@ -262,6 +271,7 @@ export default function ProfileContent({
     { key: "reviews", label: t.tabReviews, count: reviewCount },
     { key: "comments", label: t.tabComments, count: comments.length },
     { key: "liked", label: t.tabLiked, count: likedCount },
+    { key: "trips", label: tt.tabTrips, count: tripCount },
   ];
 
   // Both review tabs render the same card with the same actions.
@@ -475,6 +485,19 @@ export default function ProfileContent({
             <EmptyState>{t.noReviewsProfile}</EmptyState>
           ) : (
             reviewList(reviews)
+          ))}
+
+        {activeTab === "trips" &&
+          (trips.length === 0 ? (
+            <EmptyState>
+              {isOwnProfile ? tt.noTrips : tt.noPublicTrips}
+            </EmptyState>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2">
+              {trips.map((trip) => (
+                <TripCard key={trip.id} trip={trip} />
+              ))}
+            </div>
           ))}
 
         {activeTab === "liked" &&

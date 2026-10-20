@@ -41,6 +41,14 @@ function getRedis(): Redis | null {
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   redisClient = url && token ? new Redis({ url, token }) : null;
 
+  if (!redisClient && process.env.NODE_ENV === "production") {
+    // Each serverless instance would keep its own counters, so the limits
+    // below are far weaker than they read. Say so once rather than silently.
+    console.warn(
+      "[rate-limit] UPSTASH_REDIS_REST_URL / _TOKEN are not set: falling back to a per-instance in-memory limiter.",
+    );
+  }
+
   return redisClient;
 }
 

@@ -8,8 +8,11 @@ import { requireActiveUser } from "@/lib/auth-guards";
 import { toActionResult, actionError } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 import { parseVisitDates } from "@/lib/schemas";
+import { parseRatings, parseReviewContent } from "@/lib/review";
+import { moderate } from "@/lib/moderation";
 
 const RATE_LIMIT = 30;
+const DUPLICATE_REVIEW_MESSAGE = "Bu şehre zaten yorum yaptınız.";
 
 async function authorize(key: string) {
   const auth = await requireActiveUser();
@@ -153,5 +156,57 @@ export async function saveVisitDates(
     });
 
     await revalidateCity(cityId, user.username);
+  });
+}
+
+/**
+ * Publishes the viewer's review of a city. Bound to the city id by the page
+ * (`submitReview.bind(null, city.id)`), so the form posts only the ratings
+ * and the text.
+ */
+export async function submitReview(
+  cityId: string,
+  _previousState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return toActionResult(async () => {
+    const auth = await requireActiveUser();
+    if (!auth.ok) throw new Error(auth.error);
+
+    if (!(await rateLimit(`review:${auth.user.email}`)))
+      throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+
+    const ratings = parseRatings(formData);
+    const moderated = moderate(parseReviewContent(formData));
+
+    try {
+      await prisma.review.create({
+        data: {
+          cityId,
+          userId: auth.user.id,
+          ...ratings,
+          content: moderated.text,
+          flagged: moderated.flagged,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        // The unique index is the real guard against a double submission; a
+        // pre-check would still lose the race between two concurrent requests.
+        if (error.code === "P2002") throw new Error(DUPLICATE_REVIEW_MESSAGE);
+        // P2003: the bound city id does not exist.
+        if (error.code === "P2003") throw new Error("Şehir bulunamadı");
+      }
+      throw error;
+    }
+
+    // Reviewing a city implies having been there. upsert keeps any dates the
+    // user already recorded for that visit.
+    await prisma.visit.upsert({
+      where: { userId_cityId: { userId: auth.user.id, cityId } },
+      create: { userId: auth.user.id, cityId },
+      update: {},
+    });
+    await revalidateCity(cityId, auth.user.username);
   });
 }

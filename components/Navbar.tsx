@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   Globe,
   Landmark,
+  Route,
   Loader2,
   LogOut,
   Search,
@@ -15,6 +16,7 @@ import {
   User,
 } from "lucide-react";
 import { useT } from "@/hooks/useT";
+import { useTripT } from "@/hooks/useTripT";
 import UserAvatar from "@/components/ui/UserAvatar";
 import HamburgerIcon from "@/components/ui/HamburgerIcon";
 import GlassButton, { GlassLink } from "@/components/ui/GlassButton";
@@ -28,6 +30,7 @@ const SEARCH_DEBOUNCE_MS = 220;
 export default function Navbar() {
   const router = useRouter();
   const t = useT();
+  const { tt } = useTripT();
   const profileRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
@@ -136,6 +139,8 @@ export default function Navbar() {
   const navLinks = [
     { href: "/", label: t.mapNav, icon: Globe },
     { href: "/meydan", label: t.square, icon: Landmark },
+    // Planning needs an account, so the link only shows when signed in.
+    ...(session ? [{ href: "/trips", label: tt.myTrips, icon: Route }] : []),
   ];
 
   const suggestionList = (

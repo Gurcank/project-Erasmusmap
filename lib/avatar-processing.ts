@@ -27,3 +27,18 @@ export async function normalizeAvatar(input: Buffer): Promise<Buffer> {
     .webp({ quality: AVATAR_QUALITY })
     .toBuffer();
 }
+
+const TRIP_PHOTO_MAX_DIMENSION = 1600;
+const TRIP_PHOTO_QUALITY = 80;
+
+/** Trip photos keep their shape: scaled to fit, never cropped or enlarged. */
+export async function normalizeTripPhoto(input: Buffer): Promise<Buffer> {
+  return sharp(input, { limitInputPixels: MAX_INPUT_PIXELS })
+    .rotate()
+    .resize(TRIP_PHOTO_MAX_DIMENSION, TRIP_PHOTO_MAX_DIMENSION, {
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: TRIP_PHOTO_QUALITY })
+    .toBuffer();
+}

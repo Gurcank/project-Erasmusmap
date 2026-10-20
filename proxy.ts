@@ -20,9 +20,16 @@ const SIGNED_IN_ONLY = [
   "/admin",
   "/settings",
   "/choose-username",
+  // Only the list and the create form: /trips/[id] serves public plans to
+  // signed-out visitors, and its own page guard handles private ones.
+  "/trips/new",
 ] as const;
 
+const SIGNED_IN_ONLY_EXACT = ["/trips"] as const;
+
 function isSignedInOnly(pathname: string): boolean {
+  if ((SIGNED_IN_ONLY_EXACT as readonly string[]).includes(pathname))
+    return true;
   return SIGNED_IN_ONLY.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
@@ -48,6 +55,10 @@ export async function proxy(request: NextRequest) {
       if (!token) {
         return NextResponse.redirect(new URL("/login", request.url));
       }
+    } else if (process.env.NODE_ENV === "production") {
+      console.warn(
+        "[proxy] NEXTAUTH_SECRET is not set: signed-in-only pages are not redirected here and rely on their page-level guard.",
+      );
     }
   }
 
