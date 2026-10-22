@@ -201,5 +201,12 @@ export const tr = {
   confirmDeleteUser:
     "Bu kullanıcıyı kalıcı olarak silmek istediğine emin misin? Bu işlem geri alınamaz.",
   noUsersFound: "Kullanıcı bulunamadı.",
+  usersSearchPlaceholder: "Ad, kullanıcı adı veya e-posta ara",
+  usersSearchBtn: "Ara",
+  usersPageLabel: "Sayfa {page} / {pages}",
+  usersTotal: "{n} kullanıcı",
+  prevPage: "Önceki",
+  nextPage: "Sonraki",
+  usersPagination: "Kullanıcı sayfaları",
   noReviewsFound: "Yorum bulunamadı.",
 };

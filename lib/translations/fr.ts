@@ -196,5 +196,12 @@ export const fr = {
   confirmDeleteUser:
     "Supprimer définitivement cet utilisateur ? Cette action est irréversible.",
   noUsersFound: "Aucun utilisateur trouvé.",
+  usersSearchPlaceholder: "Rechercher par nom, pseudo ou e-mail",
+  usersSearchBtn: "Rechercher",
+  usersPageLabel: "Page {page} sur {pages}",
+  usersTotal: "{n} utilisateurs",
+  prevPage: "Précédent",
+  nextPage: "Suivant",
+  usersPagination: "Pages des utilisateurs",
   noReviewsFound: "Aucun avis trouvé.",
 };

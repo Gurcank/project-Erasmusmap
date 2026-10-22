@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { MAX_COMMENTS_PER_REVIEW } from "@/lib/engagement";
 import type { EngagedReview, ReviewComment } from "@/types";
 
 const AUTHOR_SELECT = {
@@ -20,8 +21,10 @@ export const COMMENT_SELECT = {
 } as const;
 
 export const COMMENT_QUERY = {
-  // Oldest first: a thread reads top to bottom, and replies follow their parent.
-  orderBy: { createdAt: "asc" },
+  // Newest first, so that when a thread is longer than the cap it is the oldest
+  // comments that are left out. buildCommentTree puts them back in reading order.
+  orderBy: { createdAt: "desc" },
+  take: MAX_COMMENTS_PER_REVIEW,
   select: COMMENT_SELECT,
 } as const;
 
@@ -72,9 +75,11 @@ export function buildCommentTree(
   likedCommentIds: Set<string>,
   hiddenUserIds: Set<string> = new Set(),
 ): ReviewComment[] {
-  const visible = rows.filter(
-    (row) => !row.user || !hiddenUserIds.has(row.user.id),
-  );
+  // Oldest first: a thread reads top to bottom, and replies follow their parent.
+  // The rows arrive newest first (see COMMENT_QUERY).
+  const visible = rows
+    .filter((row) => !row.user || !hiddenUserIds.has(row.user.id))
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
   const toComment = (row: CommentRow): ReviewComment => ({
     id: row.id,
