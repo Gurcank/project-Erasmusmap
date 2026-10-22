@@ -138,7 +138,7 @@ export const it = {
   loginLegalNotice: "Accedendo accetti le {terms} e l'{privacy}.",
   cookieBannerLabel: "Preferenze sui cookie",
   cookieBannerText:
-    "I cookie necessari per mantenere l'accesso sono sempre usati. In via facoltativa, possiamo raccogliere statistiche di visita anonime (Vercel Analytics) per migliorare il sito.",
+    "I cookie necessari per mantenere l'accesso sono sempre usati. In via facoltativa, possiamo raccogliere statistiche di visita anonime (Vercel Analytics) e eventi di utilizzo della mappa (Mapbox) per migliorare il sito.",
   cookieAccept: "Accetta",
   cookieReject: "Rifiuta",
   cookiePrefsTitle: "La tua scelta su cookie e statistiche",

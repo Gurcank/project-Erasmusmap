@@ -117,6 +117,15 @@ describe("legal documents", () => {
     );
   });
 
+  it("say Mapbox usage events are sent only to those who accept", () => {
+    expect(text(getLegalDocument("privacy", "en"))).toMatch(
+      /Mapbox's map usage events[^.]*only if you accept/,
+    );
+    expect(text(getLegalDocument("privacy", "tr"))).toMatch(
+      /harita kullanım olayları[^.]*yalnızca isteğe bağlı istatistikleri kabul edersen/,
+    );
+  });
+
   it("point to the controls that actually exist", () => {
     const tr = text(getLegalDocument("privacy", "tr"));
     expect(tr).toContain("Verilerimi indir");

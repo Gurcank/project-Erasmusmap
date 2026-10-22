@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { CONSENT_COOKIE, analyticsAllowed, parseConsent } from "@/lib/consent";
 import { contentSecurityPolicy } from "@/lib/security-headers";
 
 /**
@@ -37,9 +38,13 @@ function isSignedInOnly(pathname: string): boolean {
 
 export async function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  // Mapbox's usage events are optional statistics: their host is in the policy
+  // only for a visitor who accepted them (see lib/consent.ts).
+  const consent = parseConsent(request.cookies.get(CONSENT_COOKIE)?.value);
   const policy = contentSecurityPolicy(
     nonce,
     process.env.NODE_ENV === "development",
+    { mapboxEvents: analyticsAllowed(consent) },
   );
 
   // Only document requests are redirected. A server action arrives as a POST to

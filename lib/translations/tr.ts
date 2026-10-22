@@ -143,7 +143,7 @@ export const tr = {
   loginLegalNotice: "Giriş yaparak {terms} ve {privacy} kabul etmiş olursun.",
   cookieBannerLabel: "Çerez tercihleri",
   cookieBannerText:
-    "Oturum için zorunlu çerezler her zaman kullanılır. İsteğe bağlı olarak, siteyi iyileştirmek için anonim ziyaret istatistikleri (Vercel Analytics) toplayabiliriz.",
+    "Oturum için zorunlu çerezler her zaman kullanılır. İsteğe bağlı olarak, siteyi iyileştirmek için anonim ziyaret istatistikleri (Vercel Analytics) ve harita kullanım olayları (Mapbox) toplayabiliriz.",
   cookieAccept: "Kabul et",
   cookieReject: "Reddet",
   cookiePrefsTitle: "Çerez ve istatistik tercihin",

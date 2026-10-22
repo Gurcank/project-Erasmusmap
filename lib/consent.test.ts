@@ -6,6 +6,7 @@ import {
   consentCookie,
   needsConsentDecision,
   parseConsent,
+  readConsentCookie,
 } from "@/lib/consent";
 
 describe("parseConsent", () => {
@@ -27,6 +28,25 @@ describe("parseConsent", () => {
       "yes",
     ]) {
       expect(parseConsent(value)).toBeNull();
+    }
+  });
+});
+
+describe("readConsentCookie", () => {
+  it("finds the choice among other cookies", () => {
+    expect(readConsentCookie("a=1; consent=granted; b=2")).toBe("granted");
+    expect(readConsentCookie("consent=denied")).toBe("denied");
+  });
+
+  it("returns no choice when the cookie is absent, empty or not ours", () => {
+    for (const value of [
+      "",
+      "a=1",
+      "xconsent=granted",
+      "consent=",
+      "consent=maybe",
+    ]) {
+      expect(readConsentCookie(value)).toBeNull();
     }
   });
 });

@@ -127,6 +127,7 @@ export default function Map() {
       zoom: INITIAL_ZOOM,
       pitch: INITIAL_PITCH,
       maxPitch: 0,
+      performanceMetricsCollection: false,
     });
 
     mapRef.current = map;
