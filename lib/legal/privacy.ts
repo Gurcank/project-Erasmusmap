@@ -58,7 +58,7 @@ const tr = ({
         "Verilerini şu hizmet sağlayıcılar aracılığıyla işleriz. Hepsi, bizim adımıza veya kendi hizmetleri kapsamında, yalnızca ilgili işi yapmak için veri alır:",
       ],
       items: [
-        "Vercel Inc. (ABD): siteyi barındırır; sunucu tarafı kodu şu anda Vercel'in ABD Doğu (Washington D.C.) bölgesinde çalışır. Çerez kullanmayan, toplu ziyaret istatistikleri için Vercel Analytics'i kullanırız.",
+        "Vercel Inc. (ABD): siteyi barındırır; sunucu tarafı kodu şu anda Vercel'in ABD Doğu (Washington D.C.) bölgesinde çalışır. İsteğe bağlı istatistik tercihini kabul edersen, çerez kullanmayan, toplu ziyaret istatistikleri için Vercel Analytics'i yükleriz.",
         "Supabase (veritabanı): hesabın ve içeriklerin Dublin'de (İrlanda, AB) bulunan bir PostgreSQL veritabanında saklanır.",
         "Google (ABD): giriş için kimlik doğrular. Google, ErasmusMap'e giriş yaptığını bilir.",
         `Upstash (hız sınırı): kısa süreli sayaçlar tutar; veritabanı bölgesi: ${upstashRegion}. Sayaç anahtarlarında kullanıcı kimliğin veya (giriş yapmamışsan) IP adresin bulunabilir.`,
@@ -82,8 +82,9 @@ const tr = ({
       heading: "7. Çerezler ve yerel depolama",
       items: [
         "Zorunlu çerezler: giriş yaptığında oturumunu tanıyan ve yetkisiz isteklere karşı koruyan next-auth çerezleri (oturum, CSRF ve yönlendirme). Oturum çerezi varsayılan olarak 30 gün geçerlidir. Bunlar olmadan giriş çalışmaz.",
+        "Tercih çerezi (consent): isteğe bağlı istatistik tercihini 6 ay boyunca hatırlar ve yalnızca bu tercihi içerir.",
         "Tarayıcının yerel depolaması: seçtiğin tema ve arayüz dili; yalnızca senin cihazında kalır.",
-        "Vercel Analytics çerez kullanmaz ve seni takip etmez; yalnızca toplu sayımlar tutar.",
+        "İsteğe bağlı istatistikler: Vercel Analytics yalnızca kabul edersen yüklenir. Çerez kullanmaz ve seni takip etmez; yalnızca toplu sayımlar tutar. Reddedersen hiç yüklenmez. Tercihini bu sayfanın altındaki bölümden istediğin zaman değiştirebilirsin.",
       ],
     },
     {
@@ -165,7 +166,7 @@ const en = ({
         "We process your data through the following providers. Each receives data only to do its job, on our behalf or as part of its own service:",
       ],
       items: [
-        "Vercel Inc. (USA): hosts the site; the server-side code currently runs in Vercel's US East (Washington D.C.) region. We use Vercel Analytics for aggregate visit statistics; it uses no cookies.",
+        "Vercel Inc. (USA): hosts the site; the server-side code currently runs in Vercel's US East (Washington D.C.) region. If you accept the optional statistics choice, we load Vercel Analytics for aggregate visit statistics; it uses no cookies.",
         "Supabase (database): your account and content are stored in a PostgreSQL database in Dublin (Ireland, EU).",
         "Google (USA): verifies your identity when you sign in. Google knows you signed in to ErasmusMap.",
         `Upstash (rate limiting): keeps short-lived counters; database region: ${upstashRegion}. Counter keys can contain your user id or, if you are not signed in, your IP address.`,
@@ -189,8 +190,9 @@ const en = ({
       heading: "7. Cookies and local storage",
       items: [
         "Essential cookies: the next-auth cookies that recognise your session when you are signed in and protect against forged requests (session, CSRF and redirect). The session cookie is valid for 30 days by default. Signing in does not work without them.",
+        "Choice cookie (consent): remembers your optional statistics choice for 6 months and holds nothing but that choice.",
         "Your browser's local storage: the theme and interface language you chose; it stays on your device only.",
-        "Vercel Analytics uses no cookies and does not track you; it only keeps aggregate counts.",
+        "Optional statistics: Vercel Analytics is loaded only if you accept. It uses no cookies and does not track you; it only keeps aggregate counts. If you refuse, it is never loaded. You can change your choice at any time in the section at the bottom of this page.",
       ],
     },
     {

@@ -136,6 +136,16 @@ export const it = {
   termsLinkText: "Condizioni d'uso",
   privacyLinkText: "Informativa sulla privacy",
   loginLegalNotice: "Accedendo accetti le {terms} e l'{privacy}.",
+  cookieBannerLabel: "Preferenze sui cookie",
+  cookieBannerText:
+    "I cookie necessari per mantenere l'accesso sono sempre usati. In via facoltativa, possiamo raccogliere statistiche di visita anonime (Vercel Analytics) per migliorare il sito.",
+  cookieAccept: "Accetta",
+  cookieReject: "Rifiuta",
+  cookiePrefsTitle: "La tua scelta su cookie e statistiche",
+  cookieStatusGranted: "Hai accettato le statistiche facoltative.",
+  cookieStatusDenied: "Hai rifiutato le statistiche facoltative.",
+  cookieStatusUnset:
+    "Non hai ancora scelto; le statistiche facoltative sono disattivate.",
   accountSection: "Account",
   profileSection: "Profilo",
   blockedUsersSection: "Utenti bloccati",

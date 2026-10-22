@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LEGAL_CONFIG, legalPlaceholdersLeft } from "@/lib/legal/config";
 import { getLegalDocument, legalLangFor, type LegalKind } from "@/lib/legal";
+import { CONSENT_COOKIE } from "@/lib/consent";
 import { imageHosts } from "@/lib/security-headers";
 import type { LegalDocument } from "@/lib/legal/types";
 
@@ -100,6 +101,20 @@ describe("legal documents", () => {
       expect(provider, `no provider named for ${host}`).toBeTruthy();
       expect(privacy).toContain(provider);
     }
+  });
+
+  it("describe the consent cookie and the opt-in statistics the banner controls", () => {
+    for (const lang of LANGS) {
+      const privacy = text(getLegalDocument("privacy", lang));
+      expect(privacy).toContain(CONSENT_COOKIE);
+      expect(privacy).toContain("Vercel Analytics");
+    }
+    expect(text(getLegalDocument("privacy", "en"))).toMatch(
+      /only if you accept/i,
+    );
+    expect(text(getLegalDocument("privacy", "tr"))).toMatch(
+      /yalnızca kabul edersen/,
+    );
   });
 
   it("point to the controls that actually exist", () => {

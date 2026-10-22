@@ -138,6 +138,16 @@ export const de = {
   privacyLinkText: "Datenschutzerklärung",
   loginLegalNotice:
     "Mit der Anmeldung akzeptierst du die {terms} und die {privacy}.",
+  cookieBannerLabel: "Cookie-Einstellungen",
+  cookieBannerText:
+    "Cookies für die Anmeldung werden immer verwendet. Optional können wir anonyme Besuchsstatistiken (Vercel Analytics) erheben, um die Seite zu verbessern.",
+  cookieAccept: "Akzeptieren",
+  cookieReject: "Ablehnen",
+  cookiePrefsTitle: "Deine Cookie- und Statistik-Auswahl",
+  cookieStatusGranted: "Du hast die optionalen Statistiken akzeptiert.",
+  cookieStatusDenied: "Du hast die optionalen Statistiken abgelehnt.",
+  cookieStatusUnset:
+    "Du hast noch nichts gewählt; die optionalen Statistiken sind aus.",
   accountSection: "Konto",
   profileSection: "Profil",
   blockedUsersSection: "Blockierte Nutzer",
