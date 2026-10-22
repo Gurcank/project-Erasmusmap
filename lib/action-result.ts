@@ -12,6 +12,22 @@ export function actionError(error: string): ActionResult {
 }
 
 /**
+ * An error whose message was written for the person using the form: a failed
+ * validation, a missing permission, a rate limit. It is the only kind of error
+ * whose text leaves the server. Anything else — a database failure, a bug —
+ * can carry table names or query text, so it is logged and replaced by
+ * GENERIC_ERROR_MESSAGE instead.
+ */
+export class UserFacingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UserFacingError";
+  }
+}
+
+export const GENERIC_ERROR_MESSAGE = "Bir hata oluştu";
+
+/**
  * Next.js implements redirect() and notFound() by throwing tagged errors.
  * Swallowing those would break navigation, so they are re-thrown untouched.
  */
@@ -26,8 +42,9 @@ function isControlFlowError(error: unknown): boolean {
 }
 
 /**
- * Runs an action body, converting the Error messages thrown by validation
- * helpers into a result the form can render.
+ * Runs an action body, converting the UserFacingErrors thrown by validation
+ * helpers into a result the form can render. Every other error is logged and
+ * answered with a generic message.
  */
 export async function toActionResult(
   run: () => Promise<void>,
@@ -37,8 +54,9 @@ export async function toActionResult(
     return actionSuccess;
   } catch (error) {
     if (isControlFlowError(error)) throw error;
-    if (error instanceof Error) return actionError(error.message);
-    throw error;
+    if (error instanceof UserFacingError) return actionError(error.message);
+    console.error("Server action failed", error);
+    return actionError(GENERIC_ERROR_MESSAGE);
   }
 }
 

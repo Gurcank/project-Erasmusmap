@@ -6,7 +6,7 @@ import AccountContent from "@/components/ui/AccountContent";
 import { bioSchema, firstIssueMessage, usernameSchema } from "@/lib/schemas";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveUser } from "@/lib/auth-guards";
-import { toActionResult } from "@/lib/action-result";
+import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 
 export const metadata: Metadata = {
@@ -28,13 +28,15 @@ export default async function AccountPage() {
     "use server";
     return toActionResult(async () => {
       const auth = await requireActiveUser();
-      if (!auth.ok) throw new Error(auth.error);
+      if (!auth.ok) throw new UserFacingError(auth.error);
 
       if (!(await rateLimit(`profile:${auth.user.email}`)))
-        throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+        throw new UserFacingError(
+          "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
+        );
 
       const bio = bioSchema.safeParse(formData.get("bio") ?? "");
-      if (!bio.success) throw new Error(firstIssueMessage(bio.error));
+      if (!bio.success) throw new UserFacingError(firstIssueMessage(bio.error));
 
       const updated = await prisma.user.update({
         where: { id: auth.user.id },
@@ -52,13 +54,16 @@ export default async function AccountPage() {
     "use server";
     return toActionResult(async () => {
       const auth = await requireActiveUser();
-      if (!auth.ok) throw new Error(auth.error);
+      if (!auth.ok) throw new UserFacingError(auth.error);
 
       if (!(await rateLimit(`username:${auth.user.email}`)))
-        throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+        throw new UserFacingError(
+          "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
+        );
 
       const parsed = usernameSchema.safeParse(formData.get("username") ?? "");
-      if (!parsed.success) throw new Error(firstIssueMessage(parsed.error));
+      if (!parsed.success)
+        throw new UserFacingError(firstIssueMessage(parsed.error));
       const username = parsed.data;
 
       const exists = await prisma.user.findUnique({
@@ -66,7 +71,7 @@ export default async function AccountPage() {
         select: { id: true },
       });
       if (exists && exists.id !== auth.user.id)
-        throw new Error("Bu kullanıcı adı zaten alınmış");
+        throw new UserFacingError("Bu kullanıcı adı zaten alınmış");
 
       await prisma.user.update({
         where: { id: auth.user.id },

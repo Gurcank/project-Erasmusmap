@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ReviewRatings } from "@/types";
+import { UserFacingError } from "@/lib/action-result";
 
 export const RATING_FIELDS = [
   "culture",
@@ -75,14 +76,16 @@ export function parseRatings(formData: FormData): ReviewRatings {
   );
 
   const result = ratingsSchema.safeParse(raw);
-  if (!result.success) throw new Error(firstIssueMessage(result.error));
+  if (!result.success)
+    throw new UserFacingError(firstIssueMessage(result.error));
 
   return result.data;
 }
 
 export function parseReviewContent(formData: FormData): string {
   const result = reviewContentSchema.safeParse(formData.get("content") ?? "");
-  if (!result.success) throw new Error(firstIssueMessage(result.error));
+  if (!result.success)
+    throw new UserFacingError(firstIssueMessage(result.error));
 
   return result.data;
 }

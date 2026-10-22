@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireAdmin } from "@/lib/auth-guards";
 import type { ActiveUser } from "@/lib/auth-guards";
-import { toActionResult } from "@/lib/action-result";
+import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 
 async function authorizeAdminAction(
@@ -13,10 +13,12 @@ async function authorizeAdminAction(
   limit = 20,
 ): Promise<ActiveUser> {
   const auth = await requireAdmin();
-  if (!auth.ok) throw new Error(auth.error);
+  if (!auth.ok) throw new UserFacingError(auth.error);
 
   if (!(await rateLimit(`${rateLimitKey}:${auth.user.email}`, limit))) {
-    throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+    throw new UserFacingError(
+      "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
+    );
   }
 
   return auth.user;
@@ -30,7 +32,7 @@ export async function deleteReview(
     await authorizeAdminAction("delete-review");
 
     const reviewId = String(formData.get("reviewId") ?? "");
-    if (!reviewId) throw new Error("Geçersiz yorum");
+    if (!reviewId) throw new UserFacingError("Geçersiz yorum");
 
     const review = await prisma.review.findUnique({
       where: { id: reviewId },
@@ -57,7 +59,7 @@ export async function banUser(
     const admin = await authorizeAdminAction("admin-ban", 30);
 
     const userId = String(formData.get("userId") ?? "");
-    if (!userId) throw new Error("Geçersiz kullanıcı");
+    if (!userId) throw new UserFacingError("Geçersiz kullanıcı");
 
     const target = await prisma.user.findUnique({
       where: { id: userId },
@@ -65,10 +67,10 @@ export async function banUser(
     });
     if (!target) return;
     if (target.id === admin.id) {
-      throw new Error("Kendi hesabınızı askıya alamazsınız");
+      throw new UserFacingError("Kendi hesabınızı askıya alamazsınız");
     }
     if (target.role === "ADMIN") {
-      throw new Error("Başka bir admini askıya alamazsınız");
+      throw new UserFacingError("Başka bir admini askıya alamazsınız");
     }
 
     await prisma.user.update({
@@ -88,7 +90,7 @@ export async function deleteUser(
     const admin = await authorizeAdminAction("admin-delete-user", 30);
 
     const userId = String(formData.get("userId") ?? "");
-    if (!userId) throw new Error("Geçersiz kullanıcı");
+    if (!userId) throw new UserFacingError("Geçersiz kullanıcı");
 
     const target = await prisma.user.findUnique({
       where: { id: userId },
@@ -96,10 +98,10 @@ export async function deleteUser(
     });
     if (!target) return;
     if (target.id === admin.id) {
-      throw new Error("Kendi hesabınızı silemezsiniz");
+      throw new UserFacingError("Kendi hesabınızı silemezsiniz");
     }
     if (target.role === "ADMIN") {
-      throw new Error("Başka bir admini silemezsiniz");
+      throw new UserFacingError("Başka bir admini silemezsiniz");
     }
 
     await prisma.user.delete({ where: { id: userId } });

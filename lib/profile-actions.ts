@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveUser } from "@/lib/auth-guards";
-import { toActionResult } from "@/lib/action-result";
+import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 import { fetchCityPhoto } from "@/lib/unsplash";
 import { MAX_FAVORITE_CITIES } from "@/lib/profile";
@@ -14,10 +14,12 @@ const RATE_LIMIT = 30;
 
 async function authorize(key: string) {
   const auth = await requireActiveUser();
-  if (!auth.ok) throw new Error(auth.error);
+  if (!auth.ok) throw new UserFacingError(auth.error);
 
   if (!(await rateLimit(`${key}:${auth.user.email}`, RATE_LIMIT))) {
-    throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+    throw new UserFacingError(
+      "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
+    );
   }
 
   return auth.user;
@@ -38,13 +40,13 @@ export async function addFavoriteCity(
     const user = await authorize("favorite");
 
     const cityId = String(formData.get("cityId") ?? "");
-    if (!cityId) throw new Error("Şehir bulunamadı");
+    if (!cityId) throw new UserFacingError("Şehir bulunamadı");
 
     const city = await prisma.city.findUnique({
       where: { id: cityId },
       select: { id: true, name: true, imageUrl: true },
     });
-    if (!city) throw new Error("Şehir bulunamadı");
+    if (!city) throw new UserFacingError("Şehir bulunamadı");
 
     const taken = await prisma.favoriteCity.findMany({
       where: { userId: user.id },
@@ -52,7 +54,7 @@ export async function addFavoriteCity(
     });
 
     if (taken.some((entry) => entry.cityId === cityId)) {
-      throw new Error("Bu şehir zaten listende");
+      throw new UserFacingError("Bu şehir zaten listende");
     }
 
     const position = Array.from(
@@ -60,7 +62,9 @@ export async function addFavoriteCity(
       (_, i) => i,
     ).find((slot) => !taken.some((entry) => entry.position === slot));
     if (position === undefined) {
-      throw new Error(`En fazla ${MAX_FAVORITE_CITIES} şehir seçebilirsin`);
+      throw new UserFacingError(
+        `En fazla ${MAX_FAVORITE_CITIES} şehir seçebilirsin`,
+      );
     }
 
     if (!city.imageUrl) {
@@ -83,7 +87,7 @@ export async function addFavoriteCity(
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
       ) {
-        throw new Error("Bu şehir zaten listende");
+        throw new UserFacingError("Bu şehir zaten listende");
       }
       throw error;
     }
@@ -100,7 +104,7 @@ export async function removeFavoriteCity(
     const user = await authorize("favorite");
 
     const cityId = String(formData.get("cityId") ?? "");
-    if (!cityId) throw new Error("Şehir bulunamadı");
+    if (!cityId) throw new UserFacingError("Şehir bulunamadı");
 
     await prisma.favoriteCity.deleteMany({
       where: { userId: user.id, cityId },
