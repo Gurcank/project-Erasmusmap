@@ -46,7 +46,7 @@
 
 ### Gereksinimler
 
-- Node.js 20.9+ (bkz. [`.nvmrc`](.nvmrc))
+- Node.js 24 LTS (bkz. [`.nvmrc`](.nvmrc))
 - PostgreSQL veritabanı (Supabase önerilir)
 
 ### Kurulum
