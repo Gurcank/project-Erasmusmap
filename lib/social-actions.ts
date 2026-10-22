@@ -4,17 +4,19 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveUser } from "@/lib/auth-guards";
-import { toActionResult } from "@/lib/action-result";
+import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 
 const RATE_LIMIT = 30;
 
 async function authorize(key: string) {
   const auth = await requireActiveUser();
-  if (!auth.ok) throw new Error(auth.error);
+  if (!auth.ok) throw new UserFacingError(auth.error);
 
   if (!(await rateLimit(`${key}:${auth.user.email}`, RATE_LIMIT))) {
-    throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+    throw new UserFacingError(
+      "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
+    );
   }
 
   return auth.user;
@@ -22,7 +24,7 @@ async function authorize(key: string) {
 
 function targetIdOf(formData: FormData): string {
   const id = String(formData.get("targetUserId") ?? "");
-  if (!id) throw new Error("Kullanıcı bulunamadı");
+  if (!id) throw new UserFacingError("Kullanıcı bulunamadı");
   return id;
 }
 
@@ -45,13 +47,14 @@ export async function toggleFollow(
     const user = await authorize("follow");
     const targetId = targetIdOf(formData);
 
-    if (targetId === user.id) throw new Error("Kendini takip edemezsin");
+    if (targetId === user.id)
+      throw new UserFacingError("Kendini takip edemezsin");
 
     const target = await prisma.user.findUnique({
       where: { id: targetId },
       select: { id: true },
     });
-    if (!target) throw new Error("Kullanıcı bulunamadı");
+    if (!target) throw new UserFacingError("Kullanıcı bulunamadı");
 
     const blocked = await prisma.block.findFirst({
       where: {
@@ -62,7 +65,7 @@ export async function toggleFollow(
       },
       select: { id: true },
     });
-    if (blocked) throw new Error("Bu kullanıcıyı takip edemezsin");
+    if (blocked) throw new UserFacingError("Bu kullanıcıyı takip edemezsin");
 
     const identity = {
       followerId_followingId: { followerId: user.id, followingId: targetId },
@@ -96,13 +99,14 @@ export async function toggleBlock(
     const user = await authorize("block");
     const targetId = targetIdOf(formData);
 
-    if (targetId === user.id) throw new Error("Kendini engelleyemezsin");
+    if (targetId === user.id)
+      throw new UserFacingError("Kendini engelleyemezsin");
 
     const target = await prisma.user.findUnique({
       where: { id: targetId },
       select: { id: true },
     });
-    if (!target) throw new Error("Kullanıcı bulunamadı");
+    if (!target) throw new UserFacingError("Kullanıcı bulunamadı");
 
     const identity = {
       blockerId_blockedId: { blockerId: user.id, blockedId: targetId },

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveUser, requireAdmin } from "@/lib/auth-guards";
-import { toActionResult } from "@/lib/action-result";
+import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 import { MAX_REPLY_LENGTH } from "@/lib/engagement";
 import { parseRatings, parseReviewContent } from "@/lib/review";
@@ -18,10 +18,12 @@ const REVIEW_EDIT_RATE_LIMIT = 20;
 
 async function authorize(key: string, limit: number) {
   const auth = await requireActiveUser();
-  if (!auth.ok) throw new Error(auth.error);
+  if (!auth.ok) throw new UserFacingError(auth.error);
 
   if (!(await rateLimit(`${key}:${auth.user.email}`, limit))) {
-    throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+    throw new UserFacingError(
+      "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
+    );
   }
 
   return auth.user;
@@ -39,7 +41,7 @@ async function revalidateReview(reviewId: string) {
 
 /** Loads a review the signed-in user owns, or throws. */
 async function requireOwnReview(reviewId: string, userId: string) {
-  if (!reviewId) throw new Error("Yorum bulunamadı");
+  if (!reviewId) throw new UserFacingError("Yorum bulunamadı");
 
   const review = await prisma.review.findUnique({
     where: { id: reviewId },
@@ -50,9 +52,9 @@ async function requireOwnReview(reviewId: string, userId: string) {
       user: { select: { username: true } },
     },
   });
-  if (!review) throw new Error("Yorum bulunamadı");
+  if (!review) throw new UserFacingError("Yorum bulunamadı");
   if (review.userId !== userId) {
-    throw new Error("Bu işlem için yetkiniz yok");
+    throw new UserFacingError("Bu işlem için yetkiniz yok");
   }
   return review;
 }
@@ -80,7 +82,7 @@ export async function updateOwnReview(
     const ratings = parseRatings(formData);
     const content = parseReviewContent(formData);
     const stay = parseVisitDates(formData);
-    if (!stay.ok) throw new Error(stay.error);
+    if (!stay.ok) throw new UserFacingError(stay.error);
     const moderated = moderate(content);
 
     await prisma.review.update({
@@ -138,7 +140,7 @@ export async function toggleReviewLike(
     const user = await authorize("review-like", LIKE_RATE_LIMIT);
 
     const reviewId = String(formData.get("reviewId") ?? "");
-    if (!reviewId) throw new Error("Yorum bulunamadı");
+    if (!reviewId) throw new UserFacingError("Yorum bulunamadı");
 
     const identity = { userId_reviewId: { userId: user.id, reviewId } };
     const existing = await prisma.reviewLike.findUnique({
@@ -158,7 +160,7 @@ export async function toggleReviewLike(
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2003"
       ) {
-        throw new Error("Yorum bulunamadı");
+        throw new UserFacingError("Yorum bulunamadı");
       }
       throw error;
     }
@@ -183,7 +185,7 @@ async function resolveCommentParent(
     select: { id: true, reviewId: true, parentId: true },
   });
   if (!parent || parent.reviewId !== reviewId) {
-    throw new Error("Yanıt verilecek yorum bulunamadı");
+    throw new UserFacingError("Yanıt verilecek yorum bulunamadı");
   }
   return parent.parentId ?? parent.id;
 }
@@ -196,13 +198,13 @@ export async function toggleCommentLike(
     const user = await authorize("comment-like", LIKE_RATE_LIMIT);
 
     const commentId = String(formData.get("commentId") ?? "");
-    if (!commentId) throw new Error("Yorum bulunamadı");
+    if (!commentId) throw new UserFacingError("Yorum bulunamadı");
 
     const comment = await prisma.reviewComment.findUnique({
       where: { id: commentId },
       select: { reviewId: true },
     });
-    if (!comment) throw new Error("Yorum bulunamadı");
+    if (!comment) throw new UserFacingError("Yorum bulunamadı");
 
     const identity = { userId_commentId: { userId: user.id, commentId } };
     const existing = await prisma.reviewCommentLike.findUnique({
@@ -241,12 +243,14 @@ export async function addReviewComment(
     const user = await authorize("review-comment", REPLY_RATE_LIMIT);
 
     const reviewId = String(formData.get("reviewId") ?? "");
-    if (!reviewId) throw new Error("Yorum bulunamadı");
+    if (!reviewId) throw new UserFacingError("Yorum bulunamadı");
 
     const content = String(formData.get("content") ?? "").trim();
-    if (!content) throw new Error("Yanıt boş olamaz");
+    if (!content) throw new UserFacingError("Yanıt boş olamaz");
     if (content.length > MAX_REPLY_LENGTH) {
-      throw new Error(`Yanıt en fazla ${MAX_REPLY_LENGTH} karakter olabilir`);
+      throw new UserFacingError(
+        `Yanıt en fazla ${MAX_REPLY_LENGTH} karakter olabilir`,
+      );
     }
 
     const parentId = await resolveCommentParent(
@@ -270,7 +274,7 @@ export async function addReviewComment(
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2003"
       ) {
-        throw new Error("Yorum bulunamadı");
+        throw new UserFacingError("Yorum bulunamadı");
       }
       throw error;
     }
@@ -288,7 +292,7 @@ export async function deleteReviewComment(
     const user = await authorize("review-comment-delete", REPLY_RATE_LIMIT);
 
     const commentId = String(formData.get("commentId") ?? "");
-    if (!commentId) throw new Error("Yanıt bulunamadı");
+    if (!commentId) throw new UserFacingError("Yanıt bulunamadı");
 
     const comment = await prisma.reviewComment.findUnique({
       where: { id: commentId },
@@ -298,7 +302,7 @@ export async function deleteReviewComment(
 
     if (comment.userId !== user.id) {
       const admin = await requireAdmin();
-      if (!admin.ok) throw new Error("Bu işlem için yetkiniz yok");
+      if (!admin.ok) throw new UserFacingError("Bu işlem için yetkiniz yok");
     }
 
     await prisma.reviewComment.delete({ where: { id: comment.id } });

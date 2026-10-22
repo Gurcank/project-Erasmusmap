@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveUser } from "@/lib/auth-guards";
-import { toActionResult, actionError } from "@/lib/action-result";
+import {
+  UserFacingError,
+  toActionResult,
+  actionError,
+} from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 import { parseVisitDates } from "@/lib/schemas";
 import { parseRatings, parseReviewContent } from "@/lib/review";
@@ -16,10 +20,12 @@ const DUPLICATE_REVIEW_MESSAGE = "Bu şehre zaten yorum yaptınız.";
 
 async function authorize(key: string) {
   const auth = await requireActiveUser();
-  if (!auth.ok) throw new Error(auth.error);
+  if (!auth.ok) throw new UserFacingError(auth.error);
 
   if (!(await rateLimit(`${key}:${auth.user.email}`, RATE_LIMIT))) {
-    throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+    throw new UserFacingError(
+      "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
+    );
   }
 
   return auth.user;
@@ -27,7 +33,7 @@ async function authorize(key: string) {
 
 function cityIdOf(formData: FormData): string {
   const cityId = String(formData.get("cityId") ?? "");
-  if (!cityId) throw new Error("Şehir bulunamadı");
+  if (!cityId) throw new UserFacingError("Şehir bulunamadı");
   return cityId;
 }
 
@@ -81,7 +87,7 @@ export async function toggleVisit(
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2003"
       ) {
-        throw new Error("Şehir bulunamadı");
+        throw new UserFacingError("Şehir bulunamadı");
       }
       throw error;
     }
@@ -115,7 +121,7 @@ export async function toggleWishlist(
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2003"
       ) {
-        throw new Error("Şehir bulunamadı");
+        throw new UserFacingError("Şehir bulunamadı");
       }
       throw error;
     }
@@ -171,10 +177,12 @@ export async function submitReview(
 ): Promise<ActionResult> {
   return toActionResult(async () => {
     const auth = await requireActiveUser();
-    if (!auth.ok) throw new Error(auth.error);
+    if (!auth.ok) throw new UserFacingError(auth.error);
 
     if (!(await rateLimit(`review:${auth.user.email}`)))
-      throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+      throw new UserFacingError(
+        "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
+      );
 
     const ratings = parseRatings(formData);
     const moderated = moderate(parseReviewContent(formData));
@@ -193,9 +201,11 @@ export async function submitReview(
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         // The unique index is the real guard against a double submission; a
         // pre-check would still lose the race between two concurrent requests.
-        if (error.code === "P2002") throw new Error(DUPLICATE_REVIEW_MESSAGE);
+        if (error.code === "P2002")
+          throw new UserFacingError(DUPLICATE_REVIEW_MESSAGE);
         // P2003: the bound city id does not exist.
-        if (error.code === "P2003") throw new Error("Şehir bulunamadı");
+        if (error.code === "P2003")
+          throw new UserFacingError("Şehir bulunamadı");
       }
       throw error;
     }

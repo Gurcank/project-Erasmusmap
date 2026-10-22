@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveUser, type ActiveUser } from "@/lib/auth-guards";
-import { toActionResult } from "@/lib/action-result";
+import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 import { deleteTripPhotoObject } from "@/lib/storage";
 import { dayOf } from "@/lib/trip-timeline";
@@ -35,9 +35,11 @@ const NOT_FOUND = "Plan bulunamadı";
 
 async function authorize(key: string): Promise<ActiveUser> {
   const auth = await requireActiveUser();
-  if (!auth.ok) throw new Error(auth.error);
+  if (!auth.ok) throw new UserFacingError(auth.error);
   if (!(await rateLimit(`trip-${key}:${auth.user.email}`, RATE_LIMIT))) {
-    throw new Error("Çok fazla istek. Lütfen biraz sonra tekrar dene.");
+    throw new UserFacingError(
+      "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
+    );
   }
   return auth.user;
 }
@@ -50,12 +52,12 @@ const field = (formData: FormData, name: string) =>
  * else answers exactly like one that does not.
  */
 async function ownedTrip(tripId: string, userId: string) {
-  if (!tripId) throw new Error(NOT_FOUND);
+  if (!tripId) throw new UserFacingError(NOT_FOUND);
   const trip = await prisma.trip.findFirst({
     where: { id: tripId, userId },
     select: { id: true, startDate: true, endDate: true },
   });
-  if (!trip) throw new Error(NOT_FOUND);
+  if (!trip) throw new UserFacingError(NOT_FOUND);
   return {
     id: trip.id,
     startDate: dateToDay(trip.startDate),
@@ -75,7 +77,7 @@ function rethrowMissingCity(error: unknown): never {
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === "P2003"
   ) {
-    throw new Error("Şehir bulunamadı");
+    throw new UserFacingError("Şehir bulunamadı");
   }
   throw error;
 }
@@ -128,7 +130,9 @@ export async function createTrip(
     const user = await authorize("create");
     const count = await prisma.trip.count({ where: { userId: user.id } });
     if (count >= MAX_TRIPS_PER_USER) {
-      throw new Error(`En fazla ${MAX_TRIPS_PER_USER} plan oluşturabilirsin`);
+      throw new UserFacingError(
+        `En fazla ${MAX_TRIPS_PER_USER} plan oluşturabilirsin`,
+      );
     }
 
     const { startDate, endDate, ...rest } = parsed.data;
@@ -229,7 +233,7 @@ export async function saveTripItem(
     const { cost, costCategory, startAt, endAt, ...rest } = parsed.data;
 
     if (!itemWithinTrip({ startAt, endAt }, trip.startDate, trip.endDate)) {
-      throw new Error("Bu saat planın tarihleri dışında");
+      throw new UserFacingError("Bu saat planın tarihleri dışında");
     }
 
     const data = {
@@ -246,14 +250,14 @@ export async function saveTripItem(
             where: { id: itemId, tripId: trip.id },
             data,
           });
-          if (updated.count === 0) throw new Error("Öğe bulunamadı");
+          if (updated.count === 0) throw new UserFacingError("Öğe bulunamadı");
           id = itemId;
         } else {
           const count = await tx.tripItem.count({
             where: { tripId: trip.id },
           });
           if (count >= MAX_ITEMS_PER_TRIP) {
-            throw new Error(
+            throw new UserFacingError(
               `Bir planda en fazla ${MAX_ITEMS_PER_TRIP} öğe olabilir`,
             );
           }
@@ -322,7 +326,7 @@ export async function saveTripExpense(
     const expenseId = field(formData, "expenseId") || null;
     const { date, ...rest } = parsed.data;
     if (date < trip.startDate || date > trip.endDate) {
-      throw new Error("Bu gün planın tarihleri dışında");
+      throw new UserFacingError("Bu gün planın tarihleri dışında");
     }
     const data = { ...rest, date: dayToDate(date) };
 
@@ -333,13 +337,14 @@ export async function saveTripExpense(
           where: { id: expenseId, tripId: trip.id, itemId: null },
           data,
         });
-        if (updated.count === 0) throw new Error("Harcama bulunamadı");
+        if (updated.count === 0)
+          throw new UserFacingError("Harcama bulunamadı");
       } else {
         const count = await prisma.tripExpense.count({
           where: { tripId: trip.id },
         });
         if (count >= MAX_EXPENSES_PER_TRIP) {
-          throw new Error("Bu plana daha fazla harcama eklenemez");
+          throw new UserFacingError("Bu plana daha fazla harcama eklenemez");
         }
         await prisma.tripExpense.create({ data: { ...data, tripId: trip.id } });
       }
@@ -417,7 +422,7 @@ export async function saveTripCityNotes(
       where: { id: field(formData, "tripCityId"), tripId: trip.id },
       data: { notes: notes.data || null },
     });
-    if (updated.count === 0) throw new Error("Şehir bulunamadı");
+    if (updated.count === 0) throw new UserFacingError("Şehir bulunamadı");
     revalidateTrip(trip.id, user.username);
   });
 }
@@ -428,7 +433,7 @@ async function ownedTripCity(formData: FormData, userId: string) {
     where: { id: field(formData, "tripCityId"), tripId: trip.id },
     select: { id: true },
   });
-  if (!tripCity) throw new Error("Şehir bulunamadı");
+  if (!tripCity) throw new UserFacingError("Şehir bulunamadı");
   return { trip, tripCity };
 }
 
@@ -447,7 +452,7 @@ export async function addTripTodo(
       where: { tripCityId: tripCity.id },
     });
     if (count >= MAX_TODOS_PER_CITY) {
-      throw new Error(
+      throw new UserFacingError(
         `Bir şehre en fazla ${MAX_TODOS_PER_CITY} madde eklenebilir`,
       );
     }
@@ -469,7 +474,7 @@ export async function toggleTripTodo(
       where: { id: field(formData, "todoId"), tripCityId: tripCity.id },
       select: { id: true, done: true },
     });
-    if (!todo) throw new Error("Madde bulunamadı");
+    if (!todo) throw new UserFacingError("Madde bulunamadı");
     await prisma.tripTodo.update({
       where: { id: todo.id },
       data: { done: !todo.done },
@@ -507,7 +512,7 @@ export async function deleteTripPhoto(
       where: { id: field(formData, "photoId"), tripId: trip.id },
       select: { id: true, path: true },
     });
-    if (!photo) throw new Error("Fotoğraf bulunamadı");
+    if (!photo) throw new UserFacingError("Fotoğraf bulunamadı");
     await prisma.tripPhoto.delete({ where: { id: photo.id } });
     await deleteTripPhotoObject(photo.path).catch(() => undefined);
     revalidateTrip(trip.id, user.username);
