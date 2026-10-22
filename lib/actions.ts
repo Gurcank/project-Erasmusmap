@@ -2,26 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { rateLimit } from "@/lib/rate-limit";
-import { requireAdmin } from "@/lib/auth-guards";
-import type { ActiveUser } from "@/lib/auth-guards";
+import { authorizeAction } from "@/lib/action-guard";
 import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 
-async function authorizeAdminAction(
-  rateLimitKey: string,
-  limit = 20,
-): Promise<ActiveUser> {
-  const auth = await requireAdmin();
-  if (!auth.ok) throw new UserFacingError(auth.error);
-
-  if (!(await rateLimit(`${rateLimitKey}:${auth.user.email}`, limit))) {
-    throw new UserFacingError(
-      "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
-    );
-  }
-
-  return auth.user;
+function authorizeAdminAction(key: string, limit = 20) {
+  return authorizeAction(key, { limit, admin: true });
 }
 
 export async function deleteReview(

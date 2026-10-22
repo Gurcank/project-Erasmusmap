@@ -3,8 +3,7 @@
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { rateLimit } from "@/lib/rate-limit";
-import { requireActiveUser } from "@/lib/auth-guards";
+import { authorizeAction } from "@/lib/action-guard";
 import {
   UserFacingError,
   toActionResult,
@@ -18,17 +17,8 @@ import { moderate } from "@/lib/moderation";
 const RATE_LIMIT = 30;
 const DUPLICATE_REVIEW_MESSAGE = "Bu şehre zaten yorum yaptınız.";
 
-async function authorize(key: string) {
-  const auth = await requireActiveUser();
-  if (!auth.ok) throw new UserFacingError(auth.error);
-
-  if (!(await rateLimit(`${key}:${auth.user.email}`, RATE_LIMIT))) {
-    throw new UserFacingError(
-      "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
-    );
-  }
-
-  return auth.user;
+function authorize(key: string) {
+  return authorizeAction(key, { limit: RATE_LIMIT });
 }
 
 function cityIdOf(formData: FormData): string {
@@ -176,13 +166,7 @@ export async function submitReview(
   formData: FormData,
 ): Promise<ActionResult> {
   return toActionResult(async () => {
-    const auth = await requireActiveUser();
-    if (!auth.ok) throw new UserFacingError(auth.error);
-
-    if (!(await rateLimit(`review:${auth.user.email}`)))
-      throw new UserFacingError(
-        "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
-      );
+    const user = await authorizeAction("review", { limit: 10 });
 
     const ratings = parseRatings(formData);
     const moderated = moderate(parseReviewContent(formData));
@@ -191,7 +175,7 @@ export async function submitReview(
       await prisma.review.create({
         data: {
           cityId,
-          userId: auth.user.id,
+          userId: user.id,
           ...ratings,
           content: moderated.text,
           flagged: moderated.flagged,
@@ -213,10 +197,10 @@ export async function submitReview(
     // Reviewing a city implies having been there. upsert keeps any dates the
     // user already recorded for that visit.
     await prisma.visit.upsert({
-      where: { userId_cityId: { userId: auth.user.id, cityId } },
-      create: { userId: auth.user.id, cityId },
+      where: { userId_cityId: { userId: user.id, cityId } },
+      create: { userId: user.id, cityId },
       update: {},
     });
-    await revalidateCity(cityId, auth.user.username);
+    await revalidateCity(cityId, user.username);
   });
 }

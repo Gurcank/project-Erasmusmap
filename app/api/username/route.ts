@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  if (!(await rateLimit(`username:${auth.user.email}`))) {
+  if (!(await rateLimit(`username:${auth.user.id}`))) {
     return NextResponse.json(
       { error: "Çok fazla istek. Lütfen biraz sonra tekrar dene." },
       { status: 429 },
