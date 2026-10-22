@@ -95,7 +95,7 @@ export default async function CityPage({
     },
     include: {
       user: {
-        select: { id: true, name: true, image: true, username: true },
+        select: { id: true, name: true, avatar: true, username: true },
       },
       comments: COMMENT_QUERY,
       _count: { select: { likes: true } },

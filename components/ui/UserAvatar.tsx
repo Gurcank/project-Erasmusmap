@@ -1,48 +1,37 @@
-import Image from "next/image";
+import AvatarFigure from "@/components/ui/AvatarFigure";
+import { resolveAvatarKey } from "@/lib/avatars";
 
 type Props = {
-  src: string | null;
-  /** Display name or username — only its first letter is used as fallback. */
-  label: string;
+  /** The stored avatar key; null until the person picks one. */
+  avatar: string | null;
+  /**
+   * What the default avatar is derived from: the user's id. It has to be the
+   * same everywhere the person appears, or they would change avatar from page
+   * to page.
+   */
+  seed: string;
   /** Rendered size in pixels. */
   size: number;
   className?: string;
 };
 
 /**
- * One avatar rendering for the whole app. Before this, the image-or-initial
- * pattern was duplicated in four components with four different fallback
- * styles.
+ * One avatar rendering for the whole app. Decorative: the name next to it is
+ * what identifies the person.
  */
 export default function UserAvatar({
-  src,
-  label,
+  avatar,
+  seed,
   size,
   className = "",
 }: Props) {
-  if (src) {
-    return (
-      <Image
-        src={src}
-        alt=""
-        width={size}
-        height={size}
-        // Avatars uploaded before the Storage migration are still base64 data
-        // URIs, which the image optimizer cannot fetch.
-        unoptimized={src.startsWith("data:")}
-        style={{ width: size, height: size }}
-        className={`shrink-0 rounded-full object-cover ${className}`}
-      />
-    );
-  }
-
   return (
     <span
       aria-hidden="true"
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.4) }}
-      className={`flex shrink-0 items-center justify-center rounded-full bg-surface-raised font-semibold text-text-muted ring-1 ring-border ${className}`}
+      style={{ width: size, height: size }}
+      className={`flex shrink-0 overflow-hidden rounded-full bg-surface-raised text-text ring-1 ring-border ${className}`}
     >
-      {label.trim().charAt(0).toUpperCase() || "?"}
+      <AvatarFigure avatarKey={resolveAvatarKey(avatar, seed)} />
     </span>
   );
 }

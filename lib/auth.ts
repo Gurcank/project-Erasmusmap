@@ -56,6 +56,10 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, user, trigger }) {
+      // Google's profile photo arrives on the token at sign-in. It is never
+      // shown or stored, so it does not get to ride along in the cookie either.
+      delete token.picture;
+
       if (!token.email) return token;
 
       const nowInSeconds = Math.floor(Date.now() / 1000);
@@ -72,7 +76,7 @@ export const authOptions: NextAuthOptions = {
           username: true,
           role: true,
           banned: true,
-          image: true,
+          avatar: true,
         },
       });
 
@@ -81,7 +85,7 @@ export const authOptions: NextAuthOptions = {
         token.username = dbUser.username;
         token.role = dbUser.role;
         token.banned = dbUser.banned;
-        token.picture = dbUser.image;
+        token.avatar = dbUser.avatar;
         token.refreshedAt = nowInSeconds;
       }
 
@@ -94,6 +98,7 @@ export const authOptions: NextAuthOptions = {
         session.user.username = token.username;
         session.user.role = token.role;
         session.user.banned = token.banned;
+        session.user.avatar = token.avatar ?? null;
       }
 
       return session;

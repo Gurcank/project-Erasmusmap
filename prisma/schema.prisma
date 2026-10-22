@@ -227,6 +227,10 @@ model User {
   /// so a key built from the id published that id on every profile page and
   /// made the whole bucket enumerable to anyone holding a list of ids.
   imagePath     String?
+  /// Key of the avatar the person picked from the site's own set (see
+  /// lib/avatars.ts). Null until they pick one, and the default is then derived
+  /// from the id. `image` and `imagePath` above are no longer read or written.
+  avatar        String?
   bio           String?   @db.Text
   /// Free-text "where I'm based", shown on the profile header. Optional.
   location      String?

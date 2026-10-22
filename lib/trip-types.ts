@@ -105,13 +105,6 @@ export type TripCityView = {
   todos: TripTodoView[];
 };
 
-export type TripPhotoView = {
-  id: string;
-  url: string;
-  caption: string | null;
-  cityId: string | null;
-};
-
 export type TripCityInspiration = {
   cityId: string;
   reviewCount: number;
@@ -138,7 +131,6 @@ export type TripView = {
   items: TripItemView[];
   expenses: TripExpenseView[];
   cities: TripCityView[];
-  photos: TripPhotoView[];
   inspiration: TripCityInspiration[];
 };
 

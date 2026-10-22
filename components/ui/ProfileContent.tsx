@@ -32,7 +32,7 @@ export type VisitedCity = CitySuggestion & {
 type Props = {
   userId: string;
   username: string;
-  image: string | null;
+  avatar: string | null;
   bio: string | null;
   isOwnProfile: boolean;
   isAdmin: boolean;
@@ -226,7 +226,7 @@ function ProfileMenu({
 export default function ProfileContent({
   userId,
   username,
-  image,
+  avatar,
   bio,
   isOwnProfile,
   isAdmin,
@@ -317,7 +317,7 @@ export default function ProfileContent({
             size="icon"
             className="h-24 w-24 shrink-0 border-transparent p-0 hover:border-border-strong"
           >
-            <UserAvatar src={image} label={username} size={96} />
+            <UserAvatar avatar={avatar} seed={userId} size={96} />
           </GlassButton>
 
           <div className="min-w-0 space-y-3 pt-1">
@@ -376,7 +376,8 @@ export default function ProfileContent({
 
       {avatarOpen && (
         <AvatarModal
-          image={image}
+          avatar={avatar}
+          seed={userId}
           label={username}
           isOwn={isOwnProfile}
           onClose={() => setAvatarOpen(false)}

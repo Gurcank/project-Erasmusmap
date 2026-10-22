@@ -12,7 +12,6 @@ import {
 export const MAX_TRIPS_PER_USER = 50;
 export const MAX_ITEMS_PER_TRIP = 300;
 export const MAX_EXPENSES_PER_TRIP = 500;
-export const MAX_PHOTOS_PER_TRIP = 30;
 export const MAX_TODOS_PER_CITY = 50;
 export const MAX_TRIP_DAYS = 60;
 /** 1 000 000.00 in minor units — far above any student trip. */
@@ -284,12 +283,3 @@ export const todoTitleSchema = z
   .trim()
   .min(1, "Bir şey yaz")
   .max(TODO_TITLE_MAX, `En fazla ${TODO_TITLE_MAX} karakter olabilir`);
-
-/**
- * Below Vercel's 4.5 MB request body ceiling for functions, so the upload is
- * refused here with a readable message rather than by the platform.
- */
-export const TRIP_PHOTO_MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
-export const TRIP_PHOTO_MAX_REQUEST_BYTES =
-  TRIP_PHOTO_MAX_UPLOAD_BYTES + 64 * 1024;
-export const TRIP_PHOTO_CAPTION_MAX = 200;

@@ -8,7 +8,6 @@ import { authorizeAction } from "@/lib/action-guard";
 import type { ActiveUser } from "@/lib/auth-guards";
 import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
-import { deleteTripPhotoObject } from "@/lib/storage";
 import { dayOf } from "@/lib/trip-timeline";
 import {
   cityNotesSchema,
@@ -193,17 +192,7 @@ export async function deleteTrip(
   const result = await toActionResult(async () => {
     const user = await authorize("delete");
     const trip = await ownedTrip(field(formData, "tripId"), user.id);
-    const photos = await prisma.tripPhoto.findMany({
-      where: { tripId: trip.id },
-      select: { path: true },
-    });
-
     await prisma.trip.delete({ where: { id: trip.id } });
-    // The rows are gone either way; a stray object in the bucket is only
-    // storage, so a failed removal must not fail the delete.
-    await Promise.allSettled(
-      photos.map((photo) => deleteTripPhotoObject(photo.path)),
-    );
     revalidateTrip(trip.id, user.username);
   });
   if (result.ok) redirect("/trips");
@@ -486,28 +475,6 @@ export async function deleteTripTodo(
     await prisma.tripTodo.deleteMany({
       where: { id: field(formData, "todoId"), tripCityId: tripCity.id },
     });
-    revalidateTrip(trip.id, user.username);
-  });
-}
-
-// ─── Photos ──────────────────────────────────────────────────────────────────
-// Uploads go through /api/trips/[id]/photos: a server action's body limit is
-// far below a photo's size.
-
-export async function deleteTripPhoto(
-  _previousState: ActionResult | null,
-  formData: FormData,
-): Promise<ActionResult> {
-  return toActionResult(async () => {
-    const user = await authorize("photo");
-    const trip = await ownedTrip(field(formData, "tripId"), user.id);
-    const photo = await prisma.tripPhoto.findFirst({
-      where: { id: field(formData, "photoId"), tripId: trip.id },
-      select: { id: true, path: true },
-    });
-    if (!photo) throw new UserFacingError("Fotoğraf bulunamadı");
-    await prisma.tripPhoto.delete({ where: { id: photo.id } });
-    await deleteTripPhotoObject(photo.path).catch(() => undefined);
     revalidateTrip(trip.id, user.username);
   });
 }

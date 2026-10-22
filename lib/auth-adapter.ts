@@ -13,7 +13,19 @@ import type { PrismaClient } from "@prisma/client";
  *
  * The columns stay in the schema, always null: the adapter's contract expects
  * them, and dropping them is a migration that buys nothing here.
+ *
+ * The same goes for the profile photo. Google sends its URL when the account is
+ * created, and the adapter would store it on the user. People choose one of the
+ * site's own avatars instead, so the photo is dropped before it is written.
  */
+function withoutImage<T extends { image?: unknown }>(
+  user: T,
+): Omit<T, "image"> {
+  const copy = { ...user };
+  delete copy.image;
+  return copy;
+}
+
 export function createAuthAdapter(
   prisma: PrismaClient,
 ): ReturnType<typeof PrismaAdapter> {
@@ -21,6 +33,8 @@ export function createAuthAdapter(
 
   return {
     ...adapter,
+    createUser: (user) => adapter.createUser!(withoutImage(user)),
+    updateUser: (user) => adapter.updateUser!(withoutImage(user)),
     linkAccount: (account) =>
       adapter.linkAccount!({
         userId: account.userId,

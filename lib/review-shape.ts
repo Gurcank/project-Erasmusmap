@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import type { EngagedReview, ReviewComment } from "@/types";
 
 const AUTHOR_SELECT = {
-  select: { id: true, name: true, image: true, username: true },
+  select: { id: true, name: true, avatar: true, username: true },
 } as const;
 
 /**
