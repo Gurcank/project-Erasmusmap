@@ -3,8 +3,8 @@
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { rateLimit } from "@/lib/rate-limit";
-import { requireActiveUser, requireAdmin } from "@/lib/auth-guards";
+import { authorizeAction } from "@/lib/action-guard";
+import { requireAdmin } from "@/lib/auth-guards";
 import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 import { MAX_REPLY_LENGTH } from "@/lib/engagement";
@@ -16,17 +16,8 @@ const LIKE_RATE_LIMIT = 60;
 const REPLY_RATE_LIMIT = 15;
 const REVIEW_EDIT_RATE_LIMIT = 20;
 
-async function authorize(key: string, limit: number) {
-  const auth = await requireActiveUser();
-  if (!auth.ok) throw new UserFacingError(auth.error);
-
-  if (!(await rateLimit(`${key}:${auth.user.email}`, limit))) {
-    throw new UserFacingError(
-      "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
-    );
-  }
-
-  return auth.user;
+function authorize(key: string, limit: number) {
+  return authorizeAction(key, { limit });
 }
 
 /** Revalidates every surface a review can appear on. */

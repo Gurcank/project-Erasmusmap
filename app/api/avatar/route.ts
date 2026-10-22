@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   if (!isStorageConfigured()) {
     return NextResponse.json({ error: STORAGE_UNAVAILABLE }, { status: 503 });
   }
-  if (!(await rateLimit(`avatar:${auth.user.email}`, 10))) {
+  if (!(await rateLimit(`avatar:${auth.user.id}`, 10))) {
     return NextResponse.json(
       { error: "Çok fazla istek. Lütfen biraz sonra tekrar dene." },
       { status: 429 },
@@ -126,7 +126,7 @@ export async function DELETE() {
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
-  if (!(await rateLimit(`avatar:${auth.user.email}`, 10))) {
+  if (!(await rateLimit(`avatar:${auth.user.id}`, 10))) {
     return NextResponse.json(
       { error: "Çok fazla istek. Lütfen biraz sonra tekrar dene." },
       { status: 429 },
