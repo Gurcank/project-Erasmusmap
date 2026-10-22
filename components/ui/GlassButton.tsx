@@ -138,3 +138,28 @@ export function GlassLink({
     </Link>
   );
 }
+
+/**
+ * The same surface on a plain anchor, for what a router must not handle: a file
+ * download, or a response that is not a page. next/link would prefetch it, which
+ * for an endpoint that does work is not harmless.
+ */
+export function GlassAnchor({
+  variant = "secondary",
+  size = "md",
+  fullWidth = false,
+  className = "",
+  children,
+  href,
+  ...props
+}: LinkProps) {
+  return (
+    <a
+      href={href}
+      className={classesFor(variant, size, fullWidth, className)}
+      {...props}
+    >
+      <Label>{children}</Label>
+    </a>
+  );
+}

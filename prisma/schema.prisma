@@ -66,7 +66,7 @@ model Review {
   city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
 
   userId String?
-  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   /// Set by the moderation filter — see ReviewComment.flagged.
   flagged Boolean @default(false)
@@ -171,7 +171,7 @@ model ReviewComment {
   review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 
   userId String?
-  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   content String
 
