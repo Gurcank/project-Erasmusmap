@@ -157,6 +157,28 @@ Uygulama [Vercel](https://vercel.com)'e deploy ediliyor. Vercel proje ayarların
 değişkenlerinin tanımlı olduğundan emin ol; migration'lar deploy sürecinde `npx prisma migrate deploy`
 ile veritabanına uygulanmalı.
 
+## Hata takibi ve loglar
+
+Sunucuda yakalanan her hata Vercel loglarına **tek satırlık JSON** olarak yazılır
+([`lib/logger.ts`](lib/logger.ts)). Vercel → proje → **Logs** ekranında `"level":"error"`
+ile arayabilir, `route`, `routeType` (`render` / `route` / `action`) ve `code`
+alanlarına göre daraltabilirsin. Kullanıcıya gösterilen hata sayfasındaki
+`digest` kodu, log satırındaki `error.digest` ile aynıdır.
+
+- Yakalanmayan sayfa / route / action hataları: [`instrumentation.ts`](instrumentation.ts) (`onRequestError`).
+- Kök layout çökerse: [`app/global-error.tsx`](app/global-error.tsx).
+- Veritabanı erişilemiyorsa `/api/health` `503` döner ve log'a düşer; bir izleme servisine buradan bağlanabilirsin.
+
+**Loglara ne yazılmaz:** başlıklar, çerezler, istek gövdesi, sorgu parametreleri (`?q=...`),
+e-posta adresleri, token'lar ve veritabanı adresleri. Prisma hatalarının _mesajı_ hiç yazılmaz
+(gönderilen değerleri içerebilir); yalnızca tür, kod ve model adı yazılır.
+
+**Bilinen sınır:** Next.js, yakalanmayan _render_ hatalarını kendi çıktısıyla da yazdırır ve
+bunu uygulama kodundan kapatamayız. Bu çıktı Prisma hata mesajını içerir (ör. veritabanı
+adresi). Sayfalardaki sorguların girdisi URL'den gelen kısa değerlerdir (şehir, kullanıcı adı).
+**İstemci tarafı** hatalar (tarayıcıdaki) hiçbir yere gönderilmez; bu bilinçli bir kapsam
+sınırıdır (bir izleme servisi yok).
+
 ## Lisans
 
 MIT

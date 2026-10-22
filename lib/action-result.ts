@@ -1,3 +1,5 @@
+import { logError } from "@/lib/logger";
+
 /**
  * Server actions return this instead of throwing. Next.js redacts thrown error
  * messages in production, so a thrown validation message never reaches the user
@@ -55,7 +57,7 @@ export async function toActionResult(
   } catch (error) {
     if (isControlFlowError(error)) throw error;
     if (error instanceof UserFacingError) return actionError(error.message);
-    console.error("Server action failed", error);
+    logError("Server action failed", error, { routeType: "action" });
     return actionError(GENERIC_ERROR_MESSAGE);
   }
 }
