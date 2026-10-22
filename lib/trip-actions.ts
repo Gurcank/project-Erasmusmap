@@ -4,8 +4,8 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { rateLimit } from "@/lib/rate-limit";
-import { requireActiveUser, type ActiveUser } from "@/lib/auth-guards";
+import { authorizeAction } from "@/lib/action-guard";
+import type { ActiveUser } from "@/lib/auth-guards";
 import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 import { deleteTripPhotoObject } from "@/lib/storage";
@@ -33,15 +33,8 @@ import type { ExpenseCategory, TripItemType } from "@/lib/trip-types";
 const RATE_LIMIT = 120;
 const NOT_FOUND = "Plan bulunamadı";
 
-async function authorize(key: string): Promise<ActiveUser> {
-  const auth = await requireActiveUser();
-  if (!auth.ok) throw new UserFacingError(auth.error);
-  if (!(await rateLimit(`trip-${key}:${auth.user.email}`, RATE_LIMIT))) {
-    throw new UserFacingError(
-      "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
-    );
-  }
-  return auth.user;
+function authorize(key: string): Promise<ActiveUser> {
+  return authorizeAction(`trip-${key}`, { limit: RATE_LIMIT });
 }
 
 const field = (formData: FormData, name: string) =>

@@ -37,7 +37,7 @@ export async function POST(
       { status: 503 },
     );
   }
-  if (!(await rateLimit(`trip-photo:${auth.user.email}`, 20))) {
+  if (!(await rateLimit(`trip-photo:${auth.user.id}`, 20))) {
     return NextResponse.json(
       { error: "Çok fazla istek. Lütfen biraz sonra tekrar dene." },
       { status: 429 },
