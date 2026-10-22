@@ -16,7 +16,8 @@ import type { PrismaClient } from "@prisma/client";
  *
  * The same goes for the profile photo. Google sends its URL when the account is
  * created, and the adapter would store it on the user. People choose one of the
- * site's own avatars instead, so the photo is dropped before it is written.
+ * site's own avatars instead, so the photo is dropped before it is written. The
+ * column no longer exists either, so passing it through would fail the insert.
  */
 function withoutImage<T extends { image?: unknown }>(
   user: T,
