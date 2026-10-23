@@ -3,9 +3,11 @@
  * in here and nowhere else: the documents read these values, so there is one
  * place to edit and one place to check.
  *
- * Anything still in square brackets is a placeholder. A production build refuses
- * to run while one is left (see next.config.ts), so the pages cannot go live
- * with "[VERİ SORUMLUSU ADI]" printed in them.
+ * Anything still in square brackets is a placeholder. While one is left, the
+ * production deployment does not show the pages or link to them
+ * (legalPagesAvailable), so they cannot go live with "[VERİ SORUMLUSU ADI]"
+ * printed in them. next.config.ts warns about it at build time, and refuses to
+ * build when REQUIRE_LEGAL_CONFIG=1.
  *
  * This file imports nothing on purpose: next.config.ts loads it, and the
  * config file has no path aliases.
