@@ -9,6 +9,10 @@ export type ActiveUser = {
   email: string;
   username: string | null;
   role: Role;
+  /** Read in the same query as the rest, so a page that shows them needs no second one. */
+  name: string | null;
+  bio: string | null;
+  avatar: string | null;
 };
 
 export type GuardResult =
@@ -43,6 +47,9 @@ export async function requireActiveUser(): Promise<GuardResult> {
       username: true,
       role: true,
       banned: true,
+      name: true,
+      bio: true,
+      avatar: true,
     },
   });
 
@@ -60,6 +67,9 @@ export async function requireActiveUser(): Promise<GuardResult> {
       email: user.email,
       username: user.username,
       role: user.role,
+      name: user.name,
+      bio: user.bio,
+      avatar: user.avatar,
     },
   };
 }

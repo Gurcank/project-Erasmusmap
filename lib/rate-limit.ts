@@ -1,10 +1,19 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { logError } from "@/lib/logger";
 
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 10;
 
+// A limiter that makes the visitor wait is worse than a weaker one. Redis gets
+// this long to answer; past it the request goes on with the in-memory window.
+const REDIS_TIMEOUT_MS = 1000;
+// After a failure Redis is not asked again for this long, so an outage costs one
+// slow request a minute instead of one on every request.
+const REDIS_COOLDOWN_MS = 60_000;
+
 const memoryHits = new Map<string, number[]>();
+let redisDownUntil = 0;
 
 /**
  * Per-instance sliding window. Only a stopgap: on serverless platforms each
@@ -39,7 +48,10 @@ function getRedis(): Redis | null {
 
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  redisClient = url && token ? new Redis({ url, token }) : null;
+  // No retries: the client's default is five attempts with a growing pause, about
+  // four seconds of waiting before it gives up on an unreachable database, and
+  // every server action pays that before it does anything else.
+  redisClient = url && token ? new Redis({ url, token, retry: false }) : null;
 
   if (!redisClient && process.env.NODE_ENV === "production") {
     // Each serverless instance would keep its own counters, so the limits
@@ -84,14 +96,35 @@ export async function rateLimit(
   limit = MAX_REQUESTS_PER_WINDOW,
   windowMs = WINDOW_MS,
 ): Promise<boolean> {
+  if (Date.now() < redisDownUntil) {
+    return inMemoryRateLimit(key, limit, windowMs);
+  }
   const limiter = getLimiter(limit, windowMs);
   if (!limiter) return inMemoryRateLimit(key, limit, windowMs);
 
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const { success } = await limiter.limit(key);
+    const { success } = await Promise.race([
+      limiter.limit(key),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error("Rate limiter timed out")),
+          REDIS_TIMEOUT_MS,
+        );
+      }),
+    ]);
     return success;
-  } catch {
-    // A Redis outage must degrade to weaker limiting, not lock everyone out.
+  } catch (error) {
+    // A Redis outage must degrade to weaker limiting, not lock everyone out and
+    // not make everyone wait.
+    redisDownUntil = Date.now() + REDIS_COOLDOWN_MS;
+    logError(
+      "Rate limiter unreachable, using the in-memory window for a minute",
+      error,
+      { component: "rate-limit" },
+    );
     return inMemoryRateLimit(key, limit, windowMs);
+  } finally {
+    clearTimeout(timer);
   }
 }

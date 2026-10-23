@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import AccountContent from "@/components/ui/AccountContent";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { updateProfile, updateUsername } from "@/lib/profile-actions";
-import { getAccountUser } from "@/lib/queries/profile";
 
 export const generateMetadata = () =>
   localizedMetadata((t) => ({
@@ -15,8 +14,8 @@ export default async function AccountPage() {
   const viewer = await requireActiveUser();
   if (!viewer.ok) redirect("/");
 
-  const user = await getAccountUser(viewer.user.id);
-  if (!user) redirect("/");
+  // Already read by the guard, with the fields this page shows.
+  const user = viewer.user;
 
   return (
     <div className="min-h-screen">
@@ -24,7 +23,7 @@ export default async function AccountPage() {
         <AccountContent
           name={user.name}
           bio={user.bio}
-          email={user.email ?? ""}
+          email={user.email}
           username={user.username}
           role={user.role}
           avatar={user.avatar}

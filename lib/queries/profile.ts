@@ -88,8 +88,3 @@ export function countProfileTrips(userId: string, isOwnProfile: boolean) {
     },
   });
 }
-
-/** The signed-in user's own row, for the account page. */
-export function getAccountUser(userId: string) {
-  return prisma.user.findUnique({ where: { id: userId } });
-}
