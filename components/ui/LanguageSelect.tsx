@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type CSSProperties,
-} from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 import { useT } from "@/hooks/useT";
@@ -14,7 +8,7 @@ import { useClickOutside } from "@/hooks/useClickOutside";
 import FlagIcon from "@/components/ui/FlagIcon";
 import GlassButton from "@/components/ui/GlassButton";
 import { OFFERED_LANGUAGES, type Lang } from "@/lib/i18n";
-import { applyLang, DEFAULT_LANG, readLang, subscribeToLang } from "@/lib/lang";
+import { useLangContext } from "@/components/LangProvider";
 
 const OPTION_ID = (lang: Lang) => `language-option-${lang}`;
 
@@ -54,11 +48,7 @@ export default function LanguageSelect() {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<CSSProperties | null>(null);
 
-  const current = useSyncExternalStore(
-    subscribeToLang,
-    readLang,
-    () => DEFAULT_LANG,
-  );
+  const { lang: current, setLang } = useLangContext();
 
   const currentIndex = OFFERED_LANGUAGES.findIndex(
     (language) => language.code === current,
@@ -103,7 +93,7 @@ export default function LanguageSelect() {
   }, [isOpen]);
 
   const choose = (lang: Lang) => {
-    applyLang(lang);
+    setLang(lang);
     close();
   };
 

@@ -1,7 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { DEFAULT_LANG, readLang, subscribeToLang } from "@/lib/lang";
+import { useLang } from "@/hooks/useLang";
 import type { Lang } from "@/lib/i18n";
 import { tripStrings, type TripStrings } from "@/lib/translations/trips";
 
@@ -29,11 +28,7 @@ export function fill(
  * Same language source as useT, so both switch together.
  */
 export function useTripT(): { tt: TripStrings; locale: string; lang: Lang } {
-  const lang = useSyncExternalStore(
-    subscribeToLang,
-    readLang,
-    () => DEFAULT_LANG,
-  );
+  const lang = useLang();
   return {
     tt: tripStrings[lang] ?? tripStrings.en,
     locale: LOCALES[lang],
