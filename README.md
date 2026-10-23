@@ -22,7 +22,10 @@
 - ⭐ Şehir değerlendirme sistemi — 6 kategori: Kültür, Gastronomi, Güvenlik, Sosyal Hayat, Ulaşım, Yaşam Maliyeti
 - 👤 Kullanıcı profili, ziyaret edilen şehirler ve gitmek istenenler
 - 🔐 Google ile giriş — şifre saklanmaz
-- 🌐 Türkçe / İngilizce dil desteği
+- 🌐 6 dil (TR, EN, DE, FR, ES, IT) — tarayıcı diline göre açılır, sunucuda render edilir
+- 🧭 Seyahat planlayıcı — rota, program, bütçe ve harcamalar
+- 🧑‍🎤 Hazır avatarlar — sitede fotoğraf yüklenmez
+- 🍪 İsteğe bağlı çerez onayı; istatistik yalnızca izin verilirse yüklenir
 - 🌙 Koyu / Açık tema
 
 ## Teknolojiler
@@ -193,6 +196,11 @@ uygulanır; silen (contract) migration'lar ise onu kullanmayan kod yayına çık
 Uygulama [Vercel](https://vercel.com)'e deploy ediliyor. Vercel proje ayarlarında yukarıdaki ortam
 değişkenlerinin tanımlı olduğundan emin ol. Migration'lar Vercel build'ine **bağlı değildir**
 (bkz. [Migration'lar](#migrationlar)).
+
+## Dokümantasyon
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — katmanlar, yetki, action'lar, güvenlik, dil ve çerezler.
+- [`docs/RUNBOOK.md`](docs/RUNBOOK.md) — deploy/geri alma, migration, yasal sayfaları yayına alma, admin atama, sır rotasyonu, yedek, hata ayıklama.
 
 ## Hata takibi ve loglar
 
