@@ -20,7 +20,6 @@ const SIGNED_IN_ONLY = [
   "/account",
   "/admin",
   "/settings",
-  "/choose-username",
   // Only the list and the create form: /trips/[id] serves public plans to
   // signed-out visitors, and its own page guard handles private ones.
   "/trips/new",

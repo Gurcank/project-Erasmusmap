@@ -2,7 +2,7 @@ import { type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { createAuthAdapter } from "@/lib/auth-adapter";
 import { prisma } from "@/lib/prisma";
-import { generateUniqueUsername } from "@/lib/user";
+import { assignInitialUsername } from "@/lib/user";
 import { normalizeEmail } from "@/lib/email";
 
 // How long the claims copied into the token stay valid before being re-read.
@@ -33,11 +33,7 @@ export const authOptions: NextAuthOptions = {
 
   events: {
     async createUser({ user }) {
-      const username = await generateUniqueUsername(user.name ?? "");
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { username, usernameLower: username.toLowerCase() },
-      });
+      await assignInitialUsername(user);
     },
   },
 

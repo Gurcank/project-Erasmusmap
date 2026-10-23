@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { ReviewRatings } from "@/types";
 import { UserFacingError } from "@/lib/action-result";
+import { firstIssueMessage } from "@/lib/schemas";
 
 export const RATING_FIELDS = [
   "culture",
@@ -64,10 +65,6 @@ export function toStars(ratingValue: number): number {
 /** Star count from the interface (0.5–5) to the stored value (1–10). */
 export function toRatingValue(stars: number): number {
   return Math.round(stars * 2);
-}
-
-function firstIssueMessage(error: z.ZodError): string {
-  return error.issues[0]?.message ?? "Geçersiz veri";
 }
 
 export function parseRatings(formData: FormData): ReviewRatings {

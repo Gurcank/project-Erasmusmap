@@ -123,7 +123,7 @@ export default function Navbar() {
 
   const profileHref = session?.user?.username
     ? `/u/${session.user.username}`
-    : "/choose-username";
+    : "/account";
 
   // The map is the home page. It used to be reachable only through the
   // wordmark, which reads as "go to the start" rather than as a destination.
