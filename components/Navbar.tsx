@@ -198,7 +198,7 @@ export default function Navbar() {
     <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-6 md:pt-4">
       <div className="glass glass-edge glass-shimmer mx-auto max-w-6xl rounded-[1.75rem] bg-surface shadow-popover">
         <nav
-          aria-label="Site navigasyonu"
+          aria-label={t.siteNavLabel}
           className="flex items-center justify-between gap-4 px-4 py-2.5 md:px-5 md:py-3"
         >
           <Link
@@ -360,6 +360,23 @@ export default function Navbar() {
                 <Settings size={16} aria-hidden="true" />
                 {t.settings}
               </Link>
+              {session.user?.role === "ADMIN" && (
+                <Link
+                  href="/admin"
+                  className="glass glass-edge flex items-center gap-2.5 rounded-full border border-border-strong px-4 py-3 text-accent-text"
+                >
+                  <Shield size={16} aria-hidden="true" />
+                  {t.adminPanel}
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="glass glass-edge flex w-full cursor-pointer items-center gap-2.5 rounded-full border border-border-strong px-4 py-3 text-left text-danger-700 dark:text-danger-400"
+              >
+                <LogOut size={16} aria-hidden="true" />
+                {t.logout}
+              </button>
             </div>
           )}
         </div>

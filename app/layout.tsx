@@ -10,6 +10,7 @@ import Providers from "./providers";
 import LangProvider from "@/components/LangProvider";
 import { getRequestLang } from "@/lib/lang-server";
 import { socialMetadata } from "@/lib/seo";
+import { getTranslations } from "@/lib/i18n";
 import { Analytics } from "@vercel/analytics/next";
 import {
   CONSENT_COOKIE,
@@ -90,11 +91,23 @@ export default async function RootLayout({
         <Script id="theme-init" strategy="beforeInteractive" nonce={nonce}>
           {THEME_INIT_SCRIPT}
         </Script>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-control focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-text focus:shadow-popover focus:outline-2 focus:outline-offset-2 focus:outline-focus"
+        >
+          {getTranslations(lang).skipToContent}
+        </a>
         <GlobeBackground />
         <Providers>
           <LangProvider lang={lang}>
             <Navbar />
-            <main className="min-h-screen">{children}</main>
+            <main
+              id="main-content"
+              tabIndex={-1}
+              className="min-h-screen focus:outline-none"
+            >
+              {children}
+            </main>
             {analyticsAllowed(consent) && <Analytics />}
             {needsConsentDecision(consent) && (
               <CookieBanner policyLink={legalPagesAvailable()} />

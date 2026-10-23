@@ -5,6 +5,8 @@ export const it = {
   settings: "Impostazioni",
   logout: "Esci",
   menu: "Menu",
+  skipToContent: "Vai al contenuto",
+  siteNavLabel: "Navigazione del sito",
   noResults: "Nessun risultato",
   mapNav: "Mappa",
   square: "La Piazza",

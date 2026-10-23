@@ -6,6 +6,8 @@ export const tr = {
   settings: "Ayarlar",
   logout: "Çıkış Yap",
   menu: "Menü",
+  skipToContent: "İçeriğe geç",
+  siteNavLabel: "Site gezintisi",
   noResults: "Sonuç bulunamadı",
   mapNav: "Harita",
   square: "Meydan",
