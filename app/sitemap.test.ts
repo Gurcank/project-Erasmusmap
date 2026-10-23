@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const cityFind = vi.hoisted(() => vi.fn());
 const tripFind = vi.hoisted(() => vi.fn());
@@ -13,10 +13,30 @@ import { SITE_URL } from "@/lib/site";
 
 const day = new Date("2026-10-01T00:00:00Z");
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
 beforeEach(() => {
   vi.resetAllMocks();
   cityFind.mockResolvedValue([{ slug: "berlin", updatedAt: day }]);
   tripFind.mockResolvedValue([{ id: "trip-1", updatedAt: day }]);
+});
+
+describe("sitemap and the legal pages", () => {
+  it("lists them where they may be shown", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    const urls = (await sitemap()).map((entry) => entry.url);
+    expect(urls).toContain(`${SITE_URL}/privacy`);
+    expect(urls).toContain(`${SITE_URL}/terms`);
+  });
+
+  it("leaves them out on production while they are withheld", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    const urls = (await sitemap()).map((entry) => entry.url);
+    expect(urls).not.toContain(`${SITE_URL}/privacy`);
+    expect(urls).not.toContain(`${SITE_URL}/terms`);
+  });
 });
 
 describe("sitemap", () => {

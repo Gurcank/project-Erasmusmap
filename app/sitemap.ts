@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { legalPagesAvailable } from "@/lib/legal/config";
 import { SITE_URL } from "@/lib/site";
 import primarySlugList from "@/prisma/data/primary-city-slugs.json";
 
@@ -38,6 +39,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: city.updatedAt,
   }));
 
+  const legalEntries: MetadataRoute.Sitemap = legalPagesAvailable()
+    ? [
+        { url: `${SITE_URL}/privacy`, lastModified: new Date() },
+        { url: `${SITE_URL}/terms`, lastModified: new Date() },
+      ]
+    : [];
+
   const tripEntries: MetadataRoute.Sitemap = trips.map((trip) => ({
     url: `${SITE_URL}/trips/${trip.id}`,
     lastModified: trip.updatedAt,
@@ -47,8 +55,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: SITE_URL, lastModified: new Date() },
     { url: `${SITE_URL}/meydan`, lastModified: new Date() },
     { url: `${SITE_URL}/login`, lastModified: new Date() },
-    { url: `${SITE_URL}/privacy`, lastModified: new Date() },
-    { url: `${SITE_URL}/terms`, lastModified: new Date() },
+    // Listed only once they are published (see legalPagesAvailable).
+    ...legalEntries,
     ...cityEntries,
     ...tripEntries,
   ];

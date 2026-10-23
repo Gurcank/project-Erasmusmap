@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { legalPagesAvailable } from "@/lib/legal/config";
 import LoginClient from "./LoginClient";
 
 export const metadata: Metadata = {
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <Suspense fallback={null}>
-      <LoginClient />
+      <LoginClient showLegalNotice={legalPagesAvailable()} />
     </Suspense>
   );
 }

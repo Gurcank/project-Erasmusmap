@@ -38,6 +38,25 @@ function flatten(value: unknown, path: string): [string, string][] {
   return [];
 }
 
+/**
+ * Whether the legal pages, and the links to them, may be shown to the public.
+ *
+ * A policy with "[VERİ SORUMLUSU ADI]" printed in it is worse than none, so on
+ * the production deployment they are withheld until every placeholder is filled;
+ * anywhere else (a preview, a local run) they show, so the text can be read and
+ * reviewed. The site itself is not held up: leaving them out is exactly how it
+ * was before they existed.
+ */
+export function legalPagesAvailable(
+  env: Record<string, string | undefined> = process.env,
+  config: unknown = LEGAL_CONFIG,
+): boolean {
+  return (
+    env.VERCEL_ENV !== "production" ||
+    legalPlaceholdersLeft(config).length === 0
+  );
+}
+
 /** Names of the settings that still hold a placeholder. Empty when ready. */
 export function legalPlaceholdersLeft(
   config: unknown = LEGAL_CONFIG,
