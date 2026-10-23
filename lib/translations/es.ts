@@ -5,6 +5,8 @@ export const es = {
   settings: "Ajustes",
   logout: "Cerrar sesión",
   menu: "Menú",
+  skipToContent: "Saltar al contenido",
+  siteNavLabel: "Navegación del sitio",
   noResults: "No se han encontrado resultados",
   mapNav: "Mapa",
   square: "La Plaza",

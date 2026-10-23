@@ -5,6 +5,8 @@ export const fr = {
   settings: "Paramètres",
   logout: "Se déconnecter",
   menu: "Menu",
+  skipToContent: "Aller au contenu",
+  siteNavLabel: "Navigation du site",
   noResults: "Aucun résultat",
   mapNav: "Carte",
   square: "La Place",

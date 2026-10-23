@@ -5,6 +5,8 @@ export const de = {
   settings: "Einstellungen",
   logout: "Abmelden",
   menu: "Menü",
+  skipToContent: "Zum Inhalt springen",
+  siteNavLabel: "Seitennavigation",
   noResults: "Keine Ergebnisse gefunden",
   mapNav: "Karte",
   square: "Der Platz",

@@ -6,6 +6,8 @@ export const en = {
   settings: "Settings",
   logout: "Sign Out",
   menu: "Menu",
+  skipToContent: "Skip to content",
+  siteNavLabel: "Site navigation",
   noResults: "No results found",
   mapNav: "Map",
   square: "The Square",
