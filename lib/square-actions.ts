@@ -11,6 +11,7 @@ import { MAX_REPLY_LENGTH } from "@/lib/engagement";
 import { parseRatings, parseReviewContent } from "@/lib/review";
 import { parseVisitDates } from "@/lib/schemas";
 import { moderate } from "@/lib/moderation";
+import { isBlockedBetween } from "@/lib/social";
 
 const LIKE_RATE_LIMIT = 60;
 const REPLY_RATE_LIMIT = 15;
@@ -168,17 +169,39 @@ export async function toggleReviewLike(
 async function resolveCommentParent(
   requested: string,
   reviewId: string,
-): Promise<string | null> {
-  if (!requested) return null;
+): Promise<{ parentId: string | null; repliedToUserId: string | null }> {
+  if (!requested) return { parentId: null, repliedToUserId: null };
 
   const parent = await prisma.reviewComment.findUnique({
     where: { id: requested },
-    select: { id: true, reviewId: true, parentId: true },
+    select: { id: true, reviewId: true, parentId: true, userId: true },
   });
   if (!parent || parent.reviewId !== reviewId) {
     throw new UserFacingError("Yanıt verilecek yorum bulunamadı");
   }
-  return parent.parentId ?? parent.id;
+  return {
+    parentId: parent.parentId ?? parent.id,
+    repliedToUserId: parent.userId,
+  };
+}
+
+/**
+ * A block works in both directions: neither person can add to the other's
+ * review or comment. The refusal reads the same whichever side blocked, so it
+ * does not say who did.
+ */
+async function assertNotBlocked(
+  userId: string,
+  authorIds: (string | null)[],
+): Promise<void> {
+  const others = new Set(
+    authorIds.filter((id): id is string => id !== null && id !== userId),
+  );
+  for (const otherId of others) {
+    if (await isBlockedBetween(userId, otherId)) {
+      throw new UserFacingError("Bu yoruma yanıt veremezsin");
+    }
+  }
 }
 
 export async function toggleCommentLike(
@@ -244,10 +267,17 @@ export async function addReviewComment(
       );
     }
 
-    const parentId = await resolveCommentParent(
+    const review = await prisma.review.findUnique({
+      where: { id: reviewId },
+      select: { userId: true },
+    });
+    if (!review) throw new UserFacingError("Yorum bulunamadı");
+
+    const { parentId, repliedToUserId } = await resolveCommentParent(
       String(formData.get("parentId") ?? ""),
       reviewId,
     );
+    await assertNotBlocked(user.id, [review.userId, repliedToUserId]);
     const moderated = moderate(content);
 
     try {

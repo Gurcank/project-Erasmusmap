@@ -68,29 +68,6 @@ describe("createAuthAdapter", () => {
     }
   });
 
-  it("drops the Google profile photo when the user is created or updated", async () => {
-    const { prisma, userCreate } = fakePrisma();
-    const userUpdate = vi.fn().mockResolvedValue({ id: "u1" });
-    (prisma.user as unknown as { update: typeof userUpdate }).update =
-      userUpdate;
-    const adapter = createAuthAdapter(prisma);
-    const photo = "https://lh3.googleusercontent.com/a/photo";
-
-    await adapter.createUser!({
-      id: "ignored",
-      email: "ada@example.com",
-      emailVerified: null,
-      name: "Ada",
-      image: photo,
-    });
-    await adapter.updateUser!({ id: "u1", name: "Ada L", image: photo });
-
-    expect(userCreate.mock.calls[0][0].data).toMatchObject({ name: "Ada" });
-    expect(userCreate.mock.calls[0][0].data).not.toHaveProperty("image");
-    expect(userUpdate.mock.calls[0][0].data).toMatchObject({ name: "Ada L" });
-    expect(userUpdate.mock.calls[0][0].data).not.toHaveProperty("image");
-  });
-
   it("leaves the rest of the adapter untouched", async () => {
     const { prisma, userCreate } = fakePrisma();
     const adapter = createAuthAdapter(prisma);

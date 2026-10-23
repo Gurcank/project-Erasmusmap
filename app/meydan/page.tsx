@@ -13,6 +13,7 @@ import {
   type CommentRow,
 } from "@/lib/review-shape";
 import { deleteReview } from "@/lib/actions";
+import { MAX_COMMENTS_PER_REVIEW } from "@/lib/engagement";
 import {
   addReviewComment,
   toggleCommentLike,
@@ -55,6 +56,7 @@ export default async function SquarePage() {
         ? prisma.reviewComment.findMany({
             where: { reviewId: { in: reviewIds } },
             orderBy: COMMENT_QUERY.orderBy,
+            take: reviewIds.length * MAX_COMMENTS_PER_REVIEW,
             select: { ...COMMENT_SELECT, reviewId: true },
           })
         : [],

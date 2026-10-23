@@ -1,3 +1,7 @@
+// CHECK constraints are not expressible here, and Prisma neither reads nor drops
+// them. They live in prisma/migrations/20261022180000_check_constraints_and_indexes
+// and mirror the rules in lib/ (rating range, date order, non-negative money,
+// username shape, ...). A new rule of that kind goes into a new migration.
 generator client {
   provider = "prisma-client-js"
 }
@@ -65,7 +69,7 @@ model Review {
   city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
 
   userId String?
-  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   /// Set by the moderation filter — see ReviewComment.flagged.
   flagged Boolean @default(false)
@@ -141,6 +145,7 @@ model FavoriteCity {
   @@unique([userId, position])
   @@unique([userId, cityId])
   @@index([userId])
+  @@index([cityId])
 }
 
 model ReviewLike {
@@ -170,7 +175,7 @@ model ReviewComment {
   review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 
   userId String?
-  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   content String
 
@@ -303,6 +308,7 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -312,6 +318,8 @@ model Session {
   expires      DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 enum Role {
@@ -419,6 +427,8 @@ model TripItem {
   updatedAt DateTime @updatedAt
 
   @@index([tripId, startAt])
+  @@index([cityId])
+  @@index([toCityId])
 }
 
 /// Planned spending for a day. `category` null is a lump sum for the day.
@@ -439,6 +449,7 @@ model TripExpense {
   updatedAt DateTime @updatedAt
 
   @@index([tripId, date])
+  @@index([cityId])
 }
 
 /// A city on the trip, with the traveller's own notes and to-do list.
@@ -453,6 +464,7 @@ model TripCity {
   todos    TripTodo[]
 
   @@unique([tripId, cityId])
+  @@index([cityId])
 }
 
 model TripTodo {

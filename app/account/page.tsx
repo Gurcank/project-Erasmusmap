@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import AccountContent from "@/components/ui/AccountContent";
 import { bioSchema, firstIssueMessage, usernameSchema } from "@/lib/schemas";
 import { authorizeAction } from "@/lib/action-guard";
+import { setUsername } from "@/lib/user";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
@@ -54,17 +55,8 @@ export default async function AccountPage() {
         throw new UserFacingError(firstIssueMessage(parsed.error));
       const username = parsed.data;
 
-      const exists = await prisma.user.findUnique({
-        where: { usernameLower: username.toLowerCase() },
-        select: { id: true },
-      });
-      if (exists && exists.id !== user.id)
+      if ((await setUsername(user.id, username)) === "taken")
         throw new UserFacingError("Bu kullanıcı adı zaten alınmış");
-
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { username, usernameLower: username.toLowerCase() },
-      });
       revalidatePath(`/u/${username}`);
       revalidatePath("/account");
       redirect(`/u/${username}`);

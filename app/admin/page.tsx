@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import AdminDashboard from "@/components/ui/AdminDashboard";
 import { banUser, deleteUser, deleteReview } from "@/lib/actions";
 import { requireAdmin } from "@/lib/auth-guards";
+import { getAdminUsers, normalizeUserQuery } from "@/lib/admin-users";
+import { parsePage } from "@/lib/pagination";
+import { parseAdminTab } from "@/lib/admin-tabs";
 import { deleteReviewComment } from "@/lib/square-actions";
 import primarySlugList from "@/prisma/data/primary-city-slugs.json";
 
@@ -12,29 +15,25 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string; tab?: string }>;
+}) {
   // Read from the database rather than the session: the role and ban flags on
   // the token are up to TOKEN_REFRESH_INTERVAL_SECONDS stale, which would let a
   // just-demoted or just-banned admin keep using this page.
   const admin = await requireAdmin();
   if (!admin.ok) redirect("/");
 
-  const [users, reviews, comments, userCount, cityCount, reviewCount] =
+  const params = await searchParams;
+  const query = normalizeUserQuery(params.q);
+  const page = parsePage(params.page);
+  const initialTab = parseAdminTab(params.tab);
+
+  const [usersPage, reviews, comments, userCount, cityCount, reviewCount] =
     await Promise.all([
-      prisma.user.findMany({
-        select: {
-          id: true,
-          username: true,
-          name: true,
-          email: true,
-          avatar: true,
-          role: true,
-          banned: true,
-          createdAt: true,
-          _count: { select: { reviews: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
+      getAdminUsers(query, page),
       prisma.review.findMany({
         take: 50,
         orderBy: { createdAt: "desc" },
@@ -80,7 +79,14 @@ export default async function AdminPage() {
       <div className="mx-auto max-w-6xl px-6 pt-28 pb-24">
         <AdminDashboard
           currentUserEmail={admin.user.email}
-          users={users}
+          users={usersPage.users}
+          usersPage={{
+            page: usersPage.page,
+            pages: usersPage.pages,
+            total: usersPage.total,
+            query: usersPage.query,
+          }}
+          initialTab={initialTab}
           reviews={reviews}
           comments={comments.map((comment) => ({
             id: comment.id,

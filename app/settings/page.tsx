@@ -29,6 +29,7 @@ export default async function SettingsPage() {
         <SettingsContent
           blockedUsers={blocks.map((block) => block.blocked)}
           unblockUser={toggleBlock}
+          confirmWord={viewer.user.username ?? viewer.user.email}
         />
       </div>
     </div>

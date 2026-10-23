@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logError } from "@/lib/logger";
 import { rateLimit } from "@/lib/rate-limit";
 import { getClientAddress } from "@/lib/request-ip";
 
@@ -31,7 +32,12 @@ export async function GET(req: Request) {
       { status: "ok", database: "up" },
       { headers: NO_STORE },
     );
-  } catch {
+  } catch (error) {
+    // The one place a down database is noticed by something other than a visitor.
+    logError("Health check: database unreachable", error, {
+      route: "/api/health",
+      routeType: "route",
+    });
     return NextResponse.json(
       { status: "error", database: "down" },
       { status: 503, headers: NO_STORE },
