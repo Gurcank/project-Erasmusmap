@@ -74,6 +74,18 @@ describe("contentSecurityPolicy", () => {
     }
   });
 
+  // The events host is opt-in: see the proxy tests for the cookie that adds it.
+  it("keeps Mapbox usage events out of the policy unless they are enabled", () => {
+    expect(directive(production, "connect-src")).not.toContain(
+      "events.mapbox.com",
+    );
+    const off = contentSecurityPolicy(NONCE, false, { mapboxEvents: false });
+    expect(directive(off, "connect-src")).not.toContain("events.mapbox.com");
+    const on = contentSecurityPolicy(NONCE, false, { mapboxEvents: true });
+    expect(directive(on, "connect-src")).toContain("https://events.mapbox.com");
+    expect(directive(on, "img-src")).not.toContain("events.mapbox.com");
+  });
+
   // Unsplash is only ever called from the server.
   it("allows unsplash as an image source but not as a connection", () => {
     expect(directive(production, "img-src")).toContain(
