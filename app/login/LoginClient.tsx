@@ -35,7 +35,9 @@ export default function LoginClient({
     }
   }, [searchParams]);
 
-  if (status === "loading") return null;
+  // The shell stays up while the session is checked, with the button held, so
+  // the page does not flash blank and then jump.
+  const isBusy = isRedirecting || status === "loading";
 
   return (
     <AuthShell
@@ -47,7 +49,7 @@ export default function LoginClient({
           setIsRedirecting(true);
           signIn("google", { callbackUrl: "/" });
         }}
-        disabled={isRedirecting}
+        disabled={isBusy}
         variant="contrast"
         size="lg"
         fullWidth

@@ -8,6 +8,11 @@ export const en = {
   menu: "Menu",
   skipToContent: "Skip to content",
   siteNavLabel: "Site navigation",
+  loadingPage: "Loading…",
+  mapRegionLabel: "Map of Europe",
+  mapRegionHelp:
+    "Interactive map of Europe. Pan with the arrow keys and zoom with plus and minus. To go straight to a city, use the city search.",
+  mapSearchShortcut: "Search for a city",
   noResults: "No results found",
   mapNav: "Map",
   square: "The Square",
