@@ -79,6 +79,37 @@ test.describe("accessibility landmarks", () => {
   });
 });
 
+test.describe("the menu on a phone", () => {
+  test.use({ viewport: { width: 320, height: 640 } });
+
+  test("a visitor can sign in without opening it, and nothing overflows", async ({
+    page,
+  }) => {
+    await page.goto("/meydan");
+    const header = page.locator("header");
+    await expect(header.getByRole("link", { name: "Sign In" })).toBeVisible();
+    const scrollWidth = await page.evaluate(
+      () => document.documentElement.scrollWidth,
+    );
+    expect(scrollWidth).toBeLessThanOrEqual(320);
+  });
+
+  test("opens to the search and the places to go, and closes on a link", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Menu" }).click();
+    await expect(page.locator("input[type=search]:visible")).toBeVisible();
+    const list = page.locator("header ul").first();
+    await expect(list.getByRole("link", { name: "Map" })).toBeVisible();
+    await expect(list.getByRole("link", { name: "The Square" })).toBeVisible();
+
+    await list.getByRole("link", { name: "The Square" }).click();
+    await expect(page).toHaveURL(/meydan/);
+    await expect(page.locator("input[type=search]:visible")).toBeHidden();
+  });
+});
+
 test.describe("language", () => {
   test("follows the browser when nothing has been chosen", async ({
     browser,

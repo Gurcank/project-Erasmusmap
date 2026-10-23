@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import {
+  ChevronRight,
   Globe,
   Landmark,
   Route,
@@ -23,6 +24,14 @@ import UserAvatar from "@/components/ui/UserAvatar";
 import HamburgerIcon from "@/components/ui/HamburgerIcon";
 import GlassButton, { GlassLink } from "@/components/ui/GlassButton";
 import type { CitySuggestion } from "@/types";
+
+// The mobile menu is two quiet lists rather than a stack of buttons: where to go,
+// then what concerns the account. A row is at least 48px tall, the touch target
+// that is comfortable with a thumb.
+const MOBILE_GROUP =
+  "divide-y divide-border overflow-hidden rounded-card border border-border";
+const MOBILE_ROW =
+  "flex min-h-12 items-center px-4 text-[0.95rem] transition-colors hover:bg-surface-raised focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus";
 
 export default function Navbar() {
   const router = useRouter();
@@ -295,6 +304,17 @@ export default function Navbar() {
               )}
             </div>
 
+            {!session && (
+              <GlassLink
+                href="/login"
+                variant="primary"
+                size="sm"
+                className="md:hidden"
+              >
+                {t.login}
+              </GlassLink>
+            )}
+
             <GlassButton
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label={t.menu}
@@ -310,68 +330,103 @@ export default function Navbar() {
       </div>
 
       {menuOpen && (
-        <div className="glass glass-edge mx-auto mt-2 max-w-6xl space-y-4 rounded-panel bg-surface p-5 shadow-popover md:hidden">
+        <div className="glass glass-edge mx-auto mt-2 max-w-6xl space-y-3 rounded-panel bg-surface p-4 shadow-popover md:hidden">
+          {session && (
+            <Link
+              href={profileHref}
+              className={`${MOBILE_ROW} gap-3 rounded-card border border-border py-2`}
+            >
+              <UserAvatar
+                avatar={session.user?.avatar ?? null}
+                seed={session.user?.id ?? ""}
+                size={40}
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium text-text">
+                  {session.user?.username ?? session.user?.name ?? t.profile}
+                </span>
+                <span className="block text-xs text-text-subtle">
+                  {t.profile}
+                </span>
+              </span>
+              <ChevronRight
+                size={16}
+                aria-hidden="true"
+                className="shrink-0 text-text-subtle"
+              />
+            </Link>
+          )}
+
           <div className="relative">
             {searchField(true)}
             {showSuggestions && suggestionList}
           </div>
 
-          <div className="space-y-2">
-            {navLinks.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                aria-current={pathname === href ? "page" : undefined}
-                className={`glass glass-edge flex items-center gap-2.5 rounded-full border px-4 py-3 text-text ${
-                  pathname === href
-                    ? "border-primary bg-surface-raised"
-                    : "border-border-strong"
-                }`}
-              >
-                <Icon size={16} aria-hidden="true" />
-                {label}
-              </Link>
-            ))}
-          </div>
+          <ul className={MOBILE_GROUP}>
+            {navLinks.map(({ href, label, icon: Icon }) => {
+              const current = pathname === href;
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    aria-current={current ? "page" : undefined}
+                    className={`${MOBILE_ROW} gap-3 ${
+                      current
+                        ? "bg-surface-raised font-medium text-text"
+                        : "text-text-muted"
+                    }`}
+                  >
+                    <Icon
+                      size={18}
+                      aria-hidden="true"
+                      className={current ? "text-accent-text" : undefined}
+                    />
+                    <span className="flex-1">{label}</span>
+                    {current && (
+                      <span
+                        aria-hidden="true"
+                        className="h-1.5 w-1.5 rounded-full bg-primary"
+                      />
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
 
-          {!session ? (
-            <GlassLink href="/login" variant="primary" size="lg" fullWidth>
-              {t.login}
-            </GlassLink>
-          ) : (
-            <div className="space-y-2">
-              <Link
-                href={profileHref}
-                className="glass glass-edge flex items-center gap-2.5 rounded-full border border-border-strong px-4 py-3 text-text"
-              >
-                <User size={16} aria-hidden="true" />
-                {t.profile}
-              </Link>
-              <Link
-                href="/settings"
-                className="glass glass-edge flex items-center gap-2.5 rounded-full border border-border-strong px-4 py-3 text-text"
-              >
-                <Settings size={16} aria-hidden="true" />
-                {t.settings}
-              </Link>
-              {session.user?.role === "ADMIN" && (
+          {session && (
+            <ul className={MOBILE_GROUP}>
+              <li>
                 <Link
-                  href="/admin"
-                  className="glass glass-edge flex items-center gap-2.5 rounded-full border border-border-strong px-4 py-3 text-accent-text"
+                  href="/settings"
+                  className={`${MOBILE_ROW} gap-3 text-text-muted`}
                 >
-                  <Shield size={16} aria-hidden="true" />
-                  {t.adminPanel}
+                  <Settings size={18} aria-hidden="true" />
+                  {t.settings}
                 </Link>
+              </li>
+              {session.user?.role === "ADMIN" && (
+                <li>
+                  <Link
+                    href="/admin"
+                    className={`${MOBILE_ROW} gap-3 text-accent-text`}
+                  >
+                    <Shield size={18} aria-hidden="true" />
+                    {t.adminPanel}
+                  </Link>
+                </li>
               )}
-              <button
-                type="button"
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="glass glass-edge flex w-full cursor-pointer items-center gap-2.5 rounded-full border border-border-strong px-4 py-3 text-left text-danger-700 dark:text-danger-400"
-              >
-                <LogOut size={16} aria-hidden="true" />
-                {t.logout}
-              </button>
-            </div>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className={`${MOBILE_ROW} w-full cursor-pointer gap-3 text-left text-danger-700 dark:text-danger-400`}
+                >
+                  <LogOut size={18} aria-hidden="true" />
+                  {t.logout}
+                </button>
+              </li>
+            </ul>
           )}
         </div>
       )}
