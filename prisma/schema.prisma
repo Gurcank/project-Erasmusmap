@@ -45,7 +45,6 @@ model City {
   tripItemsTo  TripItem[]    @relation("TripItemToCity")
   tripExpenses TripExpense[]
   tripCities   TripCity[]
-  tripPhotos   TripPhoto[]
 }
 
 model Review {
@@ -221,15 +220,9 @@ model User {
   name          String?
   email         String    @unique
   emailVerified DateTime?
-  image         String?
-  /// Object key of the avatar inside the Storage bucket, when the image is one
-  /// we host. The key is random rather than the user id: the bucket is public,
-  /// so a key built from the id published that id on every profile page and
-  /// made the whole bucket enumerable to anyone holding a list of ids.
-  imagePath     String?
   /// Key of the avatar the person picked from the site's own set (see
   /// lib/avatars.ts). Null until they pick one, and the default is then derived
-  /// from the id. `image` and `imagePath` above are no longer read or written.
+  /// from the id. The site stores no photo of anyone.
   avatar        String?
   bio           String?   @db.Text
   /// Free-text "where I'm based", shown on the profile header. Optional.
@@ -382,7 +375,6 @@ model Trip {
   items    TripItem[]
   expenses TripExpense[]
   cities   TripCity[]
-  photos   TripPhoto[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -474,20 +466,4 @@ model TripTodo {
   createdAt DateTime @default(now())
 
   @@index([tripCityId])
-}
-
-model TripPhoto {
-  id      String  @id @default(uuid())
-  tripId  String
-  trip    Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  cityId  String?
-  city    City?   @relation(fields: [cityId], references: [id], onDelete: SetNull)
-  /// Object key in the trip-media bucket, random — see lib/storage.ts.
-  path    String
-  url     String
-  caption String?
-
-  createdAt DateTime @default(now())
-
-  @@index([tripId])
 }
