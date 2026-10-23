@@ -95,3 +95,33 @@ describe("fromStoredDate", () => {
     expect(fromStoredDate(null)).toBeNull();
   });
 });
+
+describe("in the interface language", () => {
+  const day = new Date(2025, 8, 5);
+
+  it("names the month in that language", () => {
+    expect(formatStayDate(day, "d MMM yyyy", "tr")).toContain("Eyl");
+    expect(formatStayDate(day, "d MMM yyyy", "en")).toMatch(/Sep/);
+    expect(formatStayDate(day, "d MMMM yyyy", "de")).toContain("September");
+    expect(formatStayDate(day, "d MMMM yyyy", "fr")).toContain("septembre");
+  });
+
+  it("keeps the all-numbers form the same in every language", () => {
+    for (const lang of ["tr", "en", "de", "fr", "es", "it"] as const) {
+      expect(stayDatePlaceholder(lang)).toBe("5.9.2025");
+    }
+  });
+
+  it("reads a month typed in that language", () => {
+    expect(iso(parseStayDate("5 September 2025", {}, "de"))).toBe("2025-09-05");
+    expect(iso(parseStayDate("5 septembre 2025", {}, "fr"))).toBe("2025-09-05");
+  });
+
+  it("still reads a Turkish month after the language was switched", () => {
+    expect(iso(parseStayDate("5 Eyl 2025", {}, "en"))).toBe("2025-09-05");
+  });
+
+  it("does not read another language's month", () => {
+    expect(parseStayDate("5 septembre 2025", {}, "de")).toBe("invalid");
+  });
+});

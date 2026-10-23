@@ -12,6 +12,31 @@ export const it = {
   mapRegionHelp:
     "Mappa interattiva dell'Europa. Spostala con le frecce e ingrandisci con più e meno. Per andare direttamente a una città, usa la ricerca delle città.",
   mapSearchShortcut: "Cerca una città",
+  loginDescription: "Accedi a ErasmusMap con il tuo account Google.",
+  loginContinueGoogle: "Continua con Google",
+  loginRedirecting: "Reindirizzamento…",
+  loginSuspended: "Il tuo account è stato sospeso. Non puoi accedere.",
+  loginNoAccountHint:
+    "Se non hai un account, ne viene creato uno automaticamente al primo accesso.",
+  errorTitle: "Qualcosa è andato storto",
+  errorDescription:
+    "Si è verificato un errore imprevisto. Riprovare può risolvere il problema.",
+  errorPageLoad:
+    "Impossibile caricare la pagina. Riprovare può risolvere il problema.",
+  errorRetry: "Riprova",
+  notFoundTitle: "Pagina non trovata",
+  notFoundDescription:
+    "La pagina che cerchi potrebbe essere stata spostata o non essere mai esistita.",
+  backToMap: "Torna alla mappa",
+  siteTagline: "L'Europa raccontata dagli studenti Erasmus",
+  siteDescription:
+    "Una piattaforma per gli studenti Erasmus per scoprire e valutare le città europee.",
+  squareDescription:
+    "Le città di cui gli studenti Erasmus parlano di più questo mese e le recensioni in evidenza.",
+  cityMetaDescription:
+    "Recensioni, voti e foto di studenti Erasmus su {name}, {country}.",
+  profileMetaDescription: "{name} — profilo ErasmusMap",
+  accountTitle: "Account",
   noResults: "Nessun risultato",
   mapNav: "Mappa",
   square: "La Piazza",
@@ -135,10 +160,8 @@ export const it = {
   feedEmptyNoReviews: "Le persone che segui non hanno ancora recensito nulla.",
 
   settingsTitle: "Impostazioni",
-  accountTitle: "Account",
   accountDesc: "La tua foto, nome, bio e nome utente",
   backToProfile: "Profilo",
-  backToMap: "Torna alla mappa",
   termsTitle: "Condizioni d'uso",
   privacyTitle: "Informativa sulla privacy",
   termsLinkText: "Condizioni d'uso",

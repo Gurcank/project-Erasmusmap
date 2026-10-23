@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { localizedMetadata } from "@/lib/page-meta";
 import { redirect } from "next/navigation";
 import AdminDashboard from "@/components/ui/AdminDashboard";
 import { banUser, deleteUser, deleteReview } from "@/lib/actions";
@@ -13,10 +13,11 @@ import {
   getAdminStats,
 } from "@/lib/queries/admin";
 
-export const metadata: Metadata = {
-  title: "Admin Paneli",
-  robots: { index: false, follow: false },
-};
+export const generateMetadata = () =>
+  localizedMetadata((t) => ({
+    title: t.adminPanel,
+    robots: { index: false, follow: false },
+  }));
 
 export default async function AdminPage({
   searchParams,

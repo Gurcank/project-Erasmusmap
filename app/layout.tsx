@@ -18,7 +18,7 @@ import {
   needsConsentDecision,
   parseConsent,
 } from "@/lib/consent";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { legalPagesAvailable } from "@/lib/legal/config";
 
 // Body face: neutral, high legibility at small sizes via its optical-size axis.
@@ -46,20 +46,22 @@ const bricolage = Bricolage_Grotesque({
 const THEME_INIT_SCRIPT = `(function(){var c="system";try{var s=localStorage.getItem("theme");if(s==="light"||s==="dark")c=s}catch(e){}var d=c==="dark"||(c==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light"})()`;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getRequestLang();
+  const t = getTranslations(lang);
   return {
     metadataBase: new URL(SITE_URL),
     title: {
-      default: `${SITE_NAME} — Avrupa'yı Erasmus öğrencilerinden dinle`,
+      default: `${SITE_NAME} — ${t.siteTagline}`,
       template: `%s · ${SITE_NAME}`,
     },
-    description: SITE_DESCRIPTION,
+    description: t.siteDescription,
     appleWebApp: {
       title: SITE_NAME,
     },
     ...socialMetadata({
-      lang: await getRequestLang(),
+      lang,
       title: SITE_NAME,
-      description: SITE_DESCRIPTION,
+      description: t.siteDescription,
     }),
   };
 }

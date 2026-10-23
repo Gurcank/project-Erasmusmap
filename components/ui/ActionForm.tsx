@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
+import LocalizedError from "@/components/ui/LocalizedError";
 import type { ReactNode } from "react";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useT } from "@/hooks/useT";
@@ -62,7 +63,11 @@ export default function ActionForm({
         }}
       >
         {children}
-        {state && !state.ok && <p className={errorClassName}>{state.error}</p>}
+        {state && !state.ok && (
+          <p className={errorClassName}>
+            <LocalizedError message={state.error} />
+          </p>
+        )}
       </form>
 
       {asking && confirmMessage && (

@@ -110,6 +110,16 @@ export async function ornek(_prev: ActionResult | null, formData: FormData) {
   İngilizce. `app/layout.tsx` `<html lang>`'i ve istemci bileşenlerinin ilk metnini buna göre
   basar (`components/LangProvider.tsx`); dil seçilince çerez yazılır ve sayfa sunucuda yeniden
   render edilir. Çerez yalnızca kullanıcı dil seçince yazılır.
+- **Dile bağlı diğer şeyler:**
+  - Tarih ve sayılar `localeFor(lang)` ile (`lib/lang.ts`, `useLocale`); `date-fns` ay ve gün
+    adları `lib/date-locale.ts` ile.
+  - Sayfa başlıkları ve açıklamaları `localizedMetadata` ile (`lib/page-meta.ts`).
+  - **Sunucunun form hata mesajları** Türkçe yazılır ve olduğu gibi gider; ekranda `LocalizedError`
+    metni **kendi sözcükleriyle** `lib/translations/errors.ts` sözlüğünde bulup aktif dile çevirir
+    (sayı içeren sınır mesajları `#` ile eşlenir). Yeni bir `UserFacingError("…")` metni sözlüğe
+    eklenmezse `lib/error-text.test.ts` kırmızıya döner; böylece çeviri unutulamaz.
+  - Giriş, hata ve 404 sayfaları ile `global-error` sözlükten okur (`global-error` sağlayıcı
+    olmadan çalıştığı için çerezi ve tarayıcı dilini kendisi çözer).
 - **Çerez onayı** (`consent=granted|denied`, 6 ay): yalnızca isteğe bağlı istatistik (Vercel
   Analytics, Mapbox kullanım olayları) içindir. Sunucu çerezi okur; reddedilince script sayfaya
   **hiç konmaz**, "konup kapatılmaz". Zorunlu çerezler (oturum, CSRF) onay gerektirmez.

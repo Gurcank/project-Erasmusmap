@@ -25,6 +25,8 @@ import { MAX_FAVORITE_CITIES } from "@/lib/profile";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { getUserTrips } from "@/lib/trips";
 import { getRequestLang } from "@/lib/lang-server";
+import { getTranslations } from "@/lib/i18n";
+import { fillText } from "@/lib/page-meta";
 import { canonicalFor, socialMetadata } from "@/lib/seo";
 import {
   countProfileTrips,
@@ -55,14 +57,17 @@ export async function generateMetadata({
   if (!user) notFound();
 
   const title = user.username ?? "";
-  const description = user.bio || `${title} — ErasmusMap profili`;
+  const lang = await getRequestLang();
+  const description =
+    user.bio ||
+    fillText(getTranslations(lang).profileMetaDescription, { name: title });
   const path = `/u/${title}`;
   return {
     title,
     description,
     ...canonicalFor(path),
     ...socialMetadata({
-      lang: await getRequestLang(),
+      lang,
       title,
       description,
       path,

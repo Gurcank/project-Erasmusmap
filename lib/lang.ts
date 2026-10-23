@@ -100,3 +100,17 @@ export function langCookie(lang: Lang, secure: boolean): string {
     ...(secure ? ["Secure"] : []),
   ].join("; ");
 }
+
+/** The BCP 47 locale each interface language formats dates and numbers with. */
+export const LOCALES: Record<Lang, string> = {
+  tr: "tr-TR",
+  en: "en-GB",
+  de: "de-DE",
+  fr: "fr-FR",
+  es: "es-ES",
+  it: "it-IT",
+};
+
+export function localeFor(lang: Lang): string {
+  return LOCALES[lang];
+}

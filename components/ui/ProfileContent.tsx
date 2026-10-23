@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import LocalizedError from "@/components/ui/LocalizedError";
 import Link from "next/link";
 import { Check, Copy, MoreHorizontal, UserMinus } from "lucide-react";
 import { useT } from "@/hooks/useT";
@@ -110,7 +111,7 @@ function FollowButton({
           role="alert"
           className="text-xs text-danger-700 dark:text-danger-400"
         >
-          {state.error}
+          <LocalizedError message={state.error} />
         </span>
       )}
     </form>
@@ -262,7 +263,7 @@ export default function ProfileContent({
   removeFavoriteCity,
 }: Props) {
   const t = useT();
-  const { tt } = useTripT();
+  const { tt, locale } = useTripT();
   const [avatarOpen, setAvatarOpen] = useState(false);
 
   const tabs: { key: ProfileTab; label: string; count: number }[] = [
@@ -468,7 +469,7 @@ export default function ProfileContent({
                   </p>
                   <p className="mt-2 flex items-center gap-3 text-xs text-text-subtle">
                     <span>
-                      {new Date(comment.createdAt).toLocaleDateString("tr-TR")}
+                      {new Date(comment.createdAt).toLocaleDateString(locale)}
                     </span>
                     {comment.likeCount > 0 && (
                       <span className="tabular-nums">
