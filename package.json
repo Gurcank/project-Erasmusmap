@@ -55,12 +55,12 @@
     "eslint": "^9.39.5",
     "eslint-config-next": "16.4.2",
     "mapshaper": "^0.7.55",
-    "prettier": "^3.9.6",
+    "prettier": "^3.9.10",
     "prisma": "^6.19.3",
     "tailwindcss": "^4.3.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   },
   "overrides": {
     "deepmerge-ts": "^8.0.2"
