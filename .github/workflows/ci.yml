@@ -116,6 +116,60 @@ jobs:
       - name: Seed the cities
         run: npx prisma db seed
 
+  # The unit tests cover the pieces; this is the one place the built app is
+  # opened in a real browser, against a database built from the migrations and
+  # the seed. It guards what only shows up end to end: a page that answers 200
+  # where it should answer 404, a missing landmark, a language or a cookie that
+  # is not honoured. Pages that need a Google sign-in are out of its reach.
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    # No secrets, like the build job: nothing here calls Google, Mapbox or
+    # Unsplash, so the values only have to exist.
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
+      NEXTAUTH_SECRET: ci-e2e-only-not-a-secret
+      NEXTAUTH_URL: http://localhost:3000
+      GOOGLE_CLIENT_ID: ci-e2e-only
+      GOOGLE_CLIENT_SECRET: ci-e2e-only
+      NEXT_PUBLIC_MAPBOX_TOKEN: pk.ci-e2e-only
+      UNSPLASH_ACCESS_KEY: ci-e2e-only
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npx prisma db seed
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
   audit:
     runs-on: ubuntu-latest
     steps:
