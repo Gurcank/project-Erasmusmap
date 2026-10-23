@@ -3,14 +3,18 @@ import { legalPlaceholdersLeft } from "./lib/legal/config";
 import { imageHosts, STATIC_SECURITY_HEADERS } from "./lib/security-headers";
 
 // The privacy policy and the terms name who runs the site and how to reach them.
-// Those facts live in lib/legal/config.ts, and a production build refuses to go
-// out while any of them is still a placeholder: a policy with "[VERİ SORUMLUSU
-// ADI]" printed in it is worse than none. Previews and local builds are not
-// held up by it.
+// Those facts live in lib/legal/config.ts. While any of them is still a
+// placeholder the production deployment does not show the pages or link to them
+// (legalPagesAvailable); the build itself goes ahead, because a stuck build also
+// holds back every security fix behind it. Set REQUIRE_LEGAL_CONFIG=1 on the
+// project to make it refuse instead, once the values are in and a regression
+// should be loud.
 const placeholders = legalPlaceholdersLeft();
 if (process.env.VERCEL_ENV === "production" && placeholders.length > 0) {
-  throw new Error(
-    `Legal placeholders not filled in lib/legal/config.ts: ${placeholders.join(", ")}`,
+  const message = `Legal placeholders not filled in lib/legal/config.ts: ${placeholders.join(", ")}`;
+  if (process.env.REQUIRE_LEGAL_CONFIG === "1") throw new Error(message);
+  console.warn(
+    `WARNING: ${message}. The privacy policy and the terms are NOT published until they are.`,
   );
 }
 

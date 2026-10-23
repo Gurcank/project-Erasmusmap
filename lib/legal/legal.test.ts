@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { LEGAL_CONFIG, legalPlaceholdersLeft } from "@/lib/legal/config";
+import {
+  LEGAL_CONFIG,
+  legalPagesAvailable,
+  legalPlaceholdersLeft,
+} from "@/lib/legal/config";
 import { getLegalDocument, legalLangFor, type LegalKind } from "@/lib/legal";
 import { imageHosts } from "@/lib/security-headers";
 import type { LegalDocument } from "@/lib/legal/types";
@@ -147,15 +151,65 @@ describe("legal placeholders", () => {
   });
 });
 
-describe("the production build guard in next.config.ts", () => {
-  it("refuses to build for production while a placeholder is left", async () => {
+describe("legalPagesAvailable", () => {
+  const filled = {
+    controllerName: "Ada Lovelace",
+    contactEmail: "privacy@example.com",
+    governingLaw: { tr: "Türk hukuku", en: "Turkish law" },
+  };
+
+  it("withholds the pages on production while a placeholder is left", () => {
+    expect(legalPagesAvailable({ VERCEL_ENV: "production" })).toBe(false);
+  });
+
+  it("shows them on production once every value is real", () => {
+    expect(legalPagesAvailable({ VERCEL_ENV: "production" }, filled)).toBe(
+      true,
+    );
+  });
+
+  it("shows them anywhere else, so the text can be read and reviewed", () => {
+    for (const env of [
+      { VERCEL_ENV: "preview" },
+      { VERCEL_ENV: "development" },
+      {},
+    ]) {
+      expect(legalPagesAvailable(env)).toBe(true);
+    }
+  });
+
+  it("is not fooled by a half-filled config on production", () => {
+    expect(
+      legalPagesAvailable(
+        { VERCEL_ENV: "production" },
+        { ...filled, contactEmail: "[İLETİŞİM E-POSTASI]" },
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("the production build in next.config.ts", () => {
+  it("goes ahead while a placeholder is left, and says the pages are not published", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("REQUIRE_LEGAL_CONFIG", "");
+    await expect(import("../../next.config")).resolves.toBeDefined();
+    const text = warn.mock.calls.map((call) => String(call[0])).join("\n");
+    expect(text).toMatch(/Legal placeholders not filled.*controllerName/);
+    expect(text).toMatch(/NOT published/);
+    warn.mockRestore();
+  });
+
+  it("refuses when the project asks for it with REQUIRE_LEGAL_CONFIG=1", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("REQUIRE_LEGAL_CONFIG", "1");
     await expect(import("../../next.config")).rejects.toThrow(
       /Legal placeholders not filled.*controllerName/,
     );
   });
 
-  it("does not hold up a preview or a local build", async () => {
+  it("does not hold up a preview or a local build, even in strict mode", async () => {
+    vi.stubEnv("REQUIRE_LEGAL_CONFIG", "1");
     vi.stubEnv("VERCEL_ENV", "preview");
     await expect(import("../../next.config")).resolves.toBeDefined();
     vi.resetModules();
