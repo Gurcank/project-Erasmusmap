@@ -62,10 +62,12 @@ Migration'lar deploy'la birlikte **uygulanmaz**; elle, korumalı bir workflow il
 SELECT count(*) FROM "User" WHERE image IS NOT NULL;
 ```
 
-**Şu an bekleyen:** `20261022160000_drop_photo_storage` (`TripPhoto` tablosunu ve
-`User.image` / `User.imagePath` kolonlarını siler). Uygulamadan önce Supabase →
-Storage'da `avatars` ve `trip-media` bucket'larının **elle boşaltıldığından** emin ol;
-migration yalnızca veritabanını temizler, dosyalara dokunmaz.
+**Şu an bekleyen migration yok.** Son silici migration
+`20261022160000_drop_photo_storage` (`TripPhoto` tablosunu ve `User.image` /
+`User.imagePath` kolonlarını siler) 23 Ekim 2026'da uygulandı. Silici bir migration için
+sıra hep aynıdır: önce `allow_destructive` **işaretsiz** çalıştır (bekleyenleri listeler,
+kapı durur, hiçbir şey değişmez); listeyi ve Supabase → Storage'daki dosya tarafını
+kontrol et; sonra işaretle. Migration yalnızca veritabanını temizler, dosyalara dokunmaz.
 
 **Elle uygulamak gerekirse** (workflow kullanılamıyorsa): `DIRECT_URL` (port `5432`,
 pgbouncer yok) ile `npx prisma migrate status`, ardından `npx prisma migrate deploy`.
