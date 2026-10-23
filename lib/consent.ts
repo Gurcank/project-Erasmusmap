@@ -23,9 +23,24 @@ export function parseConsent(value: string | undefined | null): Consent {
   return value === "granted" || value === "denied" ? value : null;
 }
 
-/** Statistics are loaded only for a visitor who said yes. */
+/**
+ * The optional statistics (Vercel Analytics and Mapbox's usage events) run only
+ * for a visitor who said yes.
+ */
 export function analyticsAllowed(consent: Consent): boolean {
   return consent === "granted";
+}
+
+/**
+ * The choice in a cookie string, `document.cookie` in the browser. For code that
+ * has to decide before React renders anything.
+ */
+export function readConsentCookie(cookieString: string): Consent {
+  for (const part of cookieString.split(";")) {
+    const [name, ...value] = part.trim().split("=");
+    if (name === CONSENT_COOKIE) return parseConsent(value.join("="));
+  }
+  return null;
 }
 
 /** The banner shows until a choice has been made, either way. */

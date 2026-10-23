@@ -143,7 +143,7 @@ export const en = {
   loginLegalNotice: "By signing in you accept the {terms} and the {privacy}.",
   cookieBannerLabel: "Cookie preferences",
   cookieBannerText:
-    "Cookies that keep you signed in are always used. Optionally, we can collect anonymous visit statistics (Vercel Analytics) to improve the site.",
+    "Cookies that keep you signed in are always used. Optionally, we can collect anonymous visit statistics (Vercel Analytics) and map usage events (Mapbox) to improve the site.",
   cookieAccept: "Accept",
   cookieReject: "Refuse",
   cookiePrefsTitle: "Your cookie and statistics choice",

@@ -140,7 +140,7 @@ export const fr = {
     "En te connectant, tu acceptes les {terms} et la {privacy}.",
   cookieBannerLabel: "Préférences de cookies",
   cookieBannerText:
-    "Les cookies nécessaires à ta connexion sont toujours utilisés. En option, nous pouvons collecter des statistiques de visite anonymes (Vercel Analytics) pour améliorer le site.",
+    "Les cookies nécessaires à ta connexion sont toujours utilisés. En option, nous pouvons collecter des statistiques de visite anonymes (Vercel Analytics) et des événements d'usage de la carte (Mapbox) pour améliorer le site.",
   cookieAccept: "Accepter",
   cookieReject: "Refuser",
   cookiePrefsTitle: "Ton choix de cookies et de statistiques",

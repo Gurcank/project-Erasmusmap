@@ -140,7 +140,7 @@ export const de = {
     "Mit der Anmeldung akzeptierst du die {terms} und die {privacy}.",
   cookieBannerLabel: "Cookie-Einstellungen",
   cookieBannerText:
-    "Cookies für die Anmeldung werden immer verwendet. Optional können wir anonyme Besuchsstatistiken (Vercel Analytics) erheben, um die Seite zu verbessern.",
+    "Cookies für die Anmeldung werden immer verwendet. Optional können wir anonyme Besuchsstatistiken (Vercel Analytics) und Kartennutzungsereignisse (Mapbox) erheben, um die Seite zu verbessern.",
   cookieAccept: "Akzeptieren",
   cookieReject: "Ablehnen",
   cookiePrefsTitle: "Deine Cookie- und Statistik-Auswahl",

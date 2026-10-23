@@ -140,7 +140,7 @@ export const es = {
   loginLegalNotice: "Al iniciar sesión aceptas los {terms} y la {privacy}.",
   cookieBannerLabel: "Preferencias de cookies",
   cookieBannerText:
-    "Las cookies necesarias para mantener tu sesión se usan siempre. Opcionalmente, podemos recoger estadísticas de visitas anónimas (Vercel Analytics) para mejorar el sitio.",
+    "Las cookies necesarias para mantener tu sesión se usan siempre. Opcionalmente, podemos recoger estadísticas de visitas anónimas (Vercel Analytics) y eventos de uso del mapa (Mapbox) para mejorar el sitio.",
   cookieAccept: "Aceptar",
   cookieReject: "Rechazar",
   cookiePrefsTitle: "Tu elección de cookies y estadísticas",

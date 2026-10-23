@@ -169,6 +169,7 @@ export default function TripMap({
       center: [12, 50],
       zoom: 3.4,
       attributionControl: true,
+      performanceMetricsCollection: false,
     });
     mapRef.current = map;
     map.addControl(
