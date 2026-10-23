@@ -4,7 +4,6 @@ import { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import TripHero from "@/components/trips/TripHero";
 import TripTimeline from "@/components/trips/TripTimeline";
-import TripCalendar from "@/components/trips/TripCalendar";
 import TripBudget from "@/components/trips/TripBudget";
 import TripCities from "@/components/trips/TripCities";
 import type { TripActions } from "@/components/trips/planner-types";
@@ -37,7 +36,6 @@ export type EditorState = { item: TripItemView | null; day: string } | null;
 
 const SECTIONS = [
   ["route", "sectionMap"],
-  ["calendar", "sectionCalendar"],
   ["budget", "sectionBudget"],
   ["cities", "sectionCities"],
 ] as const;
@@ -76,13 +74,6 @@ export default function TripPlanner({ trip, isOwner, actions }: Props) {
     },
     [trip.items],
   );
-
-  const openDayFromCalendar = (day: string) => {
-    setOpenDay(day);
-    document
-      .getElementById(`day-${day}`)
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 pt-24 pb-24 sm:px-6 md:px-8">
@@ -138,18 +129,6 @@ export default function TripPlanner({ trip, isOwner, actions }: Props) {
           editor={editor}
           onEdit={setEditor}
           actions={actions}
-        />
-      </section>
-
-      <section id="calendar" className="mb-16 scroll-mt-36">
-        <TripCalendar
-          days={days}
-          dayCities={dayCities}
-          cities={trip.cities}
-          cityIndex={cityIndex}
-          budget={budget}
-          currency={trip.currency}
-          onOpenDay={openDayFromCalendar}
         />
       </section>
 

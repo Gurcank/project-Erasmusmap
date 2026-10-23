@@ -255,20 +255,6 @@ export default function TripTimeline({
         <h2 className="font-display text-2xl font-bold text-on-backdrop">
           {tt.sectionTimeline}
         </h2>
-        {isOwner && (
-          <GlassButton
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              const day = openDay ?? days[0];
-              onOpenDay(day);
-              onEdit({ item: null, day });
-            }}
-          >
-            <Plus size={15} aria-hidden="true" />
-            {tt.addItem}
-          </GlassButton>
-        )}
       </div>
 
       {!isOwner && (
@@ -315,9 +301,7 @@ export default function TripTimeline({
                     {formatDay(date, locale, { weekday: "long" })}
                   </span>
                   <span className="block truncate text-xs text-text-muted">
-                    {titles.length > 0
-                      ? titles.join(" → ")
-                      : `${items.length + carried.length} ·`}
+                    {titles.join(" → ")}
                     {carried.length > 0 &&
                       ` · ${tt.carriedOver}: ${carried.map((item) => item.title).join(", ")}`}
                   </span>
@@ -334,9 +318,11 @@ export default function TripTimeline({
                     {formatMoney(dayBudget.total, trip.currency, locale)}
                   </span>
                 )}
-                <span className="rounded-full bg-ink-500/15 px-2 py-0.5 text-xs text-text-muted tabular-nums">
-                  {items.length}
-                </span>
+                {items.length > 0 && (
+                  <span className="rounded-full bg-ink-500/15 px-2 py-0.5 text-xs text-text-muted tabular-nums">
+                    {items.length}
+                  </span>
+                )}
                 <ChevronDown
                   size={18}
                   aria-hidden="true"

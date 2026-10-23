@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Link2, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, Link2, Plus, Trash2 } from "lucide-react";
 import ActionForm from "@/components/ui/ActionForm";
 import GlassButton from "@/components/ui/GlassButton";
 import SubmitButton from "@/components/ui/SubmitButton";
@@ -47,6 +47,7 @@ export default function TripBudget({
   const { tt, locale } = useTripT();
   const money = (minor: number) => formatMoney(minor, trip.currency, locale);
   const [day, setDay] = useState(days[0] ?? "");
+  const [moreExpense, setMoreExpense] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const cityName = new Map(
     trip.cities.map((entry) => [entry.city.id, entry.city.name]),
@@ -99,104 +100,108 @@ export default function TripBudget({
         <h2 className="font-display text-2xl font-bold text-on-backdrop">
           {tt.sectionBudget}
         </h2>
-        <p className="text-sm text-on-backdrop-muted">
-          {tt.dailyAllowance}: <strong>{money(budget.dailyAllowance)}</strong> ·{" "}
-          {tt.remaining}:{" "}
-          <strong className={budget.overBudget ? "text-danger-400" : ""}>
-            {money(budget.remaining)}
-          </strong>
-        </p>
+        {/* The total, what is left and the ring are in the header above; the
+            daily share is the one figure not shown there. */}
+        {budget.budget > 0 && (
+          <p className="text-sm text-on-backdrop-muted">
+            {tt.dailyAllowance}: <strong>{money(budget.dailyAllowance)}</strong>
+          </p>
+        )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title={tt.byCategory}>
-          <DonutChart
-            slices={slices}
-            centerLabel={tt.spent}
-            centerValue={money(budget.total)}
-            emptyText={tt.chartEmpty}
-          />
-        </Panel>
-        <Panel title={tt.cumulative}>
-          <CumulativeLine
-            points={budget.days.map((entry, index) => ({
-              key: entry.date,
-              label: `${fill(tt.dayLabel, { n: index + 1 })} · ${formatDay(entry.date, locale)}`,
-              shortLabel: String(Number(entry.date.slice(8, 10))),
-              value: entry.cumulative,
-            }))}
-            budget={budget.budget}
-            budgetLabel={tt.budgetLabel}
-            seriesLabel={tt.spent}
-            remainingLabel={tt.remaining}
-            formatValue={money}
-            locale={locale}
-            emptyText={tt.chartEmpty}
-          />
-        </Panel>
-        <Panel title={tt.perDay}>
-          <DailyBars
-            days={barDays}
-            reference={budget.dailyAllowance}
-            referenceLabel={tt.dailyAllowance}
-            formatValue={money}
-            locale={locale}
-            emptyText={tt.chartEmpty}
-            overLabel={tt.dayOver}
-          />
-          {/* One legend for the category colours used by both charts. */}
-          <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-muted">
-            {BUDGET_BUCKETS.filter(
-              (bucket) => budget.byCategory[bucket] > 0,
-            ).map((bucket) => (
-              <li key={bucket} className="inline-flex items-center gap-1.5">
-                <span
-                  className="h-2.5 w-2.5 rounded-sm"
-                  style={{ background: CATEGORY_COLOR[bucket] }}
-                  aria-hidden="true"
-                />
-                {bucketLabel(bucket)}
-              </li>
-            ))}
-          </ul>
-        </Panel>
-        <Panel title={tt.byCity}>
-          {cityTotals.length === 0 ? (
-            <p className="py-10 text-center text-sm text-text-muted">
-              {tt.chartEmpty}
-            </p>
-          ) : (
-            <ul className="space-y-3">
-              {cityTotals.map((entry) => (
-                <li key={entry.cityId}>
-                  <div className="mb-1 flex justify-between text-sm">
-                    <span className="inline-flex items-center gap-1.5 text-text">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ background: entry.color }}
-                        aria-hidden="true"
-                      />
-                      {entry.name}
-                    </span>
-                    <span className="font-semibold text-text tabular-nums">
-                      {money(entry.total)}
-                    </span>
-                  </div>
-                  <div className="h-3 rounded-full bg-ink-500/12">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${(entry.total / cityMax) * 100}%`,
-                        background: entry.color,
-                      }}
-                    />
-                  </div>
+      {budget.total > 0 && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Panel title={tt.byCategory}>
+            <DonutChart
+              slices={slices}
+              centerLabel={tt.spent}
+              centerValue={money(budget.total)}
+              emptyText={tt.chartEmpty}
+            />
+          </Panel>
+          <Panel title={tt.cumulative}>
+            <CumulativeLine
+              points={budget.days.map((entry, index) => ({
+                key: entry.date,
+                label: `${fill(tt.dayLabel, { n: index + 1 })} · ${formatDay(entry.date, locale)}`,
+                shortLabel: String(Number(entry.date.slice(8, 10))),
+                value: entry.cumulative,
+              }))}
+              budget={budget.budget}
+              budgetLabel={tt.budgetLabel}
+              seriesLabel={tt.spent}
+              remainingLabel={tt.remaining}
+              formatValue={money}
+              locale={locale}
+              emptyText={tt.chartEmpty}
+            />
+          </Panel>
+          <Panel title={tt.perDay}>
+            <DailyBars
+              days={barDays}
+              reference={budget.dailyAllowance}
+              referenceLabel={tt.dailyAllowance}
+              formatValue={money}
+              locale={locale}
+              emptyText={tt.chartEmpty}
+              overLabel={tt.dayOver}
+            />
+            {/* One legend for the category colours used by both charts. */}
+            <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-muted">
+              {BUDGET_BUCKETS.filter(
+                (bucket) => budget.byCategory[bucket] > 0,
+              ).map((bucket) => (
+                <li key={bucket} className="inline-flex items-center gap-1.5">
+                  <span
+                    className="h-2.5 w-2.5 rounded-sm"
+                    style={{ background: CATEGORY_COLOR[bucket] }}
+                    aria-hidden="true"
+                  />
+                  {bucketLabel(bucket)}
                 </li>
               ))}
             </ul>
+          </Panel>
+          {cityTotals.length > 1 && (
+            <Panel title={tt.byCity}>
+              {cityTotals.length === 0 ? (
+                <p className="py-10 text-center text-sm text-text-muted">
+                  {tt.chartEmpty}
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {cityTotals.map((entry) => (
+                    <li key={entry.cityId}>
+                      <div className="mb-1 flex justify-between text-sm">
+                        <span className="inline-flex items-center gap-1.5 text-text">
+                          <span
+                            className="h-2.5 w-2.5 rounded-full"
+                            style={{ background: entry.color }}
+                            aria-hidden="true"
+                          />
+                          {entry.name}
+                        </span>
+                        <span className="font-semibold text-text tabular-nums">
+                          {money(entry.total)}
+                        </span>
+                      </div>
+                      <div className="h-3 rounded-full bg-ink-500/12">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${(entry.total / cityMax) * 100}%`,
+                            background: entry.color,
+                          }}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
           )}
-        </Panel>
-      </div>
+        </div>
+      )}
 
       <Panel title={isOwner ? tt.addExpense : tt.perDay}>
         {isOwner && (
@@ -205,42 +210,10 @@ export default function TripBudget({
             action={withSuccess(actions.saveTripExpense, () =>
               setFormKey((key) => key + 1),
             )}
-            className="mb-6 grid gap-3 rounded-card border border-border-strong p-4 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_0.8fr_1fr_1.2fr_auto] lg:items-end"
-            errorClassName="text-sm text-danger-700 dark:text-danger-400 sm:col-span-2 lg:col-span-6"
+            className="mb-6 grid gap-3 rounded-card border border-border-strong p-4 sm:grid-cols-2 lg:grid-cols-[0.8fr_1fr_1.6fr_auto] lg:items-end"
+            errorClassName="text-sm text-danger-700 dark:text-danger-400 sm:col-span-2 lg:col-span-4"
           >
             <input type="hidden" name="tripId" value={trip.id} />
-            <div>
-              <label htmlFor="expense-day" className={LABEL}>
-                {tt.expenseDate}
-              </label>
-              <select
-                id="expense-day"
-                name="date"
-                value={day}
-                onChange={(event) => setDay(event.target.value)}
-                className={FIELD}
-              >
-                {days.map((date, index) => (
-                  <option key={date} value={date}>
-                    {fill(tt.dayLabel, { n: index + 1 })} ·{" "}
-                    {formatDay(date, locale)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="expense-category" className={LABEL}>
-                {tt.category}
-              </label>
-              <select id="expense-category" name="category" className={FIELD}>
-                <option value="">{tt.lumpSum}</option>
-                {EXPENSE_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {bucketLabel(category)}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div>
               <label htmlFor="expense-amount" className={LABEL}>
                 {tt.amount} ({trip.currency})
@@ -255,20 +228,14 @@ export default function TripBudget({
               />
             </div>
             <div>
-              <label htmlFor="expense-city" className={LABEL}>
-                {tt.city}
+              <label htmlFor="expense-category" className={LABEL}>
+                {tt.category}
               </label>
-              <select
-                id="expense-city"
-                name="cityId"
-                key={`${day}-${defaultCity}`}
-                defaultValue={defaultCity}
-                className={FIELD}
-              >
-                <option value="">—</option>
-                {trip.cities.map((entry) => (
-                  <option key={entry.city.id} value={entry.city.id}>
-                    {entry.city.name}
+              <select id="expense-category" name="category" className={FIELD}>
+                <option value="">{tt.lumpSum}</option>
+                {EXPENSE_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {bucketLabel(category)}
                   </option>
                 ))}
               </select>
@@ -288,6 +255,65 @@ export default function TripBudget({
               <Plus size={15} aria-hidden="true" />
               {tt.addExpense}
             </SubmitButton>
+            <button
+              type="button"
+              onClick={() => setMoreExpense(!moreExpense)}
+              aria-expanded={moreExpense}
+              aria-controls="expense-more"
+              className="inline-flex w-fit cursor-pointer items-center gap-1 text-sm text-text-muted hover:text-text focus-visible:outline-2 focus-visible:outline-focus sm:col-span-2 lg:col-span-4"
+            >
+              {tt.moreDetails}
+              <ChevronDown
+                size={15}
+                aria-hidden="true"
+                className={`transition-transform ${moreExpense ? "rotate-180" : ""}`}
+              />
+            </button>
+            {/* Folded, not removed: the day and the city are still sent. */}
+            <div
+              id="expense-more"
+              hidden={!moreExpense}
+              className="grid gap-3 sm:col-span-2 sm:grid-cols-2 lg:col-span-4"
+            >
+              <div>
+                <label htmlFor="expense-day" className={LABEL}>
+                  {tt.expenseDate}
+                </label>
+                <select
+                  id="expense-day"
+                  name="date"
+                  value={day}
+                  onChange={(event) => setDay(event.target.value)}
+                  className={FIELD}
+                >
+                  {days.map((date, index) => (
+                    <option key={date} value={date}>
+                      {fill(tt.dayLabel, { n: index + 1 })} ·{" "}
+                      {formatDay(date, locale)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="expense-city" className={LABEL}>
+                  {tt.city}
+                </label>
+                <select
+                  id="expense-city"
+                  name="cityId"
+                  key={`${day}-${defaultCity}`}
+                  defaultValue={defaultCity}
+                  className={FIELD}
+                >
+                  <option value="">—</option>
+                  {trip.cities.map((entry) => (
+                    <option key={entry.city.id} value={entry.city.id}>
+                      {entry.city.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </ActionForm>
         )}
 
