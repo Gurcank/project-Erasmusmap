@@ -145,8 +145,10 @@ son noktasıdır. **404 verebilen rotalara (`/c/[slug]`, `/u/[username]`, `/trip
 - Vitest (`npm test`), ortam `node`; bileşenler `renderToStaticMarkup` ile sınanır. Testler
   hızlı birim testleridir ve Prisma'yı mock'lar; gerçek veritabanı davranışı `database` CI
   job'unda Postgres 17'ye karşı doğrulanır (migration'lar boş veritabanına uygulanır, şema
-  drift'i ve seed denetlenir). Tarayıcıda uçtan uca (Playwright) test henüz yoktur.
-- CI: `lint`, `test`, `build` (gizlisiz, sahte ortamla), `database`, `audit`. Ayrıntı README'de.
+  drift'i ve seed denetlenir). Uçtan uca: `e2e/` altındaki Playwright duman testi built uygulamayı gerçek bir tarayıcıda açar
+  (CI `e2e` job'u; yerelde `npm run build && npm run e2e`) ve yalnızca herkese açık sayfaları kapsar,
+  çünkü Google ile giriş bir testte yapılamaz.
+- CI: `lint`, `test`, `build` (gizlisiz, sahte ortamla), `database`, `e2e`, `audit`. Ayrıntı README'de.
 
 ## Çalışma kuralları
 
