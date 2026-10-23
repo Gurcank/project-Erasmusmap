@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Bed,
   Bus,
+  ChevronDown,
   Ellipsis,
   Footprints,
   ShoppingBag,
@@ -78,7 +79,16 @@ function moneyText(amount: number | null): string {
   return amount % 100 === 0 ? String(amount / 100) : (amount / 100).toFixed(2);
 }
 
-/** Adds or edits one timeline entry: kind, title, times, city, note, cost. */
+/**
+ * Adds or edits one timeline entry.
+ *
+ * What nearly every entry needs is on show: what kind, what it is, when and what
+ * it costs. A title and Enter is a complete entry. Everything else (the date, an
+ * end time, the place, notes) sits behind "Ayrıntılar" and stays in the form
+ * while it is folded, so nothing typed there is lost. A journey is the exception
+ * and opens the details itself, because where it goes from and to is what makes
+ * it one.
+ */
 export default function TripItemForm({
   tripId,
   item,
@@ -90,20 +100,26 @@ export default function TripItemForm({
 }: Props) {
   const { tt } = useTripT();
   const [category, setCategory] = useState<ExpenseCategory>(kindOf(item));
+  const [startAt, setStartAt] = useState(item?.startAt ?? `${day}T09:00`);
   const [from, setFrom] = useState<CityChoice | null>(
     toChoice(item?.city ?? null),
   );
   const [to, setTo] = useState<CityChoice | null>(
     toChoice(item?.toCity ?? null),
   );
+  // An entry that already has details is opened with them showing.
+  const [moreOpen, setMoreOpen] = useState(
+    Boolean(item && (item.endAt || item.city || item.notes)),
+  );
 
   const kind = KINDS.find((entry) => entry.category === category) ?? KINDS[2];
   const isTransport = kind.type === "TRANSPORT";
+  const showMore = moreOpen || isTransport;
 
   return (
     <ActionForm
       action={withSuccess(action, onClose)}
-      className="glass flex flex-col gap-4 rounded-panel border border-primary/60 bg-surface p-5 shadow-popover"
+      className="glass flex flex-col gap-3.5 rounded-panel border border-primary/60 bg-surface p-4 shadow-popover sm:p-5"
       errorClassName="text-sm text-danger-700 dark:text-danger-400"
     >
       <h3 className="font-display text-lg font-semibold text-text">
@@ -113,11 +129,13 @@ export default function TripItemForm({
       {item && <input type="hidden" name="itemId" value={item.id} />}
       <input type="hidden" name="type" value={kind.type} />
       <input type="hidden" name="costCategory" value={category} />
+      {/* The time above and the date below both edit this one value. */}
+      <input type="hidden" name="startAt" value={startAt} />
 
       <div
         role="radiogroup"
         aria-label={tt.itemType}
-        className="grid grid-cols-3 gap-2"
+        className="grid grid-cols-3 gap-1.5"
       >
         {KINDS.map(({ category: value, icon: Icon }) => {
           const selected = category === value;
@@ -142,101 +160,36 @@ export default function TripItemForm({
       </div>
 
       <div>
-        <label htmlFor="item-title" className={LABEL}>
+        <label htmlFor="item-title" className="sr-only">
           {tt.itemTitle}
         </label>
         <input
           id="item-title"
           name="title"
           required
+          autoFocus
           maxLength={ITEM_TITLE_MAX}
           defaultValue={item?.title}
           placeholder={tt.itemTitlePlaceholder}
-          className={FIELD}
+          className={`${FIELD} text-base`}
         />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label htmlFor="item-start" className={LABEL}>
-            {tt.startAt}
+          <label htmlFor="item-time" className={LABEL}>
+            {tt.itemTime}
           </label>
           <input
-            id="item-start"
-            type="datetime-local"
-            name="startAt"
+            id="item-time"
+            type="time"
             required
-            defaultValue={item?.startAt ?? `${day}T09:00`}
-            min={`${tripStart}T00:00`}
-            max={`${tripEnd}T23:59`}
-            className={FIELD}
-          />
-        </div>
-        <div>
-          <label htmlFor="item-end" className={LABEL}>
-            {tt.endAt}
-          </label>
-          <input
-            id="item-end"
-            type="datetime-local"
-            name="endAt"
-            defaultValue={item?.endAt ?? ""}
-            min={`${tripStart}T00:00`}
-            max={`${addDays(tripEnd, 1)}T23:59`}
-            className={FIELD}
-          />
-        </div>
-      </div>
-
-      <div className={isTransport ? "grid gap-3 sm:grid-cols-2" : ""}>
-        <CityField
-          label={isTransport ? tt.from : tt.city}
-          name="cityId"
-          value={from}
-          onChange={setFrom}
-        />
-        {isTransport && (
-          <CityField
-            label={tt.to}
-            name="toCityId"
-            value={to}
-            onChange={setTo}
-          />
-        )}
-      </div>
-
-      {isTransport && (
-        <div>
-          <label htmlFor="item-mode" className={LABEL}>
-            {tt.mode}
-          </label>
-          <select
-            id="item-mode"
-            name="mode"
-            defaultValue={item?.mode ?? "BUS"}
-            className={FIELD}
-          >
-            {TRANSPORT_MODES.map((mode) => (
-              <option key={mode} value={mode}>
-                {tt[`mode${mode}`]}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      <div className="grid gap-3 sm:grid-cols-[1fr_9rem]">
-        <div>
-          <label htmlFor="item-notes" className={LABEL}>
-            {tt.notes}
-          </label>
-          <textarea
-            id="item-notes"
-            name="notes"
-            rows={2}
-            maxLength={ITEM_NOTES_MAX}
-            defaultValue={item?.notes ?? ""}
-            className={`${FIELD} resize-y`}
+            value={startAt.slice(11, 16)}
+            onChange={(event) =>
+              event.target.value &&
+              setStartAt(`${startAt.slice(0, 10)}T${event.target.value}`)
+            }
+            className={`${FIELD} tabular-nums`}
           />
         </div>
         <div>
@@ -250,6 +203,111 @@ export default function TripItemForm({
             defaultValue={moneyText(item?.cost ?? null)}
             placeholder="0"
             className={`${FIELD} tabular-nums`}
+          />
+        </div>
+      </div>
+
+      {!isTransport && (
+        <button
+          type="button"
+          onClick={() => setMoreOpen(!moreOpen)}
+          aria-expanded={moreOpen}
+          aria-controls="item-more"
+          className="inline-flex w-fit cursor-pointer items-center gap-1 text-sm text-text-muted hover:text-text focus-visible:outline-2 focus-visible:outline-focus"
+        >
+          {tt.moreDetails}
+          <ChevronDown
+            size={15}
+            aria-hidden="true"
+            className={`transition-transform ${moreOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+      )}
+
+      {/* Folded, not removed: what was typed here is still sent. */}
+      <div id="item-more" hidden={!showMore} className="flex flex-col gap-3.5">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label htmlFor="item-date" className={LABEL}>
+              {tt.expenseDate}
+            </label>
+            <input
+              id="item-date"
+              type="date"
+              value={startAt.slice(0, 10)}
+              onChange={(event) =>
+                event.target.value &&
+                setStartAt(`${event.target.value}T${startAt.slice(11, 16)}`)
+              }
+              min={tripStart}
+              max={tripEnd}
+              className={FIELD}
+            />
+          </div>
+          <div>
+            <label htmlFor="item-end" className={LABEL}>
+              {tt.endAt}
+            </label>
+            <input
+              id="item-end"
+              type="datetime-local"
+              name="endAt"
+              defaultValue={item?.endAt ?? ""}
+              min={`${tripStart}T00:00`}
+              max={`${addDays(tripEnd, 1)}T23:59`}
+              className={FIELD}
+            />
+          </div>
+        </div>
+
+        <div className={isTransport ? "grid gap-3 sm:grid-cols-2" : ""}>
+          <CityField
+            label={isTransport ? tt.from : tt.city}
+            name="cityId"
+            value={from}
+            onChange={setFrom}
+          />
+          {isTransport && (
+            <CityField
+              label={tt.to}
+              name="toCityId"
+              value={to}
+              onChange={setTo}
+            />
+          )}
+        </div>
+
+        {isTransport && (
+          <div>
+            <label htmlFor="item-mode" className={LABEL}>
+              {tt.mode}
+            </label>
+            <select
+              id="item-mode"
+              name="mode"
+              defaultValue={item?.mode ?? "BUS"}
+              className={FIELD}
+            >
+              {TRANSPORT_MODES.map((mode) => (
+                <option key={mode} value={mode}>
+                  {tt[`mode${mode}`]}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="item-notes" className={LABEL}>
+            {tt.notes}
+          </label>
+          <textarea
+            id="item-notes"
+            name="notes"
+            rows={2}
+            maxLength={ITEM_NOTES_MAX}
+            defaultValue={item?.notes ?? ""}
+            className={`${FIELD} resize-y`}
           />
         </div>
       </div>
