@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale } from "@/hooks/useLang";
 import Link from "next/link";
 import {
   Ban,
@@ -108,6 +109,7 @@ export default function AdminDashboard({
   deleteReviewComment,
 }: Props) {
   const t = useT();
+  const locale = useLocale();
   const [tab, setTab] = useState<Tab>(initialTab);
 
   const tabs: { key: Tab; label: string }[] = [
@@ -163,7 +165,7 @@ export default function AdminDashboard({
               className="rounded-card glass border border-border bg-surface p-6 text-center"
             >
               <p className="font-display text-3xl font-bold text-text tabular-nums">
-                {value.toLocaleString("tr-TR")}
+                {value.toLocaleString(locale)}
               </p>
               <p className="mt-1 text-sm text-text-muted">{label}</p>
             </div>
@@ -457,7 +459,7 @@ export default function AdminDashboard({
                         </Link>
                         <span>
                           {new Date(comment.createdAt).toLocaleDateString(
-                            "tr-TR",
+                            locale,
                           )}
                         </span>
                         {comment.parentAuthor && (

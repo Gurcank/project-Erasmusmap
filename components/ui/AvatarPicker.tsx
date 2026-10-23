@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import LocalizedError from "@/components/ui/LocalizedError";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import AvatarFigure from "@/components/ui/AvatarFigure";
@@ -105,7 +106,7 @@ export default function AvatarPicker({ current }: { current: AvatarKey }) {
           role="alert"
           className="text-xs text-danger-700 dark:text-danger-400"
         >
-          {error}
+          <LocalizedError message={error} />
         </p>
       )}
     </div>

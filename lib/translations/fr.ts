@@ -12,6 +12,31 @@ export const fr = {
   mapRegionHelp:
     "Carte interactive de l'Europe. Déplacez-la avec les flèches et zoomez avec plus et moins. Pour aller directement à une ville, utilisez la recherche de ville.",
   mapSearchShortcut: "Rechercher une ville",
+  loginDescription: "Connecte-toi à ErasmusMap avec ton compte Google.",
+  loginContinueGoogle: "Continuer avec Google",
+  loginRedirecting: "Redirection…",
+  loginSuspended: "Ton compte a été suspendu. Tu ne peux pas te connecter.",
+  loginNoAccountHint:
+    "Si tu n'as pas de compte, il est créé automatiquement à ta première connexion.",
+  errorTitle: "Un problème est survenu",
+  errorDescription:
+    "Une erreur inattendue s'est produite. Réessayer peut résoudre le problème.",
+  errorPageLoad:
+    "La page n'a pas pu être chargée. Réessayer peut résoudre le problème.",
+  errorRetry: "Réessayer",
+  notFoundTitle: "Page introuvable",
+  notFoundDescription:
+    "La page que tu cherches a peut-être été déplacée ou n'a jamais existé.",
+  backToMap: "Retour à la carte",
+  siteTagline: "L'Europe racontée par les étudiants Erasmus",
+  siteDescription:
+    "Une plateforme pour que les étudiants Erasmus découvrent et évaluent les villes européennes.",
+  squareDescription:
+    "Les villes dont parlent le plus les étudiants Erasmus ce mois-ci, et les avis à la une.",
+  cityMetaDescription:
+    "Avis, notes et photos d'étudiants Erasmus pour {name}, {country}.",
+  profileMetaDescription: "{name} — profil ErasmusMap",
+  accountTitle: "Compte",
   noResults: "Aucun résultat",
   mapNav: "Carte",
   square: "La Place",
@@ -136,10 +161,8 @@ export const fr = {
   feedEmptyNoReviews: "Les personnes que tu suis n'ont encore rien évalué.",
 
   settingsTitle: "Paramètres",
-  accountTitle: "Compte",
   accountDesc: "Ta photo, ton nom, ta bio et ton nom d'utilisateur",
   backToProfile: "Profil",
-  backToMap: "Retour à la carte",
   termsTitle: "Conditions d'utilisation",
   privacyTitle: "Politique de confidentialité",
   termsLinkText: "Conditions d'utilisation",

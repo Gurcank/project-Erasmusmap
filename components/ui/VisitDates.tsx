@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import LocalizedError from "@/components/ui/LocalizedError";
 import { useT } from "@/hooks/useT";
 import SubmitButton from "@/components/ui/SubmitButton";
 import Calendar, { type RangeValue } from "@/components/ui/Calendar";
@@ -69,7 +70,7 @@ export default function VisitDates({
           role="alert"
           className="text-xs text-danger-700 dark:text-danger-400"
         >
-          {state.error}
+          <LocalizedError message={state.error} />
         </p>
       )}
     </form>

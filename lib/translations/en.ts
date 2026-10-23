@@ -13,6 +13,29 @@ export const en = {
   mapRegionHelp:
     "Interactive map of Europe. Pan with the arrow keys and zoom with plus and minus. To go straight to a city, use the city search.",
   mapSearchShortcut: "Search for a city",
+  loginDescription: "Sign in to ErasmusMap with your Google account.",
+  loginContinueGoogle: "Continue with Google",
+  loginRedirecting: "Redirecting…",
+  loginSuspended: "Your account has been suspended. You cannot sign in.",
+  loginNoAccountHint:
+    "If you don't have an account, one is created automatically the first time you sign in.",
+  errorTitle: "Something went wrong",
+  errorDescription: "An unexpected error occurred. Trying again may fix it.",
+  errorPageLoad: "The page could not be loaded. Trying again may fix it.",
+  errorRetry: "Try again",
+  notFoundTitle: "Page not found",
+  notFoundDescription:
+    "The page you are looking for may have moved or never existed.",
+  backToMap: "Back to the map",
+  siteTagline: "Hear Europe from Erasmus students",
+  siteDescription:
+    "A platform for Erasmus students to discover and review European cities.",
+  squareDescription:
+    "The cities Erasmus students are talking about most this month, and standout reviews.",
+  cityMetaDescription:
+    "Erasmus student reviews, ratings and photos for {name}, {country}.",
+  profileMetaDescription: "{name} — ErasmusMap profile",
+  accountTitle: "Account",
   noResults: "No results found",
   mapNav: "Map",
   square: "The Square",
@@ -140,10 +163,8 @@ export const en = {
 
   // Settings
   settingsTitle: "Settings",
-  accountTitle: "Account",
   accountDesc: "Your photo, name, bio and username",
   backToProfile: "Profile",
-  backToMap: "Back to the map",
   termsTitle: "Terms of Use",
   privacyTitle: "Privacy Policy",
   termsLinkText: "Terms of Use",

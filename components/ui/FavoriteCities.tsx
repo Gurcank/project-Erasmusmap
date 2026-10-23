@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import LocalizedError from "@/components/ui/LocalizedError";
 import Image from "next/image";
 import Link from "next/link";
 import { ImageOff, Loader2, Plus, Search, X } from "lucide-react";
@@ -154,7 +155,7 @@ export default function FavoriteCities({
           role="alert"
           className="mt-3 text-xs text-danger-700 dark:text-danger-400"
         >
-          {errorState.error}
+          <LocalizedError message={errorState.error} />
         </p>
       )}
 

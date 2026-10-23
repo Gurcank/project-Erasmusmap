@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { localizedMetadata } from "@/lib/page-meta";
 import { prisma } from "@/lib/prisma";
 import SquareContent from "@/components/ui/SquareContent";
 import { getTrendingCities, getTrendingReviews } from "@/lib/trending";
@@ -31,12 +31,12 @@ type ReplyRow = {
 
 import { canonicalFor } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Meydan",
-  ...canonicalFor("/meydan"),
-  description:
-    "Erasmus öğrencilerinin bu ay en çok konuştuğu şehirler ve öne çıkan yorumlar.",
-};
+export const generateMetadata = () =>
+  localizedMetadata((t) => ({
+    title: t.square,
+    ...canonicalFor("/meydan"),
+    description: t.squareDescription,
+  }));
 
 export default async function SquarePage() {
   const viewer = await requireActiveUser();

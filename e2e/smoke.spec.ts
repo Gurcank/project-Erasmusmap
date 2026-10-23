@@ -110,6 +110,43 @@ test.describe("language", () => {
   });
 });
 
+test.describe("text in the visitor's language", () => {
+  test("tab titles follow the language", async ({ browser }) => {
+    const context = await browser.newContext({ locale: "de-DE" });
+    const page = await context.newPage();
+    await page.goto("/meydan");
+    await expect(page).toHaveTitle(/Der Platz/);
+    await page.goto("/login");
+    await expect(page).toHaveTitle(/Anmelden/);
+    await expect(
+      page.getByRole("button", { name: "Weiter mit Google" }),
+    ).toBeVisible();
+    await context.close();
+  });
+
+  test("the 404 page is in the language too", async ({ browser }) => {
+    const context = await browser.newContext({ locale: "de-DE" });
+    const page = await context.newPage();
+    const response = await page.goto("/c/no-such-city");
+    expect(response?.status()).toBe(404);
+    await expect(
+      page.getByRole("heading", { name: "Seite nicht gefunden" }),
+    ).toBeVisible();
+    await context.close();
+  });
+
+  test("the open graph locale follows the language", async ({ browser }) => {
+    const context = await browser.newContext({ locale: "fr-FR" });
+    const page = await context.newPage();
+    await page.goto("/meydan");
+    await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute(
+      "content",
+      "fr_FR",
+    );
+    await context.close();
+  });
+});
+
 test.describe("cookie choice", () => {
   test("is asked once, remembered, and does not come back", async ({
     page,

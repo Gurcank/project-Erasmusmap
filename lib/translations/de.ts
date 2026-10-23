@@ -12,6 +12,31 @@ export const de = {
   mapRegionHelp:
     "Interaktive Karte von Europa. Mit den Pfeiltasten verschieben, mit Plus und Minus zoomen. Um direkt zu einer Stadt zu gelangen, nutze die Stadtsuche.",
   mapSearchShortcut: "Stadt suchen",
+  loginDescription: "Melde dich mit deinem Google-Konto bei ErasmusMap an.",
+  loginContinueGoogle: "Weiter mit Google",
+  loginRedirecting: "Weiterleitung…",
+  loginSuspended: "Dein Konto wurde gesperrt. Du kannst dich nicht anmelden.",
+  loginNoAccountHint:
+    "Wenn du noch kein Konto hast, wird es bei der ersten Anmeldung automatisch erstellt.",
+  errorTitle: "Etwas ist schiefgelaufen",
+  errorDescription:
+    "Ein unerwarteter Fehler ist aufgetreten. Ein erneuter Versuch kann helfen.",
+  errorPageLoad:
+    "Die Seite konnte nicht geladen werden. Ein erneuter Versuch kann helfen.",
+  errorRetry: "Erneut versuchen",
+  notFoundTitle: "Seite nicht gefunden",
+  notFoundDescription:
+    "Die gesuchte Seite wurde möglicherweise verschoben oder hat nie existiert.",
+  backToMap: "Zurück zur Karte",
+  siteTagline: "Europa aus Sicht von Erasmus-Studierenden",
+  siteDescription:
+    "Eine Plattform für Erasmus-Studierende, um europäische Städte zu entdecken und zu bewerten.",
+  squareDescription:
+    "Die Städte, über die Erasmus-Studierende diesen Monat am meisten sprechen, und besonders gute Bewertungen.",
+  cityMetaDescription:
+    "Bewertungen, Punkte und Fotos von Erasmus-Studierenden für {name}, {country}.",
+  profileMetaDescription: "{name} — ErasmusMap-Profil",
+  accountTitle: "Konto",
   noResults: "Keine Ergebnisse gefunden",
   mapNav: "Karte",
   square: "Der Platz",
@@ -136,10 +161,8 @@ export const de = {
   feedEmptyNoReviews: "Die Leute, denen du folgst, haben noch nichts bewertet.",
 
   settingsTitle: "Einstellungen",
-  accountTitle: "Konto",
   accountDesc: "Dein Foto, Name, Bio und Nutzername",
   backToProfile: "Profil",
-  backToMap: "Zurück zur Karte",
   termsTitle: "Nutzungsbedingungen",
   privacyTitle: "Datenschutzerklärung",
   termsLinkText: "Nutzungsbedingungen",

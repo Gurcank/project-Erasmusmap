@@ -23,6 +23,8 @@ import { getHiddenUserIds } from "@/lib/social";
 import { buildCommentTree, getLikedCommentIds } from "@/lib/review-shape";
 import { cacheCityPhotos } from "@/lib/city-photo";
 import { getRequestLang } from "@/lib/lang-server";
+import { getTranslations } from "@/lib/i18n";
+import { fillText } from "@/lib/page-meta";
 import { canonicalFor, socialMetadata } from "@/lib/seo";
 import {
   getAuthorStays,
@@ -50,13 +52,17 @@ export async function generateMetadata({
   if (!city) notFound();
 
   const name = city.name;
-  const description = `${name}, ${city.country} için Erasmus öğrenci değerlendirmeleri, puanları ve fotoğrafları.`;
+  const lang = await getRequestLang();
+  const description = fillText(getTranslations(lang).cityMetaDescription, {
+    name,
+    country: city.country,
+  });
   return {
     title: name,
     description,
     ...canonicalFor(`/c/${slug}`),
     ...socialMetadata({
-      lang: await getRequestLang(),
+      lang,
       title: name,
       description,
       path: `/c/${slug}`,

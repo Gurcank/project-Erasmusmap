@@ -1,17 +1,9 @@
 "use client";
 
 import { useLang } from "@/hooks/useLang";
+import { localeFor } from "@/lib/lang";
 import type { Lang } from "@/lib/i18n";
 import { tripStrings, type TripStrings } from "@/lib/translations/trips";
-
-const LOCALES: Record<Lang, string> = {
-  tr: "tr-TR",
-  en: "en-GB",
-  de: "de-DE",
-  fr: "fr-FR",
-  es: "es-ES",
-  it: "it-IT",
-};
 
 /** Replaces `{name}` placeholders. */
 export function fill(
@@ -31,7 +23,7 @@ export function useTripT(): { tt: TripStrings; locale: string; lang: Lang } {
   const lang = useLang();
   return {
     tt: tripStrings[lang] ?? tripStrings.en,
-    locale: LOCALES[lang],
+    locale: localeFor(lang),
     lang,
   };
 }

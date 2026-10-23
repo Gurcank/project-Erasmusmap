@@ -13,6 +13,30 @@ export const tr = {
   mapRegionHelp:
     "Etkileşimli Avrupa haritası. Ok tuşlarıyla kaydırabilir, + ve - tuşlarıyla yakınlaştırabilirsin. Doğrudan bir şehre gitmek için şehir aramasını kullan.",
   mapSearchShortcut: "Şehir ara",
+  loginDescription: "ErasmusMap'e Google hesabınla giriş yap.",
+  loginContinueGoogle: "Google ile devam et",
+  loginRedirecting: "Yönlendiriliyor…",
+  loginSuspended: "Hesabınız askıya alınmış. Giriş yapamazsınız.",
+  loginNoAccountHint:
+    "Hesabın yoksa ilk girişinde otomatik olarak oluşturulur.",
+  errorTitle: "Bir şeyler ters gitti",
+  errorDescription:
+    "Beklenmeyen bir hata oluştu. Tekrar denemek sorunu çözebilir.",
+  errorPageLoad: "Sayfa yüklenemedi. Tekrar denemek sorunu çözebilir.",
+  errorRetry: "Tekrar dene",
+  notFoundTitle: "Sayfa bulunamadı",
+  notFoundDescription:
+    "Aradığın sayfa taşınmış ya da hiç var olmamış olabilir.",
+  backToMap: "Haritaya dön",
+  siteTagline: "Avrupa'yı Erasmus öğrencilerinden dinle",
+  siteDescription:
+    "Erasmus öğrencileri için Avrupa şehirlerini keşfetme ve değerlendirme platformu.",
+  squareDescription:
+    "Erasmus öğrencilerinin bu ay en çok konuştuğu şehirler ve öne çıkan yorumlar.",
+  cityMetaDescription:
+    "{name}, {country} için Erasmus öğrenci değerlendirmeleri, puanları ve fotoğrafları.",
+  profileMetaDescription: "{name} — ErasmusMap profili",
+  accountTitle: "Hesap",
   noResults: "Sonuç bulunamadı",
   mapNav: "Harita",
   square: "Meydan",
@@ -140,10 +164,8 @@ export const tr = {
 
   // Settings
   settingsTitle: "Ayarlar",
-  accountTitle: "Hesap",
   accountDesc: "Fotoğraf, ad, bio ve kullanıcı adın",
   backToProfile: "Profil",
-  backToMap: "Haritaya dön",
   termsTitle: "Kullanım Şartları",
   privacyTitle: "Gizlilik Politikası",
   termsLinkText: "Kullanım Şartları'nı",

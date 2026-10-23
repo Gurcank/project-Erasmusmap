@@ -29,19 +29,14 @@ export default function LoginClient({
   }, [status, router]);
 
   const error =
-    searchParams.get("error") === "AccessDenied"
-      ? "Hesabınız askıya alınmış. Giriş yapamazsınız."
-      : "";
+    searchParams.get("error") === "AccessDenied" ? t.loginSuspended : "";
 
   // The shell stays up while the session is checked, with the button held, so
   // the page does not flash blank and then jump.
   const isBusy = isRedirecting || status === "loading";
 
   return (
-    <AuthShell
-      title="Giriş Yap"
-      description="ErasmusMap'e Google hesabınla giriş yap."
-    >
+    <AuthShell title={t.login} description={t.loginDescription}>
       <GlassButton
         onClick={() => {
           setIsRedirecting(true);
@@ -59,7 +54,7 @@ export default function LoginClient({
             className="animate-spin motion-reduce:animate-none"
           />
         )}
-        {isRedirecting ? "Yönlendiriliyor…" : "Google ile devam et"}
+        {isRedirecting ? t.loginRedirecting : t.loginContinueGoogle}
       </GlassButton>
 
       {error && (
@@ -69,7 +64,7 @@ export default function LoginClient({
       )}
 
       <p className="mt-6 text-center text-xs leading-relaxed text-ink-300">
-        Hesabın yoksa ilk girişinde otomatik olarak oluşturulur.
+        {t.loginNoAccountHint}
       </p>
 
       {showLegalNotice && (

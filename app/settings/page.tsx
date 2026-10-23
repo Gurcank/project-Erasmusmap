@@ -1,14 +1,15 @@
-import type { Metadata } from "next";
+import { localizedMetadata } from "@/lib/page-meta";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import SettingsContent from "@/components/ui/SettingsContent";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { toggleBlock } from "@/lib/social-actions";
 
-export const metadata: Metadata = {
-  title: "Ayarlar",
-  robots: { index: false, follow: false },
-};
+export const generateMetadata = () =>
+  localizedMetadata((t) => ({
+    title: t.settings,
+    robots: { index: false, follow: false },
+  }));
 
 export default async function SettingsPage() {
   const viewer = await requireActiveUser();
