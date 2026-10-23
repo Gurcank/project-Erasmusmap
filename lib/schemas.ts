@@ -41,31 +41,6 @@ export const visitSchema = z.object({
   cityId: z.string({ error: "Invalid cityId" }).min(1, "Invalid cityId"),
 });
 
-export const usernameRequestSchema = z.object({
-  username: usernameSchema,
-});
-
-/**
- * Parses a JSON request body. Covers both malformed JSON (which arrives as
- * null) and schema failures, so callers never leak Zod's English defaults for
- * a body that is not even an object.
- */
-export function parseRequestBody<T>(
-  schema: z.ZodType<T>,
-  body: unknown,
-): { ok: true; data: T } | { ok: false; error: string } {
-  if (body === null || typeof body !== "object") {
-    return { ok: false, error: "Geçersiz istek" };
-  }
-
-  const result = schema.safeParse(body);
-  if (!result.success) {
-    return { ok: false, error: firstIssueMessage(result.error) };
-  }
-
-  return { ok: true, data: result.data };
-}
-
 /**
  * Reduces a Zod failure to the single message the UI shows. The forms here
  * surface one error at a time, so the first issue is the useful one.

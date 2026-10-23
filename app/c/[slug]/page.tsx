@@ -45,8 +45,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const city = await getCityMeta(slug);
-  // Runs before the loading.tsx shell is streamed, so this is the last
-  // point where a real 404 status can still be set.
+  // A real 404 status, which is why this route has no loading.tsx: a loading
+  // shell starts the response before the page can say the city does not exist.
   if (!city) notFound();
 
   const name = city.name;

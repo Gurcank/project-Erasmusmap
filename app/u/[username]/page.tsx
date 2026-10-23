@@ -50,8 +50,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { username } = await params;
   const user = await getProfileMeta(username);
-  // Runs before the shell is streamed, so this is the last point where a real
-  // 404 status can still be set.
+  // A real 404 status, which is why this route has no loading.tsx: a loading
+  // shell starts the response before the page can say the profile does not exist.
   if (!user) notFound();
 
   const title = user.username ?? "";
