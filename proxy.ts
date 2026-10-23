@@ -55,7 +55,16 @@ export async function proxy(request: NextRequest) {
     // everyone and lock signed-in users out of their own account pages. The
     // page-level guard still refuses the request.
     if (secret) {
-      const token = await getToken({ req: request, secret });
+      // The name of the session cookie depends on whether the site is served over
+      // https (`__Secure-` prefix). getToken would guess from NEXTAUTH_URL, which
+      // is not set in this runtime the way it is for the auth routes; a wrong or
+      // localhost value there makes it look for the wrong cookie and sends a
+      // signed-in visitor to the sign-in page. The request itself is what knows.
+      const token = await getToken({
+        req: request,
+        secret,
+        secureCookie: request.nextUrl.protocol === "https:",
+      });
       if (!token) {
         return NextResponse.redirect(new URL("/login", request.url));
       }
