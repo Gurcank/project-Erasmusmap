@@ -14,7 +14,6 @@ export type TripActions = {
   addTripTodo: FormAction;
   toggleTripTodo: FormAction;
   deleteTripTodo: FormAction;
-  deleteTripPhoto: FormAction;
 };
 
 /**

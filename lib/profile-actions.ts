@@ -8,6 +8,7 @@ import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 import { fetchCityPhoto } from "@/lib/unsplash";
 import { MAX_FAVORITE_CITIES } from "@/lib/profile";
+import { isAvatarKey } from "@/lib/avatars";
 
 const RATE_LIMIT = 30;
 
@@ -101,5 +102,26 @@ export async function removeFavoriteCity(
     });
 
     if (user.username) revalidatePath(`/u/${user.username}`);
+  });
+}
+
+/**
+ * Picks one of the site's avatars. The value is checked against the list, not
+ * trusted: whatever is stored here is what every page renders.
+ */
+export async function setAvatar(
+  _previousState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return toActionResult(async () => {
+    const user = await authorizeAction("avatar", { limit: 20 });
+
+    const avatar = formData.get("avatar");
+    if (!isAvatarKey(avatar)) throw new UserFacingError("Geçersiz avatar");
+
+    await prisma.user.update({ where: { id: user.id }, data: { avatar } });
+
+    if (user.username) revalidatePath(`/u/${user.username}`);
+    revalidatePath("/account");
   });
 }

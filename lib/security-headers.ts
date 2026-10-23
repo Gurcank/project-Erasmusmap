@@ -8,25 +8,10 @@
  * silent.
  */
 
-// Avatars are served from the project's own Supabase Storage bucket, whose
-// host is only known from the environment.
-function supabaseHost(): string | null {
-  const url = process.env.SUPABASE_URL;
-  if (!url) return null;
-  try {
-    return new URL(url).host;
-  } catch {
-    return null;
-  }
-}
-
+// City photos are the only remote images. Avatars are drawn by the application
+// itself and nothing is uploaded, so there is no storage or profile-photo host.
 export function imageHosts(): string[] {
-  const storageHost = supabaseHost();
-  return [
-    "images.unsplash.com",
-    "*.googleusercontent.com",
-    ...(storageHost ? [storageHost] : []),
-  ];
+  return ["images.unsplash.com"];
 }
 
 // @vercel/analytics serves its production script from /_vercel/insights on our

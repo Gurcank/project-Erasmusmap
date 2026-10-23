@@ -14,7 +14,6 @@ import {
   deleteTrip,
   deleteTripExpense,
   deleteTripItem,
-  deleteTripPhoto,
   deleteTripTodo,
   removeTripCity,
   saveTripCityNotes,
@@ -24,7 +23,6 @@ import {
   toggleTripTodo,
   updateTrip,
 } from "@/lib/trip-actions";
-import { isStorageConfigured } from "@/lib/storage";
 
 // Shared by generateMetadata and the page, so one request reads the trip once.
 const loadTrip = cache(async (id: string) => {
@@ -90,7 +88,6 @@ export default async function TripPage({
     <TripPlanner
       trip={trip}
       isOwner={isOwner}
-      uploadsEnabled={isOwner && isStorageConfigured()}
       actions={{
         updateTrip,
         deleteTrip,
@@ -105,7 +102,6 @@ export default async function TripPage({
         addTripTodo,
         toggleTripTodo,
         deleteTripTodo,
-        deleteTripPhoto,
       }}
     />
   );

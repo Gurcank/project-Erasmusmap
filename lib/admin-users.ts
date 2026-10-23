@@ -38,7 +38,7 @@ export async function getAdminUsers(query: string, requestedPage: number) {
       username: true,
       name: true,
       email: true,
-      image: true,
+      avatar: true,
       role: true,
       banned: true,
       createdAt: true,

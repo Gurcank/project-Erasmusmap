@@ -173,7 +173,7 @@ export default async function ProfilePage({
       <ProfileContent
         userId={user.id}
         username={user.username ?? ""}
-        image={user.image}
+        avatar={user.avatar}
         bio={user.bio}
         isOwnProfile={isOwnProfile}
         isAdmin={isAdmin}
