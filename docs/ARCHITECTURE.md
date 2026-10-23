@@ -156,8 +156,7 @@ son noktasıdır. **404 verebilen rotalara (`/c/[slug]`, `/u/[username]`, `/trip
   hızlı birim testleridir ve Prisma'yı mock'lar; gerçek veritabanı davranışı `database` CI
   job'unda Postgres 17'ye karşı doğrulanır (migration'lar boş veritabanına uygulanır, şema
   drift'i ve seed denetlenir). Uçtan uca: `e2e/` altındaki Playwright duman testi built uygulamayı gerçek bir tarayıcıda açar
-  (CI `e2e` job'u; yerelde `npm run build && npm run e2e`) ve yalnızca herkese açık sayfaları kapsar,
-  çünkü Google ile giriş bir testte yapılamaz.
+  (CI `e2e` job'u; yerelde `npm run build && npm run e2e`) herkese açık sayfaları ve giriş yapmış kullanıcı akışlarını (hesap, ayarlar, seyahat planı, avatar, admin) kapsar. Google ile giriş bir testte yapılamadığından test, veritabanına bir kullanıcı yazıp NextAuth’un vereceği aynı JWT çerezini üretir (`e2e/support/session.ts`). Bu yalnızca `E2E_ALLOW_DB_WRITES=1` iken çalışır; CI’da geçici veritabanına yazar, yerelde `.env.local` production’ı gösteriyorsa kendiliğinden atlanır.
 - CI: `lint`, `test`, `build` (gizlisiz, sahte ortamla), `database`, `e2e`, `audit`. Ayrıntı README'de.
 
 ## Çalışma kuralları

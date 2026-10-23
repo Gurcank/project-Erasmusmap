@@ -148,6 +148,9 @@ jobs:
       GOOGLE_CLIENT_SECRET: ci-e2e-only
       NEXT_PUBLIC_MAPBOX_TOKEN: pk.ci-e2e-only
       UNSPLASH_ACCESS_KEY: ci-e2e-only
+      # The signed-in tests write test users into this throwaway database; they
+      # refuse to run anywhere this is not set (see e2e/support/session.ts).
+      E2E_ALLOW_DB_WRITES: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

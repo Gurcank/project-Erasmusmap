@@ -151,14 +151,14 @@ npx ts-node scripts/build-map-regions.ts
 
 [`ci.yml`](.github/workflows/ci.yml) her push ve pull request'te şunları çalıştırır:
 
-| Job        | Ne yapar                                                                                                                                                                |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lint`     | ESLint, tip kontrolü, Prettier                                                                                                                                          |
-| `test`     | Vitest                                                                                                                                                                  |
-| `build`    | `next build`. **Secret kullanmaz**: yalnızca var olması gereken değişkenleri sahte değerlerle verir, bu yüzden fork'tan gelen PR'lar da geçer                           |
-| `database` | Postgres 17 ile **boş bir veritabanına tüm migration'ları** uygular, `schema.prisma` ile migration'ların uyuştuğunu (drift) ve seed'in çalıştığını doğrular             |
-| `e2e`      | Boş veritabanına migration + seed, production build, ardından **Playwright** ile herkese açık sayfaların duman testi (`e2e/`). Giriş (Google) gerektirenler kapsam dışı |
-| `audit`    | `npm audit` (üretim bağımlılıkları engelleyici)                                                                                                                         |
+| Job        | Ne yapar                                                                                                                                                                                                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lint`     | ESLint, tip kontrolü, Prettier                                                                                                                                                                                                                                            |
+| `test`     | Vitest                                                                                                                                                                                                                                                                    |
+| `build`    | `next build`. **Secret kullanmaz**: yalnızca var olması gereken değişkenleri sahte değerlerle verir, bu yüzden fork'tan gelen PR'lar da geçer                                                                                                                             |
+| `database` | Postgres 17 ile **boş bir veritabanına tüm migration'ları** uygular, `schema.prisma` ile migration'ların uyuştuğunu (drift) ve seed'in çalıştığını doğrular                                                                                                               |
+| `e2e`      | Boş veritabanına migration + seed, production build, ardından **Playwright** ile herkese açık sayfaların duman testi (`e2e/`); giriş yapmış kullanıcı akışları için testin kendi yazdığı sahte oturum çerezi kullanılır (yalnızca bu job’da, `E2E_ALLOW_DB_WRITES=1` ile) |
+| `audit`    | `npm audit` (üretim bağımlılıkları engelleyici)                                                                                                                                                                                                                           |
 
 `database` job'u, bir şema düzenlemesinin migration'ı unutulduğunda (ya da tersi) PR'ı kırmızıya çevirir.
 Prisma `CHECK` kısıtlarını karşılaştırmaya katmaz; onlar yalnızca migration dosyalarında yaşar.
