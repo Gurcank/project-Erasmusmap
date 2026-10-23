@@ -97,7 +97,7 @@ export default async function SquarePage() {
           id: review.authorId,
           name: review.authorName,
           username: review.authorUsername,
-          image: review.authorImage,
+          avatar: review.authorAvatar,
         }
       : null,
     likeCount: review.likeCount,

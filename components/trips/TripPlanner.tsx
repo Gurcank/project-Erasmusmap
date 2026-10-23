@@ -7,7 +7,6 @@ import TripTimeline from "@/components/trips/TripTimeline";
 import TripCalendar from "@/components/trips/TripCalendar";
 import TripBudget from "@/components/trips/TripBudget";
 import TripCities from "@/components/trips/TripCities";
-import TripGallery from "@/components/trips/TripGallery";
 import type { TripActions } from "@/components/trips/planner-types";
 import { useTripT } from "@/hooks/useTripT";
 import { summarizeBudget } from "@/lib/trip-budget";
@@ -31,7 +30,6 @@ const TripMap = dynamic(() => import("@/components/trips/TripMap"), {
 type Props = {
   trip: TripView;
   isOwner: boolean;
-  uploadsEnabled: boolean;
   actions: TripActions;
 };
 
@@ -42,15 +40,9 @@ const SECTIONS = [
   ["calendar", "sectionCalendar"],
   ["budget", "sectionBudget"],
   ["cities", "sectionCities"],
-  ["gallery", "sectionGallery"],
 ] as const;
 
-export default function TripPlanner({
-  trip,
-  isOwner,
-  uploadsEnabled,
-  actions,
-}: Props) {
+export default function TripPlanner({ trip, isOwner, actions }: Props) {
   const { tt } = useTripT();
   const days = useMemo(
     () => tripDays(trip.startDate, trip.endDate),
@@ -173,20 +165,11 @@ export default function TripPlanner({
         />
       </section>
 
-      <section id="cities" className="mb-16 scroll-mt-36">
+      <section id="cities" className="scroll-mt-36">
         <TripCities
           trip={trip}
           isOwner={isOwner}
           cityIndex={cityIndex}
-          actions={actions}
-        />
-      </section>
-
-      <section id="gallery" className="scroll-mt-36">
-        <TripGallery
-          trip={trip}
-          isOwner={isOwner}
-          uploadsEnabled={uploadsEnabled}
           actions={actions}
         />
       </section>

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import AccountContent from "@/components/ui/AccountContent";
 import { bioSchema, firstIssueMessage, usernameSchema } from "@/lib/schemas";
-import { rateLimit } from "@/lib/rate-limit";
+import { authorizeAction } from "@/lib/action-guard";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
@@ -27,19 +27,13 @@ export default async function AccountPage() {
   ): Promise<ActionResult> {
     "use server";
     return toActionResult(async () => {
-      const auth = await requireActiveUser();
-      if (!auth.ok) throw new UserFacingError(auth.error);
-
-      if (!(await rateLimit(`profile:${auth.user.email}`)))
-        throw new UserFacingError(
-          "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
-        );
+      const user = await authorizeAction("profile", { limit: 10 });
 
       const bio = bioSchema.safeParse(formData.get("bio") ?? "");
       if (!bio.success) throw new UserFacingError(firstIssueMessage(bio.error));
 
       const updated = await prisma.user.update({
-        where: { id: auth.user.id },
+        where: { id: user.id },
         data: { bio: bio.data },
       });
       if (updated.username) revalidatePath(`/u/${updated.username}`);
@@ -53,13 +47,7 @@ export default async function AccountPage() {
   ): Promise<ActionResult> {
     "use server";
     return toActionResult(async () => {
-      const auth = await requireActiveUser();
-      if (!auth.ok) throw new UserFacingError(auth.error);
-
-      if (!(await rateLimit(`username:${auth.user.email}`)))
-        throw new UserFacingError(
-          "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
-        );
+      const user = await authorizeAction("username", { limit: 10 });
 
       const parsed = usernameSchema.safeParse(formData.get("username") ?? "");
       if (!parsed.success)
@@ -70,11 +58,11 @@ export default async function AccountPage() {
         where: { usernameLower: username.toLowerCase() },
         select: { id: true },
       });
-      if (exists && exists.id !== auth.user.id)
+      if (exists && exists.id !== user.id)
         throw new UserFacingError("Bu kullanıcı adı zaten alınmış");
 
       await prisma.user.update({
-        where: { id: auth.user.id },
+        where: { id: user.id },
         data: { username, usernameLower: username.toLowerCase() },
       });
       revalidatePath(`/u/${username}`);
@@ -92,7 +80,8 @@ export default async function AccountPage() {
           email={user.email ?? ""}
           username={user.username}
           role={user.role}
-          image={user.image}
+          avatar={user.avatar}
+          userId={user.id}
           profileUrl={user.username ? `/u/${user.username}` : "/"}
           updateProfile={updateProfile}
           updateUsername={updateUsername}

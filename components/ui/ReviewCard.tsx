@@ -108,8 +108,8 @@ export default function ReviewCard({
           className="group flex items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           <UserAvatar
-            src={review.user?.image ?? null}
-            label={author}
+            avatar={review.user?.avatar ?? null}
+            seed={review.user?.id ?? ""}
             size={36}
           />
           <div>

@@ -59,7 +59,6 @@ const tr = {
   sectionCalendar: "Takvim",
   sectionBudget: "Bütçe",
   sectionCities: "Şehirler",
-  sectionGallery: "Galeri",
 
   play: "Oynat",
   pause: "Duraklat",
@@ -155,14 +154,8 @@ const tr = {
   noCities:
     "Plana bir şehir içeren öğe eklediğinde şehir kartları burada belirir.",
 
-  uploadPhoto: "Fotoğraf yükle",
-  uploading: "Yükleniyor…",
   caption: "Açıklama",
-  photoCity: "Şehir",
   allCities: "Tüm şehirler",
-  noPhotos: "Henüz fotoğraf yok.",
-  confirmDeletePhoto: "Bu fotoğrafı silmek istediğine emin misin?",
-  uploadFailed: "Yükleme başarısız oldu.",
 
   tabTrips: "Seyahatler",
   noPublicTrips: "Paylaşılan seyahat planı yok.",
@@ -223,7 +216,6 @@ const en: TripStrings = {
   sectionCalendar: "Calendar",
   sectionBudget: "Budget",
   sectionCities: "Cities",
-  sectionGallery: "Gallery",
 
   play: "Play",
   pause: "Pause",
@@ -318,14 +310,8 @@ const en: TripStrings = {
   confirmRemoveCity: "Remove this city with its notes and to-dos?",
   noCities: "City cards appear here once you add an item with a city.",
 
-  uploadPhoto: "Upload photo",
-  uploading: "Uploading…",
   caption: "Caption",
-  photoCity: "City",
   allCities: "All cities",
-  noPhotos: "No photos yet.",
-  confirmDeletePhoto: "Delete this photo?",
-  uploadFailed: "Upload failed.",
 
   tabTrips: "Trips",
   noPublicTrips: "No shared trip plans.",
@@ -375,7 +361,6 @@ const de: TripStrings = {
   sectionCalendar: "Kalender",
   sectionBudget: "Budget",
   sectionCities: "Städte",
-  sectionGallery: "Galerie",
   play: "Abspielen",
   pause: "Pause",
   addItem: "Eintrag hinzufügen",
@@ -410,7 +395,6 @@ const de: TripStrings = {
   category: "Kategorie",
   todos: "Zu erledigen",
   addCity: "Stadt hinzufügen",
-  uploadPhoto: "Foto hochladen",
   tabTrips: "Reisen",
 };
 
@@ -450,7 +434,6 @@ const fr: TripStrings = {
   sectionCalendar: "Calendrier",
   sectionBudget: "Budget",
   sectionCities: "Villes",
-  sectionGallery: "Galerie",
   play: "Lecture",
   addItem: "Ajouter",
   dayLabel: "Jour {n}",
@@ -483,7 +466,6 @@ const fr: TripStrings = {
   category: "Catégorie",
   todos: "À faire",
   addCity: "Ajouter une ville",
-  uploadPhoto: "Ajouter une photo",
   tabTrips: "Voyages",
 };
 
@@ -523,7 +505,6 @@ const es: TripStrings = {
   sectionCalendar: "Calendario",
   sectionBudget: "Presupuesto",
   sectionCities: "Ciudades",
-  sectionGallery: "Galería",
   play: "Reproducir",
   addItem: "Añadir",
   dayLabel: "Día {n}",
@@ -556,7 +537,6 @@ const es: TripStrings = {
   category: "Categoría",
   todos: "Pendientes",
   addCity: "Añadir ciudad",
-  uploadPhoto: "Subir foto",
   tabTrips: "Viajes",
 };
 
@@ -596,7 +576,6 @@ const it: TripStrings = {
   sectionCalendar: "Calendario",
   sectionBudget: "Budget",
   sectionCities: "Città",
-  sectionGallery: "Galleria",
   play: "Riproduci",
   addItem: "Aggiungi",
   dayLabel: "Giorno {n}",
@@ -629,7 +608,6 @@ const it: TripStrings = {
   category: "Categoria",
   todos: "Da fare",
   addCity: "Aggiungi città",
-  uploadPhoto: "Carica foto",
   tabTrips: "Viaggi",
 };
 

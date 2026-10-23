@@ -2,24 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { rateLimit } from "@/lib/rate-limit";
-import { requireActiveUser } from "@/lib/auth-guards";
+import { authorizeAction } from "@/lib/action-guard";
 import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 
 const RATE_LIMIT = 30;
 
-async function authorize(key: string) {
-  const auth = await requireActiveUser();
-  if (!auth.ok) throw new UserFacingError(auth.error);
-
-  if (!(await rateLimit(`${key}:${auth.user.email}`, RATE_LIMIT))) {
-    throw new UserFacingError(
-      "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
-    );
-  }
-
-  return auth.user;
+function authorize(key: string) {
+  return authorizeAction(key, { limit: RATE_LIMIT });
 }
 
 function targetIdOf(formData: FormData): string {

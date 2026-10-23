@@ -16,7 +16,7 @@ type AdminUser = {
   username: string | null;
   name: string | null;
   email: string;
-  image: string | null;
+  avatar: string | null;
   role: string;
   banned: boolean;
   createdAt: Date;
@@ -32,7 +32,7 @@ type AdminReview = ReviewRatings & {
     id: string;
     name: string | null;
     username: string | null;
-    image: string | null;
+    avatar: string | null;
   } | null;
 };
 
@@ -49,7 +49,7 @@ type AdminComment = {
     id: string;
     name: string | null;
     username: string | null;
-    image: string | null;
+    avatar: string | null;
   } | null;
 };
 
@@ -160,8 +160,8 @@ export default function AdminDashboard({
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <UserAvatar
-                        src={user.image}
-                        label={displayName}
+                        avatar={user.avatar}
+                        seed={user.id}
                         size={40}
                       />
                       <div className="min-w-0">
@@ -257,8 +257,8 @@ export default function AdminDashboard({
                   <div className="mb-3 flex items-start justify-between gap-4">
                     <div className="flex min-w-0 items-center gap-3">
                       <UserAvatar
-                        src={review.user?.image ?? null}
-                        label={displayName}
+                        avatar={review.user?.avatar ?? null}
+                        seed={review.user?.id ?? ""}
                         size={36}
                       />
                       <div className="min-w-0">
@@ -333,10 +333,8 @@ export default function AdminDashboard({
                 <div className="mb-2 flex items-start justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <UserAvatar
-                      src={comment.user?.image ?? null}
-                      label={
-                        comment.user?.username ?? comment.user?.name ?? "—"
-                      }
+                      avatar={comment.user?.avatar ?? null}
+                      seed={comment.user?.id ?? ""}
                       size={32}
                     />
                     <div className="min-w-0">

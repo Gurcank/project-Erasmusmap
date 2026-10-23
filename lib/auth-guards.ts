@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import type { Role } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { normalizeEmail } from "@/lib/email";
 
 export type ActiveUser = {
   id: string;
@@ -21,12 +22,21 @@ export type GuardResult =
  */
 export async function requireActiveUser(): Promise<GuardResult> {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+  const sessionUser = session?.user;
+  if (!sessionUser?.id && !sessionUser?.email) {
     return { ok: false, status: 401, error: "Giriş yapmalısın" };
   }
 
+  // The id is the stable key: an email can change, and is stored normalized
+  // while the session carries whatever the provider reported. A token with no
+  // id has not been refreshed since the claim was introduced, so it falls back
+  // to the normalized email. A token that has an id never falls back — if that
+  // user is gone, the session is not valid for someone who later registers the
+  // same address.
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
+    where: sessionUser.id
+      ? { id: sessionUser.id }
+      : { email: normalizeEmail(sessionUser.email!) },
     select: {
       id: true,
       email: true,

@@ -147,7 +147,6 @@ export async function getTripForViewer(
           todos: { orderBy: [{ position: "asc" }, { createdAt: "asc" }] },
         },
       },
-      photos: { orderBy: { createdAt: "desc" } },
     },
   });
   if (!row) return null;
@@ -194,12 +193,6 @@ export async function getTripForViewer(
           title: todo.title,
           done: todo.done,
         })),
-      })),
-      photos: row.photos.map((photo) => ({
-        id: photo.id,
-        url: photo.url,
-        caption: photo.caption,
-        cityId: photo.cityId,
       })),
       inspiration,
     },

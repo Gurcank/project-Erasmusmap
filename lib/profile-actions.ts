@@ -3,26 +3,17 @@
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { rateLimit } from "@/lib/rate-limit";
-import { requireActiveUser } from "@/lib/auth-guards";
+import { authorizeAction } from "@/lib/action-guard";
 import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
 import { fetchCityPhoto } from "@/lib/unsplash";
 import { MAX_FAVORITE_CITIES } from "@/lib/profile";
+import { isAvatarKey } from "@/lib/avatars";
 
 const RATE_LIMIT = 30;
 
-async function authorize(key: string) {
-  const auth = await requireActiveUser();
-  if (!auth.ok) throw new UserFacingError(auth.error);
-
-  if (!(await rateLimit(`${key}:${auth.user.email}`, RATE_LIMIT))) {
-    throw new UserFacingError(
-      "Çok fazla istek. Lütfen biraz sonra tekrar dene.",
-    );
-  }
-
-  return auth.user;
+function authorize(key: string) {
+  return authorizeAction(key, { limit: RATE_LIMIT });
 }
 
 /**
@@ -111,5 +102,26 @@ export async function removeFavoriteCity(
     });
 
     if (user.username) revalidatePath(`/u/${user.username}`);
+  });
+}
+
+/**
+ * Picks one of the site's avatars. The value is checked against the list, not
+ * trusted: whatever is stored here is what every page renders.
+ */
+export async function setAvatar(
+  _previousState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return toActionResult(async () => {
+    const user = await authorizeAction("avatar", { limit: 20 });
+
+    const avatar = formData.get("avatar");
+    if (!isAvatarKey(avatar)) throw new UserFacingError("Geçersiz avatar");
+
+    await prisma.user.update({ where: { id: user.id }, data: { avatar } });
+
+    if (user.username) revalidatePath(`/u/${user.username}`);
+    revalidatePath("/account");
   });
 }

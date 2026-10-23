@@ -74,7 +74,7 @@ type TrendingReviewRow = {
   authorId: string | null;
   authorName: string | null;
   authorUsername: string | null;
-  authorImage: string | null;
+  authorAvatar: string | null;
   stayStart: Date | null;
   stayEnd: Date | null;
   likeCount: number;
@@ -96,7 +96,7 @@ export async function getTrendingReviews(
       r.culture, r.gastronomy, r.safety, r."socialLife", r.transport, r."costOfLiving",
       c.slug AS "citySlug", c.name AS "cityName",
       u.id AS "authorId", u.name AS "authorName",
-      u.username AS "authorUsername", u.image AS "authorImage",
+      u.username AS "authorUsername", u.avatar AS "authorAvatar",
       v."startDate" AS "stayStart", v."endDate" AS "stayEnd",
       COUNT(DISTINCT l.id)::int AS "likeCount",
       COUNT(DISTINCT cm.id)::int AS "commentCount"
@@ -111,7 +111,7 @@ export async function getTrendingReviews(
       WHERE (b."blockerId" = ${viewerId} AND b."blockedId" = r."userId")
          OR (b."blockerId" = r."userId" AND b."blockedId" = ${viewerId})
     )
-    GROUP BY r.id, c.slug, c.name, u.id, u.name, u.username, u.image,
+    GROUP BY r.id, c.slug, c.name, u.id, u.name, u.username, u.avatar,
       v."startDate", v."endDate"
     ORDER BY
       (COUNT(DISTINCT l.id) * 2 + COUNT(DISTINCT cm.id) * 3) DESC,

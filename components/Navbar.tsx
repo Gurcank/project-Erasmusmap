@@ -250,8 +250,8 @@ export default function Navbar() {
                   className="border-transparent p-0 hover:border-border-strong"
                 >
                   <UserAvatar
-                    src={session.user?.image ?? null}
-                    label={session.user?.username ?? session.user?.name ?? "?"}
+                    avatar={session.user?.avatar ?? null}
+                    seed={session.user?.id ?? ""}
                     size={36}
                   />
                 </GlassButton>

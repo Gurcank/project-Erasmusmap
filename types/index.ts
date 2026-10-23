@@ -21,7 +21,7 @@ export type CitySuggestion = {
 export type ReviewAuthor = {
   id: string;
   name: string | null;
-  image: string | null;
+  avatar: string | null;
   username: string | null;
 };
 
