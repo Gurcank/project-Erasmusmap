@@ -4,6 +4,18 @@ export const SITE_DESCRIPTION =
 
 const FALLBACK_SITE_URL = "https://erasmusmap.vercel.app";
 
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+function parseOrigin(value: string | undefined): URL | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  try {
+    return new URL(trimmed);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Canonical origin behind the metadata, Open Graph tags, robots.txt and the
  * sitemap.
@@ -16,16 +28,23 @@ const FALLBACK_SITE_URL = "https://erasmusmap.vercel.app";
  *
  * Normalized to the origin, so a configured trailing slash cannot turn into
  * `https://host//c/slug` in the sitemap.
+ *
+ * A loopback address is ignored on Vercel. The value is easy to copy over from
+ * `.env.example`, and on a deployment it put `http://localhost:3000` into every
+ * canonical URL, Open Graph tag and sitemap entry. The production domain Vercel
+ * exposes is used instead, then the fallback.
  */
 function resolveSiteUrl(): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (!configured) return FALLBACK_SITE_URL;
+  const configured = parseOrigin(process.env.NEXT_PUBLIC_SITE_URL);
+  const onVercel = Boolean(process.env.VERCEL_ENV);
 
-  try {
-    return new URL(configured).origin;
-  } catch {
-    return FALLBACK_SITE_URL;
+  if (configured && !(onVercel && LOOPBACK_HOSTS.has(configured.hostname))) {
+    return configured.origin;
   }
+
+  const vercelDomain = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  const fromVercel = vercelDomain && parseOrigin(`https://${vercelDomain}`);
+  return fromVercel ? fromVercel.origin : FALLBACK_SITE_URL;
 }
 
 export const SITE_URL = resolveSiteUrl();
