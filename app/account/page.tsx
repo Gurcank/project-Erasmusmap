@@ -72,7 +72,8 @@ export default async function AccountPage() {
           email={user.email ?? ""}
           username={user.username}
           role={user.role}
-          image={user.image}
+          avatar={user.avatar}
+          userId={user.id}
           profileUrl={user.username ? `/u/${user.username}` : "/"}
           updateProfile={updateProfile}
           updateUsername={updateUsername}

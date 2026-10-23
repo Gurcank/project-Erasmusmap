@@ -40,7 +40,7 @@ export default async function AdminPage({
         include: {
           city: { select: { name: true, slug: true } },
           user: {
-            select: { id: true, name: true, username: true, image: true },
+            select: { id: true, name: true, username: true, avatar: true },
           },
         },
       }),
@@ -54,7 +54,7 @@ export default async function AdminPage({
           createdAt: true,
           flagged: true,
           user: {
-            select: { id: true, name: true, username: true, image: true },
+            select: { id: true, name: true, username: true, avatar: true },
           },
           parent: {
             select: { user: { select: { username: true, name: true } } },

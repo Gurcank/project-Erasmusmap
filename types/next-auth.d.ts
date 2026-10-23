@@ -9,6 +9,8 @@ declare module "next-auth" {
       username?: string | null;
       role?: Role;
       banned?: boolean;
+      /** The chosen avatar key; null until one is picked. */
+      avatar?: string | null;
     } & DefaultSession["user"];
   }
 
@@ -22,6 +24,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     id?: string;
+    avatar?: string | null;
     username?: string | null;
     role?: Role;
     banned?: boolean;

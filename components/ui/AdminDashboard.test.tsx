@@ -12,7 +12,7 @@ const user = (n: number) => ({
   username: `user${n}`,
   name: null,
   email: `user${n}@example.com`,
-  image: null,
+  avatar: null,
   role: "USER",
   banned: false,
   createdAt: new Date("2026-10-01T00:00:00Z"),

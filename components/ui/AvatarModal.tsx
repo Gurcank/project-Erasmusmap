@@ -4,23 +4,32 @@ import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import GlassButton from "@/components/ui/GlassButton";
-import AvatarUploader from "@/components/ui/AvatarUploader";
+import AvatarPicker from "@/components/ui/AvatarPicker";
+import UserAvatar from "@/components/ui/UserAvatar";
+import { resolveAvatarKey } from "@/lib/avatars";
 
 type Props = {
-  image: string | null;
-  /** Display name — its first letter is the fallback when there is no image. */
+  avatar: string | null;
+  /** The user's id, which the default avatar is derived from. */
+  seed: string;
+  /** Display name, announced as the dialog's name. */
   label: string;
-  /** Own profile gets the change / remove controls and the format note. */
+  /** Own profile gets the picker. */
   isOwn: boolean;
   onClose: () => void;
 };
 
 /**
- * The enlarged profile photo. Opened by clicking the avatar; on the owner's
- * profile it also carries the upload controls and the format note that used to
- * sit permanently under the avatar.
+ * The enlarged avatar. Opened by clicking it; on the owner's profile it also
+ * carries the picker for choosing another.
  */
-export default function AvatarModal({ image, label, isOwn, onClose }: Props) {
+export default function AvatarModal({
+  avatar,
+  seed,
+  label,
+  isOwn,
+  onClose,
+}: Props) {
   const t = useT();
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -65,28 +74,9 @@ export default function AvatarModal({ image, label, isOwn, onClose }: Props) {
         </GlassButton>
 
         <div className="flex flex-col items-center gap-5 pt-2">
-          {image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={image}
-              alt={label}
-              className="h-56 w-56 rounded-full border border-border object-cover"
-            />
-          ) : (
-            <span
-              aria-hidden="true"
-              className="flex h-56 w-56 items-center justify-center rounded-full bg-surface-raised text-6xl font-semibold text-text-muted ring-1 ring-border"
-            >
-              {label.trim().charAt(0).toUpperCase() || "?"}
-            </span>
-          )}
+          <UserAvatar avatar={avatar} seed={seed} size={224} />
 
-          {isOwn && (
-            <div className="flex w-full flex-col items-center gap-2">
-              <AvatarUploader image={image} fallbackLabel={label} />
-              <p className="text-xs text-text-subtle">{t.profilePhotoHint}</p>
-            </div>
-          )}
+          {isOwn && <AvatarPicker current={resolveAvatarKey(avatar, seed)} />}
         </div>
       </div>
     </div>

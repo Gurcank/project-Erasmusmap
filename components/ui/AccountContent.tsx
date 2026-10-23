@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import SubmitButton from "@/components/ui/SubmitButton";
 import ActionForm from "@/components/ui/ActionForm";
-import AvatarUploader from "@/components/ui/AvatarUploader";
+import AvatarModal from "@/components/ui/AvatarModal";
+import UserAvatar from "@/components/ui/UserAvatar";
+import GlassButton from "@/components/ui/GlassButton";
 import { MAX_BIO_LENGTH } from "@/lib/profile";
 import type { FormAction } from "@/lib/action-result";
 
@@ -15,7 +18,8 @@ type Props = {
   email: string;
   username: string | null;
   role: string;
-  image: string | null;
+  avatar: string | null;
+  userId: string;
   profileUrl: string;
   updateProfile: FormAction;
   updateUsername: FormAction;
@@ -33,12 +37,14 @@ export default function AccountContent({
   email,
   username,
   role,
-  image,
+  avatar,
+  userId,
   profileUrl,
   updateProfile,
   updateUsername,
 }: Props) {
   const t = useT();
+  const [avatarOpen, setAvatarOpen] = useState(false);
 
   const inputClass = "field w-full px-4 py-2.5 text-sm";
 
@@ -61,7 +67,17 @@ export default function AccountContent({
         {/* Identity row: the photo, who this account is, and what it can do.
             Stacks on narrow screens so the email never squeezes the uploader. */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <AvatarUploader image={image} fallbackLabel={name ?? email} />
+          <div className="flex items-center gap-4">
+            <UserAvatar avatar={avatar} seed={userId} size={56} />
+            <GlassButton
+              onClick={() => setAvatarOpen(true)}
+              aria-haspopup="dialog"
+              variant="primary"
+              size="sm"
+            >
+              {t.changeAvatar}
+            </GlassButton>
+          </div>
           <div className="flex min-w-0 flex-col gap-1.5 sm:items-end">
             <span className="w-fit rounded-full bg-surface-raised px-3 py-1 text-xs font-medium text-text-muted">
               {role === "ADMIN" ? t.admin : t.member}
@@ -130,6 +146,16 @@ export default function AccountContent({
           </SubmitButton>
         </ActionForm>
       </div>
+
+      {avatarOpen && (
+        <AvatarModal
+          avatar={avatar}
+          seed={userId}
+          label={name ?? email}
+          isOwn
+          onClose={() => setAvatarOpen(false)}
+        />
+      )}
     </>
   );
 }

@@ -72,8 +72,8 @@ function CommentRow({
   return (
     <li className="flex gap-2.5">
       <UserAvatar
-        src={comment.user?.image ?? null}
-        label={name}
+        avatar={comment.user?.avatar ?? null}
+        seed={comment.user?.id ?? ""}
         size={isReply ? 26 : 32}
       />
 
