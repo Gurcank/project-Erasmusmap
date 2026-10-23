@@ -29,8 +29,11 @@ type ReplyRow = {
   reviewId: string;
 } & CommentRow;
 
+import { canonicalFor } from "@/lib/seo";
+
 export const metadata: Metadata = {
   title: "Meydan",
+  ...canonicalFor("/meydan"),
   description:
     "Erasmus öğrencilerinin bu ay en çok konuştuğu şehirler ve öne çıkan yorumlar.",
 };

@@ -24,6 +24,8 @@ import { isBlockedBetween } from "@/lib/social";
 import { MAX_FAVORITE_CITIES } from "@/lib/profile";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { getUserTrips } from "@/lib/trips";
+import { getRequestLang } from "@/lib/lang-server";
+import { canonicalFor, socialMetadata } from "@/lib/seo";
 import {
   countProfileTrips,
   getFollowStats,
@@ -54,11 +56,17 @@ export async function generateMetadata({
 
   const title = user.username ?? "";
   const description = user.bio || `${title} — ErasmusMap profili`;
+  const path = `/u/${title}`;
   return {
     title,
     description,
-    openGraph: { title, description },
-    twitter: { title, description },
+    ...canonicalFor(path),
+    ...socialMetadata({
+      lang: await getRequestLang(),
+      title,
+      description,
+      path,
+    }),
   };
 }
 

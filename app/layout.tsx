@@ -9,6 +9,7 @@ import GlobeBackground from "@/components/ui/GlobeBackground";
 import Providers from "./providers";
 import LangProvider from "@/components/LangProvider";
 import { getRequestLang } from "@/lib/lang-server";
+import { socialMetadata } from "@/lib/seo";
 import { Analytics } from "@vercel/analytics/next";
 import {
   CONSENT_COOKIE,
@@ -43,30 +44,24 @@ const bricolage = Bricolage_Grotesque({
 // raw inline <script> the way it does for one rendered as an element.
 const THEME_INIT_SCRIPT = `(function(){var c="system";try{var s=localStorage.getItem("theme");if(s==="light"||s==="dark")c=s}catch(e){}var d=c==="dark"||(c==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light"})()`;
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: `${SITE_NAME} — Avrupa'yı Erasmus öğrencilerinden dinle`,
-    template: `%s · ${SITE_NAME}`,
-  },
-  description: SITE_DESCRIPTION,
-  appleWebApp: {
-    title: SITE_NAME,
-  },
-  openGraph: {
-    title: SITE_NAME,
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: `${SITE_NAME} — Avrupa'yı Erasmus öğrencilerinden dinle`,
+      template: `%s · ${SITE_NAME}`,
+    },
     description: SITE_DESCRIPTION,
-    url: SITE_URL,
-    siteName: SITE_NAME,
-    locale: "tr_TR",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: SITE_NAME,
-    description: SITE_DESCRIPTION,
-  },
-};
+    appleWebApp: {
+      title: SITE_NAME,
+    },
+    ...socialMetadata({
+      lang: await getRequestLang(),
+      title: SITE_NAME,
+      description: SITE_DESCRIPTION,
+    }),
+  };
+}
 
 export default async function RootLayout({
   children,

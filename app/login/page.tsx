@@ -5,6 +5,8 @@ import LoginClient from "./LoginClient";
 
 export const metadata: Metadata = {
   title: "Giriş Yap",
+  // A form, not a page to land on; it is not in the sitemap either.
+  robots: { index: false, follow: true },
 };
 
 export default function LoginPage() {
