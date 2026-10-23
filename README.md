@@ -147,15 +147,54 @@ npx ts-node scripts/build-map-regions.ts
 
 ## CI/CD
 
-[`ci.yml`](.github/workflows/ci.yml) her push ve pull request'te lint, tip kontrolü, format, test,
-build ve bağımlılık audit'i çalıştırır. Build job'ının geçmesi için yukarıdaki ortam değişkenlerinin repo'nun
-**Settings → Secrets and variables → Actions** bölümünde tanımlı olması gerekir.
+[`ci.yml`](.github/workflows/ci.yml) her push ve pull request'te şunları çalıştırır:
+
+| Job        | Ne yapar                                                                                                                                                    |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lint`     | ESLint, tip kontrolü, Prettier                                                                                                                              |
+| `test`     | Vitest                                                                                                                                                      |
+| `build`    | `next build`. **Secret kullanmaz**: yalnızca var olması gereken değişkenleri sahte değerlerle verir, bu yüzden fork'tan gelen PR'lar da geçer               |
+| `database` | Postgres 17 ile **boş bir veritabanına tüm migration'ları** uygular, `schema.prisma` ile migration'ların uyuştuğunu (drift) ve seed'in çalıştığını doğrular |
+| `audit`    | `npm audit` (üretim bağımlılıkları engelleyici)                                                                                                             |
+
+`database` job'u, bir şema düzenlemesinin migration'ı unutulduğunda (ya da tersi) PR'ı kırmızıya çevirir.
+Prisma `CHECK` kısıtlarını karşılaştırmaya katmaz; onlar yalnızca migration dosyalarında yaşar.
+
+Workflow'lardaki action'lar commit SHA'sına sabitlidir; [`dependabot.yml`](.github/dependabot.yml)
+bunları ve npm bağımlılıklarını haftada bir (minor/patch gruplu) günceller. Büyük sürüm geçişleri
+(Prisma, next-auth, ESLint, TypeScript, Vitest) bilerek Dependabot'a bırakılmaz.
+
+## Migration'lar
+
+Production veritabanına migration, **deploy'un yan etkisi olarak değil, elle** uygulanır:
+bir preview deploy'u, yeniden build veya geri alma şemayı değiştirememeli.
+
+1. GitHub → **Actions → Production database → Run workflow** (`main` üzerinde).
+2. `confirm` kutusuna `APPLY` yaz.
+3. Workflow bekleyen migration'ları listeler, uygular ve hiçbirinin kalmadığını doğrular.
+
+Korumalar ([`migrations.yml`](.github/workflows/migrations.yml),
+[`scripts/ci/pending-migrations.mjs`](scripts/ci/pending-migrations.mjs)):
+
+- Yalnızca `main`'de ve yalnızca `APPLY` yazılınca çalışır; yoksa nedenini söyleyip kırmızı biter.
+- **Veri silebilen migration'ı** (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, `DELETE FROM` ya da `-- DESTRUCTIVE` yorumu) `allow_destructive` işaretlenmeden **reddeder**.
+- `main`'e migration içeren bir PR merge edilince aynı workflow bekleyenleri raporlar (job özeti ve uyarı); unutulmaz.
+- Gerekli repo secret'ı: `DIRECT_URL` (session bağlantısı, port `5432`).
+
+**Sıra kuralı (expand / contract):** koddan önce uygulanması gereken (ekleyen: kolon, tablo, index, kısıt)
+migration'lar, onu kullanan koddan **önce** ayrı, yalnızca-migration bir PR olarak merge edilip
+uygulanır; silen (contract) migration'lar ise onu kullanmayan kod yayına çıktıktan **sonra**. Aynı PR'da hem
+şema hem kod varsa bu sırayı yapmak imkânsızdır; PR'ı ikiye böl.
+
+> **Önerilen repo ayarları** (workflow bunları yapamaz): `main`'i koruma altına alıp `lint`, `test`, `build`,
+> `database` ve `audit` job'larını zorunlu kıl; `Production` ortamına "Required reviewers" ekle. Ortamların
+> şu an koruma kuralı yok, bu yüzden güvence workflow'un kendi kapılarından gelir.
 
 ## Deployment
 
 Uygulama [Vercel](https://vercel.com)'e deploy ediliyor. Vercel proje ayarlarında yukarıdaki ortam
-değişkenlerinin tanımlı olduğundan emin ol; migration'lar deploy sürecinde `npx prisma migrate deploy`
-ile veritabanına uygulanmalı.
+değişkenlerinin tanımlı olduğundan emin ol. Migration'lar Vercel build'ine **bağlı değildir**
+(bkz. [Migration'lar](#migrationlar)).
 
 ## Hata takibi ve loglar
 
