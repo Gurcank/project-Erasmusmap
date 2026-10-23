@@ -7,6 +7,8 @@ import Navbar from "@/components/Navbar";
 import CookieBanner from "@/components/ui/CookieBanner";
 import GlobeBackground from "@/components/ui/GlobeBackground";
 import Providers from "./providers";
+import LangProvider from "@/components/LangProvider";
+import { getRequestLang } from "@/lib/lang-server";
 import { Analytics } from "@vercel/analytics/next";
 import {
   CONSENT_COOKIE,
@@ -81,9 +83,11 @@ export default async function RootLayout({
   // yes; the script is not included and then switched off.
   const consent = parseConsent((await cookies()).get(CONSENT_COOKIE)?.value);
 
+  const lang = await getRequestLang();
+
   return (
     <html
-      lang="tr"
+      lang={lang}
       className={`${inter.variable} ${bricolage.variable}`}
       suppressHydrationWarning
     >
@@ -93,12 +97,14 @@ export default async function RootLayout({
         </Script>
         <GlobeBackground />
         <Providers>
-          <Navbar />
-          <main className="min-h-screen">{children}</main>
-          {analyticsAllowed(consent) && <Analytics />}
-          {needsConsentDecision(consent) && (
-            <CookieBanner policyLink={legalPagesAvailable()} />
-          )}
+          <LangProvider lang={lang}>
+            <Navbar />
+            <main className="min-h-screen">{children}</main>
+            {analyticsAllowed(consent) && <Analytics />}
+            {needsConsentDecision(consent) && (
+              <CookieBanner policyLink={legalPagesAvailable()} />
+            )}
+          </LangProvider>
         </Providers>
       </body>
     </html>

@@ -83,7 +83,8 @@ const tr = ({
       items: [
         "Zorunlu çerezler: giriş yaptığında oturumunu tanıyan ve yetkisiz isteklere karşı koruyan next-auth çerezleri (oturum, CSRF ve yönlendirme). Oturum çerezi varsayılan olarak 30 gün geçerlidir. Bunlar olmadan giriş çalışmaz.",
         "Tercih çerezi (consent): isteğe bağlı istatistik tercihini 6 ay boyunca hatırlar ve yalnızca bu tercihi içerir.",
-        "Tarayıcının yerel depolaması: seçtiğin tema ve arayüz dili; yalnızca senin cihazında kalır.",
+        "Dil çerezi (lang): arayüz dilini seçtiğinde bir yıl boyunca hatırlar ve yalnızca dil kodunu içerir. Sayfanın doğru dille açılabilmesi için sunucu bunu okur. Dil seçmezsen yazılmaz; o zaman tarayıcının dili kullanılır.",
+        "Tarayıcının yerel depolaması: seçtiğin tema; yalnızca senin cihazında kalır.",
         "İsteğe bağlı istatistikler: yalnızca kabul edersen Vercel Analytics yüklenir (çerez kullanmaz, seni takip etmez, yalnızca toplu sayımlar tutar) ve Mapbox harita kullanım olayları gönderilir. Reddedersen ikisi de çalışmaz. Tercihini bu sayfanın altındaki bölümden istediğin zaman değiştirebilirsin.",
       ],
     },
@@ -191,7 +192,8 @@ const en = ({
       items: [
         "Essential cookies: the next-auth cookies that recognise your session when you are signed in and protect against forged requests (session, CSRF and redirect). The session cookie is valid for 30 days by default. Signing in does not work without them.",
         "Choice cookie (consent): remembers your optional statistics choice for 6 months and holds nothing but that choice.",
-        "Your browser's local storage: the theme and interface language you chose; it stays on your device only.",
+        "Language cookie (lang): remembers the interface language you pick for one year and holds nothing but the language code. The server reads it so the page opens in the right language. It is not written unless you pick a language; until then your browser's language is used.",
+        "Your browser's local storage: the theme you chose; it stays on your device only.",
         "Optional statistics: only if you accept, Vercel Analytics is loaded (it uses no cookies, does not track you and only keeps aggregate counts) and Mapbox's map usage events are sent. If you refuse, neither runs. You can change your choice at any time in the section at the bottom of this page.",
       ],
     },
