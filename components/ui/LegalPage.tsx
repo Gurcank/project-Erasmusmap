@@ -4,13 +4,22 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useLang } from "@/hooks/useLang";
 import { useT } from "@/hooks/useT";
+import CookiePreferences from "@/components/ui/CookiePreferences";
+import type { Consent } from "@/lib/consent";
 import { getLegalDocument, type LegalKind } from "@/lib/legal";
 
 /**
  * A legal text in the reader's language. The text sits on one glass panel like
  * the other settings-style pages; the heading stays on the backdrop.
  */
-export default function LegalPage({ kind }: { kind: LegalKind }) {
+export default function LegalPage({
+  kind,
+  consent = null,
+}: {
+  kind: LegalKind;
+  /** The visitor's cookie choice, shown and changeable on the privacy policy. */
+  consent?: Consent;
+}) {
   const t = useT();
   const doc = getLegalDocument(kind, useLang());
 
@@ -58,6 +67,8 @@ export default function LegalPage({ kind }: { kind: LegalKind }) {
               ))}
             </section>
           ))}
+
+          {kind === "privacy" && <CookiePreferences consent={consent} />}
         </article>
       </div>
     </div>
