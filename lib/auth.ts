@@ -4,6 +4,13 @@ import { createAuthAdapter } from "@/lib/auth-adapter";
 import { prisma } from "@/lib/prisma";
 import { assignInitialUsername } from "@/lib/user";
 import { normalizeEmail } from "@/lib/email";
+import { authUrlOverride } from "@/lib/auth-url";
+import { SITE_URL } from "@/lib/site";
+
+// NextAuth reads NEXTAUTH_URL itself, on every request; this runs before the first.
+// See authUrlOverride for why a wrong value is replaced.
+const authUrl = authUrlOverride(process.env, SITE_URL);
+if (authUrl) process.env.NEXTAUTH_URL = authUrl;
 
 // How long the claims copied into the token stay valid before being re-read.
 // Reading on every request defeats the point of a JWT session; never re-reading
