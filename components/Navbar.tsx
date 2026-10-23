@@ -17,16 +17,12 @@ import {
 } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import { useTripT } from "@/hooks/useTripT";
+import { MIN_QUERY_LENGTH, useCitySearch } from "@/hooks/useCitySearch";
 import { CITY_SEARCH_FOCUS_EVENT } from "@/lib/city-search";
 import UserAvatar from "@/components/ui/UserAvatar";
 import HamburgerIcon from "@/components/ui/HamburgerIcon";
 import GlassButton, { GlassLink } from "@/components/ui/GlassButton";
 import type { CitySuggestion } from "@/types";
-
-const MIN_QUERY_LENGTH = 2;
-// Long enough that typing a city name is one request, short enough to feel
-// immediate.
-const SEARCH_DEBOUNCE_MS = 220;
 
 export default function Navbar() {
   const router = useRouter();
@@ -37,52 +33,17 @@ export default function Navbar() {
   const [search, setSearch] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
+  // Closed by clicking away, Escape or navigating; reopened by typing or focus.
+  const [suggestionsDismissed, setSuggestionsDismissed] = useState(false);
+  const { results: suggestions, isSearching } = useCitySearch(search);
+  const showSuggestions =
+    !suggestionsDismissed && search.trim().length >= MIN_QUERY_LENGTH;
   const { data: session } = useSession();
   const pathname = usePathname();
 
   useEffect(() => {
     if (session?.user?.banned) signOut({ callbackUrl: "/" });
   }, [session]);
-
-  // The city list is ~1600 entries with translated aliases, so matching happens
-  // on the server rather than shipping it all to every visitor.
-  useEffect(() => {
-    const query = search.trim();
-    if (query.length < MIN_QUERY_LENGTH) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      setIsSearching(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    setIsSearching(true);
-
-    const timer = setTimeout(async () => {
-      try {
-        const response = await fetch(
-          `/api/cities/search?q=${encodeURIComponent(query)}`,
-          { signal: controller.signal },
-        );
-        if (!response.ok) throw new Error("search failed");
-        setSuggestions(await response.json());
-        setShowSuggestions(true);
-      } catch (error) {
-        if ((error as Error).name === "AbortError") return;
-        setSuggestions([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, SEARCH_DEBOUNCE_MS);
-
-    return () => {
-      controller.abort();
-      clearTimeout(timer);
-    };
-  }, [search]);
 
   useEffect(() => {
     function handleOutside(event: MouseEvent) {
@@ -95,7 +56,7 @@ export default function Navbar() {
         searchRef.current &&
         !searchRef.current.contains(event.target as Node)
       )
-        setShowSuggestions(false);
+        setSuggestionsDismissed(true);
     }
     document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
@@ -106,18 +67,23 @@ export default function Navbar() {
     function handleEscape(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
       setProfileOpen(false);
-      setShowSuggestions(false);
+      setSuggestionsDismissed(true);
       setMenuOpen(false);
     }
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
   }, []);
 
-  useEffect(() => {
+  // Everything that floated over the old page closes with it. Compared during
+  // render rather than in an effect, so there is no frame of the new page with
+  // the old page's menu still open.
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
     setProfileOpen(false);
-    setShowSuggestions(false);
+    setSuggestionsDismissed(true);
     setMenuOpen(false);
-  }, [pathname]);
+  }
 
   // Something else on the page (the map) asks for the city search. On a narrow
   // screen it lives inside the menu, so that opens first.
@@ -146,7 +112,7 @@ export default function Navbar() {
   const goToCity = (city: CitySuggestion) => {
     router.push(`/c/${city.slug}`);
     setSearch("");
-    setShowSuggestions(false);
+    setSuggestionsDismissed(true);
   };
 
   const handleSearch = (event: React.FormEvent) => {
@@ -210,8 +176,11 @@ export default function Navbar() {
         aria-label={t.searchPlaceholder}
         placeholder={t.searchPlaceholder}
         value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+        onChange={(event) => {
+          setSearch(event.target.value);
+          setSuggestionsDismissed(false);
+        }}
+        onFocus={() => setSuggestionsDismissed(false)}
         className={`w-full border border-border-strong bg-surface pr-4 pl-10 text-text transition-colors placeholder:text-text-subtle focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus ${
           mobile ? "rounded-control py-3" : "rounded-full py-2.5 text-sm"
         }`}

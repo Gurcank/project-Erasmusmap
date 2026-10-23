@@ -1,13 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ImageOff, Loader2, Plus, Search, X } from "lucide-react";
 import { useT } from "@/hooks/useT";
+import { MIN_QUERY_LENGTH, useCitySearch } from "@/hooks/useCitySearch";
 import GlassButton from "@/components/ui/GlassButton";
 import type { ActionResult, FormAction } from "@/lib/action-result";
-import type { CitySuggestion } from "@/types";
 
 export type FavoriteCity = {
   cityId: string;
@@ -25,9 +25,6 @@ type Props = {
   addFavoriteCity: FormAction;
   removeFavoriteCity: FormAction;
 };
-
-const MIN_QUERY_LENGTH = 2;
-const SEARCH_DEBOUNCE_MS = 220;
 
 function CityCard({ favorite }: { favorite: FavoriteCity }) {
   return (
@@ -75,50 +72,18 @@ export default function FavoriteCities({
   const [removeState, removeAction] = useActionState(removeFavoriteCity, null);
   const [picking, setPicking] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<CitySuggestion[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const { results, isSearching } = useCitySearch(query);
 
-  // Close the picker once a city has been added.
-  useEffect(() => {
+  // Close the picker once a city has been added. Compared during render rather
+  // than in an effect, so the picker closes in the same pass the result lands.
+  const [handledAdd, setHandledAdd] = useState(addState);
+  if (addState !== handledAdd) {
+    setHandledAdd(addState);
     if (addState?.ok) {
       setPicking(false);
       setQuery("");
-      setResults([]);
     }
-  }, [addState]);
-
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (trimmed.length < MIN_QUERY_LENGTH) {
-      setResults([]);
-      setIsSearching(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    setIsSearching(true);
-
-    const timer = setTimeout(async () => {
-      try {
-        const response = await fetch(
-          `/api/cities/search?q=${encodeURIComponent(trimmed)}`,
-          { signal: controller.signal },
-        );
-        if (!response.ok) throw new Error("search failed");
-        setResults(await response.json());
-      } catch (error) {
-        if ((error as Error).name === "AbortError") return;
-        setResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, SEARCH_DEBOUNCE_MS);
-
-    return () => {
-      controller.abort();
-      clearTimeout(timer);
-    };
-  }, [query]);
+  }
 
   const slots = Array.from({ length: maxSlots }, (_, position) =>
     favorites.find((favorite) => favorite.position === position),
