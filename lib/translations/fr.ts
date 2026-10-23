@@ -131,6 +131,13 @@ export const fr = {
   accountTitle: "Compte",
   accountDesc: "Ta photo, ton nom, ta bio et ton nom d'utilisateur",
   backToProfile: "Profil",
+  backToMap: "Retour à la carte",
+  termsTitle: "Conditions d'utilisation",
+  privacyTitle: "Politique de confidentialité",
+  termsLinkText: "Conditions d'utilisation",
+  privacyLinkText: "Politique de confidentialité",
+  loginLegalNotice:
+    "En te connectant, tu acceptes les {terms} et la {privacy}.",
   accountSection: "Compte",
   profileSection: "Profil",
   blockedUsersSection: "Utilisateurs bloqués",

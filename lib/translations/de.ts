@@ -131,6 +131,13 @@ export const de = {
   accountTitle: "Konto",
   accountDesc: "Dein Foto, Name, Bio und Nutzername",
   backToProfile: "Profil",
+  backToMap: "Zurück zur Karte",
+  termsTitle: "Nutzungsbedingungen",
+  privacyTitle: "Datenschutzerklärung",
+  termsLinkText: "Nutzungsbedingungen",
+  privacyLinkText: "Datenschutzerklärung",
+  loginLegalNotice:
+    "Mit der Anmeldung akzeptierst du die {terms} und die {privacy}.",
   accountSection: "Konto",
   profileSection: "Profil",
   blockedUsersSection: "Blockierte Nutzer",
