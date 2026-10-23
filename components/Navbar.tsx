@@ -204,12 +204,23 @@ export default function Navbar() {
           aria-label={t.siteNavLabel}
           className="flex items-center justify-between gap-4 px-4 py-2.5 md:px-5 md:py-3"
         >
-          <Link
-            href="/"
-            className="font-display text-xl font-bold tracking-tight text-text transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-          >
-            Erasmus<span className="text-accent-text">Map</span>
-          </Link>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <Link
+              href="/"
+              className="font-display text-xl font-bold tracking-tight text-text transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              Erasmus<span className="text-accent-text">Map</span>
+            </Link>
+            {/* On a phone the header has no room for it; the menu carries the
+                sentence there. */}
+            <span
+              title={t.experimentNotice}
+              className="hidden cursor-help rounded-full border border-border-strong px-2 py-0.5 text-[0.65rem] font-medium tracking-wide text-text-subtle uppercase sm:inline-flex"
+            >
+              {t.experimentBadge}
+              <span className="sr-only">: {t.experimentNotice}</span>
+            </span>
+          </div>
 
           <div className="hidden shrink-0 items-center gap-1 md:flex">
             {navLinks.map(({ href, label }) => (
@@ -428,6 +439,10 @@ export default function Navbar() {
               </li>
             </ul>
           )}
+
+          <p className="px-1 text-center text-xs leading-relaxed text-text-subtle">
+            {t.experimentNotice}
+          </p>
         </div>
       )}
     </header>

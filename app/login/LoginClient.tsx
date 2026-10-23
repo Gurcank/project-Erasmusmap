@@ -84,6 +84,10 @@ export default function LoginClient({
           )}
         </p>
       )}
+
+      <p className="mt-3 text-center text-xs leading-relaxed text-ink-300">
+        {t.experimentNotice}
+      </p>
     </AuthShell>
   );
 }

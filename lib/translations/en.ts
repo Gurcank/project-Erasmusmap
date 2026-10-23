@@ -36,6 +36,8 @@ export const en = {
     "Erasmus student reviews, ratings and photos for {name}, {country}.",
   profileMetaDescription: "{name} — ErasmusMap profile",
   accountTitle: "Account",
+  experimentBadge: "experiment",
+  experimentNotice: "This site is an experiment built for learning purposes.",
   noResults: "No results found",
   mapNav: "Map",
   square: "The Square",

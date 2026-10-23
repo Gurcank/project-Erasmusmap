@@ -37,6 +37,9 @@ export const es = {
     "Reseñas, puntuaciones y fotos de estudiantes Erasmus sobre {name}, {country}.",
   profileMetaDescription: "{name} — perfil de ErasmusMap",
   accountTitle: "Cuenta",
+  experimentBadge: "prueba",
+  experimentNotice:
+    "Este sitio es un proyecto de prueba hecho con fines de aprendizaje.",
   noResults: "No se han encontrado resultados",
   mapNav: "Mapa",
   square: "La Plaza",
