@@ -7,6 +7,7 @@ import { requireActiveUser } from "@/lib/auth-guards";
 import { cacheCityPhotos } from "@/lib/city-photo";
 import { getHiddenUserIds } from "@/lib/social";
 import { getTripForViewer } from "@/lib/trips";
+import { canonicalFor } from "@/lib/seo";
 import {
   addTripCity,
   addTripTodo,
@@ -44,6 +45,7 @@ export async function generateMetadata({
   return {
     title: trip.title,
     description: trip.description ?? undefined,
+    ...canonicalFor(`/trips/${id}`),
     // Only a public plan is meant to be found; a private one is the owner's.
     robots:
       trip.visibility === "PUBLIC"

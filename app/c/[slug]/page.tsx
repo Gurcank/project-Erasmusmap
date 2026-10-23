@@ -22,6 +22,8 @@ import { requireActiveUser } from "@/lib/auth-guards";
 import { getHiddenUserIds } from "@/lib/social";
 import { buildCommentTree, getLikedCommentIds } from "@/lib/review-shape";
 import { cacheCityPhotos } from "@/lib/city-photo";
+import { getRequestLang } from "@/lib/lang-server";
+import { canonicalFor, socialMetadata } from "@/lib/seo";
 import {
   getAuthorStays,
   getCityBySlug,
@@ -52,8 +54,13 @@ export async function generateMetadata({
   return {
     title: name,
     description,
-    openGraph: { title: name, description },
-    twitter: { title: name, description },
+    ...canonicalFor(`/c/${slug}`),
+    ...socialMetadata({
+      lang: await getRequestLang(),
+      title: name,
+      description,
+      path: `/c/${slug}`,
+    }),
   };
 }
 

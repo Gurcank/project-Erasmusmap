@@ -48,6 +48,11 @@ describe("sitemap", () => {
     expect(urls).toContain(`${SITE_URL}/trips/trip-1`);
   });
 
+  it("leaves out the sign-in form, which is not a page to land on", async () => {
+    const urls = (await sitemap()).map((entry) => entry.url);
+    expect(urls).not.toContain(`${SITE_URL}/login`);
+  });
+
   it("asks only for the cities the product shows", async () => {
     await sitemap();
     expect(cityFind.mock.calls[0][0].where).toEqual({
