@@ -48,10 +48,19 @@ export default function AvatarPicker({ current }: { current: AvatarKey }) {
         setError(result.error);
         return;
       }
-      // The session carries the avatar for the navbar; without this it would
-      // show the old one until the token is next refreshed.
-      await update();
+      // The page first: it reads the avatar from the database, so it does not
+      // depend on the session at all, and the choice shows up straight away.
       router.refresh();
+      // The session carries the avatar for the navbar; without this it would
+      // show the old one until the token is next refreshed. It is a second
+      // request that can fail on its own (a dropped connection, a token that
+      // could not be re-read), and the saved choice must not look lost when it
+      // does, so a failure here is only the navbar being late.
+      try {
+        await update();
+      } catch {
+        // The navbar catches up on the next token refresh.
+      }
     });
   };
 
