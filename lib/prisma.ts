@@ -17,7 +17,11 @@ export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     adapter: new PrismaPg(pool),
-    log: ["error"],
+    // Prisma's own error printing is off. It writes the failing call to stderr,
+    // and for a validation error that includes the values that were sent, with
+    // nothing between them and the log. Every error is thrown anyway, and what
+    // catches it logs it through lib/logger.ts, which keeps those values out.
+    log: [],
   });
 
 if (process.env.NODE_ENV !== "production") {

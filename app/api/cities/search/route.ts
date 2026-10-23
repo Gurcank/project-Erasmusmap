@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { latinize } from "@/lib/latinize";
+import { logError } from "@/lib/logger";
 import { rateLimit } from "@/lib/rate-limit";
 import { getClientAddress } from "@/lib/request-ip";
 import primarySlugList from "@/prisma/data/primary-city-slugs.json";
@@ -74,7 +75,11 @@ export async function GET(req: Request) {
     return NextResponse.json(cities, {
       headers: { "Cache-Control": CACHE_CONTROL },
     });
-  } catch {
+  } catch (error) {
+    logError("City search failed", error, {
+      route: "/api/cities/search",
+      routeType: "route",
+    });
     return NextResponse.json({ error: "Arama yapılamadı" }, { status: 500 });
   }
 }
