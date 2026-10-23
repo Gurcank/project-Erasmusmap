@@ -49,6 +49,20 @@ tarayıcı ──► proxy.ts ──► app/layout.tsx ──► sayfa (server c
   fotoğrafı **yazılmaz** (`lib/auth-adapter.ts`).
 - Rol (`USER` / `ADMIN`) veritabanında; atama [RUNBOOK](RUNBOOK.md#admin-atamak)'ta.
 
+## API route'ları
+
+Az sayıdadır (`auth`, `cities/search`, `health`, `account/export`) ve ortak bir sözleşmeyi izler:
+
+- **Başarı:** gövde kaynağın kendisidir (`[]` şehir listesi, `{ status }` sağlık bilgisi, dosya
+  indirmesi). Ayrıca `{ ok, data }` gibi bir zarf yoktur: HTTP durum kodu zaten başarıyı söyler,
+  zarf CDN'de önbelleğe alınan yanıtların biçimini deploy sırasında bozardı.
+- **Hata:** uygun HTTP durum koduyla `{ "error": "…" }` (kullanıcıya gösterilebilir Türkçe bir
+  metin). 401/403 `requireActiveUser`'dan, 429 rate limit'ten gelir.
+- Hata detayı gövdeye **konmaz**; `logError` ile loglanır (`route`, `routeType: "route"`).
+- Kullanıcıya özel yanıtlar `Cache-Control: private, no-store`; herkese açık ve değişmeyenler
+  `s-maxage` ile CDN'de tutulur.
+- İstemci tarafı çağıran tek yer `hooks/useCitySearch.ts`; `response.ok`'a bakar.
+
 ## Yazma yolu: action'lar
 
 ```ts
