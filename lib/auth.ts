@@ -1,6 +1,6 @@
 import { type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import { PrismaAdapter } from "@auth/prisma-adapter";
+import { createAuthAdapter } from "@/lib/auth-adapter";
 import { prisma } from "@/lib/prisma";
 import { generateUniqueUsername } from "@/lib/user";
 import { normalizeEmail } from "@/lib/email";
@@ -22,7 +22,7 @@ const TOKEN_REFRESH_INTERVAL_SECONDS = 5 * 60;
  * no password in this database to brute force, stuff or leak.
  */
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: createAuthAdapter(prisma),
 
   providers: [
     GoogleProvider({
