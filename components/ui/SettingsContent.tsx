@@ -6,6 +6,7 @@ import ThemeSelect from "@/components/ui/ThemeSelect";
 import LanguageSelect from "@/components/ui/LanguageSelect";
 import SubmitButton from "@/components/ui/SubmitButton";
 import ActionForm from "@/components/ui/ActionForm";
+import AccountDataSection from "@/components/ui/AccountDataSection";
 import type { FormAction } from "@/lib/action-result";
 
 type BlockedUser = {
@@ -17,6 +18,8 @@ type BlockedUser = {
 type Props = {
   blockedUsers: BlockedUser[];
   unblockUser: FormAction;
+  /** What the person types to confirm deleting their account. */
+  confirmWord: string;
 };
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
@@ -27,7 +30,11 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function SettingsContent({ blockedUsers, unblockUser }: Props) {
+export default function SettingsContent({
+  blockedUsers,
+  unblockUser,
+  confirmWord,
+}: Props) {
   const t = useT();
 
   return (
@@ -115,6 +122,11 @@ export default function SettingsContent({ blockedUsers, unblockUser }: Props) {
             <LanguageSelect />
           </div>
         </div>
+      </section>
+
+      <section>
+        <SectionHeading>{t.dataSection}</SectionHeading>
+        <AccountDataSection confirmWord={confirmWord} />
       </section>
     </>
   );

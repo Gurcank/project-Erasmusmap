@@ -140,6 +140,17 @@ export const en = {
   blockedUsersSection: "Blocked Users",
   noBlockedUsers: "You haven't blocked anyone.",
   appearanceSection: "Appearance",
+  dataSection: "Account and Data",
+  exportDataTitle: "Download my data",
+  exportDataDesc:
+    "Download your profile, reviews, lists and trip plans as a JSON file.",
+  exportDataBtn: "Download",
+  deleteAccountTitle: "Delete my account",
+  deleteAccountDesc:
+    "Your account, reviews, lists and trip plans are permanently deleted. This can't be undone.",
+  deleteAccountConfirmLabel: "Type {name} to confirm",
+  deleteAccountBtn: "Permanently delete my account",
+  deleteAccountWorking: "Deleting…",
   nameLabel: "Name",
   nameHint: "Shown next to your username on your profile.",
   locationLabel: "Location",

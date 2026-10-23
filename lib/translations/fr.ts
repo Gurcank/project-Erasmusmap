@@ -136,6 +136,17 @@ export const fr = {
   blockedUsersSection: "Utilisateurs bloqués",
   noBlockedUsers: "Tu n'as bloqué personne.",
   appearanceSection: "Apparence",
+  dataSection: "Compte et données",
+  exportDataTitle: "Télécharger mes données",
+  exportDataDesc:
+    "Télécharge ton profil, tes avis, tes listes et tes plans de voyage dans un fichier JSON.",
+  exportDataBtn: "Télécharger",
+  deleteAccountTitle: "Supprimer mon compte",
+  deleteAccountDesc:
+    "Ton compte, tes avis, tes listes et tes plans de voyage sont supprimés définitivement. Cette action est irréversible.",
+  deleteAccountConfirmLabel: "Saisis {name} pour confirmer",
+  deleteAccountBtn: "Supprimer définitivement mon compte",
+  deleteAccountWorking: "Suppression…",
   nameLabel: "Nom",
   nameHint: "Affiché à côté de ton nom d'utilisateur sur ton profil.",
   locationLabel: "Lieu",

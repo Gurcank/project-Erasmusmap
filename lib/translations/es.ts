@@ -137,6 +137,17 @@ export const es = {
   blockedUsersSection: "Usuarios bloqueados",
   noBlockedUsers: "No has bloqueado a nadie.",
   appearanceSection: "Apariencia",
+  dataSection: "Cuenta y datos",
+  exportDataTitle: "Descargar mis datos",
+  exportDataDesc:
+    "Descarga tu perfil, reseñas, listas y planes de viaje como archivo JSON.",
+  exportDataBtn: "Descargar",
+  deleteAccountTitle: "Eliminar mi cuenta",
+  deleteAccountDesc:
+    "Tu cuenta, reseñas, listas y planes de viaje se eliminan de forma permanente. No se puede deshacer.",
+  deleteAccountConfirmLabel: "Escribe {name} para confirmar",
+  deleteAccountBtn: "Eliminar mi cuenta definitivamente",
+  deleteAccountWorking: "Eliminando…",
   nameLabel: "Nombre",
   nameHint: "Se muestra junto a tu nombre de usuario en tu perfil.",
   locationLabel: "Ubicación",

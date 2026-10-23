@@ -140,6 +140,17 @@ export const tr = {
   blockedUsersSection: "Engellenen Kullanıcılar",
   noBlockedUsers: "Kimseyi engellemedin.",
   appearanceSection: "Görünüm",
+  dataSection: "Hesap ve Veriler",
+  exportDataTitle: "Verilerimi indir",
+  exportDataDesc:
+    "Profilini, yorumlarını, listelerini ve seyahat planlarını JSON dosyası olarak indir.",
+  exportDataBtn: "İndir",
+  deleteAccountTitle: "Hesabımı sil",
+  deleteAccountDesc:
+    "Hesabın, yorumların, listelerin ve seyahat planların kalıcı olarak silinir. Bu işlem geri alınamaz.",
+  deleteAccountConfirmLabel: "Onaylamak için {name} yaz",
+  deleteAccountBtn: "Hesabımı kalıcı olarak sil",
+  deleteAccountWorking: "Siliniyor…",
   nameLabel: "Ad",
   nameHint: "Profilinde kullanıcı adının yanında görünür.",
   locationLabel: "Konum",
