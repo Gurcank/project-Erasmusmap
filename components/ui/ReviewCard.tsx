@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import {
   CalendarDays,
@@ -70,9 +70,11 @@ export default function ReviewCard({
   const [editing, setEditing] = useState(false);
 
   // A saved edit revalidates the page; collapse the form once it lands.
-  useEffect(() => {
+  const [handledEdit, setHandledEdit] = useState(editState);
+  if (editState !== handledEdit) {
+    setHandledEdit(editState);
     if (editState?.ok) setEditing(false);
-  }, [editState]);
+  }
 
   const author = review.user?.username ?? review.user?.name ?? "—";
   const isSignedIn = viewerId !== null;

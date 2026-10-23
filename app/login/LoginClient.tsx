@@ -20,7 +20,6 @@ export default function LoginClient({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [error, setError] = useState("");
   // Google answers with a full-page redirect, which can take a moment on a slow
   // connection; without this the button looks like it did nothing.
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -29,11 +28,10 @@ export default function LoginClient({
     if (status === "authenticated") router.replace("/");
   }, [status, router]);
 
-  useEffect(() => {
-    if (searchParams.get("error") === "AccessDenied") {
-      setError("Hesabınız askıya alınmış. Giriş yapamazsınız.");
-    }
-  }, [searchParams]);
+  const error =
+    searchParams.get("error") === "AccessDenied"
+      ? "Hesabınız askıya alınmış. Giriş yapamazsınız."
+      : "";
 
   // The shell stays up while the session is checked, with the button held, so
   // the page does not flash blank and then jump.
