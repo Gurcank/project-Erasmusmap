@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { setUsername } from "@/lib/user";
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveUser } from "@/lib/auth-guards";
@@ -26,19 +26,9 @@ export async function POST(req: Request) {
   const { username } = parsed.data;
 
   try {
-    const owner = await prisma.user.findUnique({
-      where: { usernameLower: username.toLowerCase() },
-      select: { id: true },
-    });
-
-    if (owner && owner.id !== auth.user.id) {
+    if ((await setUsername(auth.user.id, username)) === "taken") {
       return NextResponse.json({ error: "Username alınmış" }, { status: 400 });
     }
-
-    await prisma.user.update({
-      where: { id: auth.user.id },
-      data: { username, usernameLower: username.toLowerCase() },
-    });
 
     return NextResponse.json({ success: true });
   } catch {
