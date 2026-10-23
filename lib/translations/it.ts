@@ -212,5 +212,12 @@ export const it = {
   confirmDeleteUser:
     "Eliminare definitivamente questo utente? L'operazione non può essere annullata.",
   noUsersFound: "Nessun utente trovato.",
+  usersSearchPlaceholder: "Cerca per nome, utente o e-mail",
+  usersSearchBtn: "Cerca",
+  usersPageLabel: "Pagina {page} di {pages}",
+  usersTotal: "{n} utenti",
+  prevPage: "Precedente",
+  nextPage: "Successiva",
+  usersPagination: "Pagine degli utenti",
   noReviewsFound: "Nessuna recensione trovata.",
 };

@@ -2,6 +2,13 @@
  *  belongs in a review of its own. */
 export const MAX_REPLY_LENGTH = 400;
 
+/**
+ * The most comments read for one review. A thread longer than this shows its
+ * newest ones; the review page loads every thread on it at once, so an unbounded
+ * thread would be an unbounded page.
+ */
+export const MAX_COMMENTS_PER_REVIEW = 200;
+
 /** How many featured reviews The Square shows. */
 export const TRENDING_REVIEW_LIMIT = 10;
 

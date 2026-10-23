@@ -214,5 +214,12 @@ export const de = {
   confirmDeleteUser:
     "Diesen Nutzer wirklich dauerhaft löschen? Das kann nicht rückgängig gemacht werden.",
   noUsersFound: "Keine Nutzer gefunden.",
+  usersSearchPlaceholder: "Nach Name, Nutzername oder E-Mail suchen",
+  usersSearchBtn: "Suchen",
+  usersPageLabel: "Seite {page} von {pages}",
+  usersTotal: "{n} Nutzer",
+  prevPage: "Zurück",
+  nextPage: "Weiter",
+  usersPagination: "Nutzerseiten",
   noReviewsFound: "Keine Bewertungen gefunden.",
 };

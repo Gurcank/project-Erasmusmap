@@ -214,5 +214,12 @@ export const es = {
   confirmDeleteUser:
     "¿Eliminar permanentemente a este usuario? Esta acción no se puede deshacer.",
   noUsersFound: "No se han encontrado usuarios.",
+  usersSearchPlaceholder: "Buscar por nombre, usuario o correo",
+  usersSearchBtn: "Buscar",
+  usersPageLabel: "Página {page} de {pages}",
+  usersTotal: "{n} usuarios",
+  prevPage: "Anterior",
+  nextPage: "Siguiente",
+  usersPagination: "Páginas de usuarios",
   noReviewsFound: "No se han encontrado reseñas.",
 };

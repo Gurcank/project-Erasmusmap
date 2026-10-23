@@ -218,5 +218,12 @@ export const en = {
   confirmDeleteUser:
     "Are you sure you want to permanently delete this user? This cannot be undone.",
   noUsersFound: "No users found.",
+  usersSearchPlaceholder: "Search by name, username or email",
+  usersSearchBtn: "Search",
+  usersPageLabel: "Page {page} of {pages}",
+  usersTotal: "{n} users",
+  prevPage: "Previous",
+  nextPage: "Next",
+  usersPagination: "User pages",
   noReviewsFound: "No reviews found.",
 };
