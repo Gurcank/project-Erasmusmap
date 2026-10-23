@@ -9,7 +9,12 @@ import AuthShell from "@/components/ui/AuthShell";
 import GlassButton from "@/components/ui/GlassButton";
 import { useT } from "@/hooks/useT";
 
-export default function LoginClient() {
+export default function LoginClient({
+  showLegalNotice,
+}: {
+  /** False while the policy and the terms are not published: nothing to link to. */
+  showLegalNotice: boolean;
+}) {
   const t = useT();
   const { status } = useSession();
   const router = useRouter();
@@ -67,21 +72,23 @@ export default function LoginClient() {
         Hesabın yoksa ilk girişinde otomatik olarak oluşturulur.
       </p>
 
-      <p className="mt-3 text-center text-xs leading-relaxed text-ink-300">
-        {t.loginLegalNotice.split(/({terms}|{privacy})/).map((part, index) =>
-          part === "{terms}" || part === "{privacy}" ? (
-            <Link
-              key={index}
-              href={part === "{terms}" ? "/terms" : "/privacy"}
-              className="text-ink-50 underline underline-offset-2 hover:text-accent-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-            >
-              {part === "{terms}" ? t.termsLinkText : t.privacyLinkText}
-            </Link>
-          ) : (
-            part
-          ),
-        )}
-      </p>
+      {showLegalNotice && (
+        <p className="mt-3 text-center text-xs leading-relaxed text-ink-300">
+          {t.loginLegalNotice.split(/({terms}|{privacy})/).map((part, index) =>
+            part === "{terms}" || part === "{privacy}" ? (
+              <Link
+                key={index}
+                href={part === "{terms}" ? "/terms" : "/privacy"}
+                className="text-ink-50 underline underline-offset-2 hover:text-accent-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              >
+                {part === "{terms}" ? t.termsLinkText : t.privacyLinkText}
+              </Link>
+            ) : (
+              part
+            ),
+          )}
+        </p>
+      )}
     </AuthShell>
   );
 }

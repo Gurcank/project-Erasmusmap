@@ -139,6 +139,16 @@ export const es = {
   termsLinkText: "Términos de uso",
   privacyLinkText: "Política de privacidad",
   loginLegalNotice: "Al iniciar sesión aceptas los {terms} y la {privacy}.",
+  cookieBannerLabel: "Preferencias de cookies",
+  cookieBannerText:
+    "Las cookies necesarias para mantener tu sesión se usan siempre. Opcionalmente, podemos recoger estadísticas de visitas anónimas (Vercel Analytics) y eventos de uso del mapa (Mapbox) para mejorar el sitio.",
+  cookieAccept: "Aceptar",
+  cookieReject: "Rechazar",
+  cookiePrefsTitle: "Tu elección de cookies y estadísticas",
+  cookieStatusGranted: "Aceptaste las estadísticas opcionales.",
+  cookieStatusDenied: "Rechazaste las estadísticas opcionales.",
+  cookieStatusUnset:
+    "Aún no has elegido; las estadísticas opcionales están desactivadas.",
   accountSection: "Cuenta",
   profileSection: "Perfil",
   blockedUsersSection: "Usuarios bloqueados",

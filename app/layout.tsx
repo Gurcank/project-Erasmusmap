@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import Script from "next/script";
 import { Bricolage_Grotesque, Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import CookieBanner from "@/components/ui/CookieBanner";
 import GlobeBackground from "@/components/ui/GlobeBackground";
 import Providers from "./providers";
 import { Analytics } from "@vercel/analytics/next";
+import {
+  CONSENT_COOKIE,
+  analyticsAllowed,
+  needsConsentDecision,
+  parseConsent,
+} from "@/lib/consent";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { legalPagesAvailable } from "@/lib/legal/config";
 
 // Body face: neutral, high legibility at small sizes via its optical-size axis.
 const inter = Inter({
@@ -69,6 +77,10 @@ export default async function RootLayout({
   // time that no later response header matches.
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
+  // Optional statistics are left out of the page itself until the visitor says
+  // yes; the script is not included and then switched off.
+  const consent = parseConsent((await cookies()).get(CONSENT_COOKIE)?.value);
+
   return (
     <html
       lang="tr"
@@ -83,7 +95,10 @@ export default async function RootLayout({
         <Providers>
           <Navbar />
           <main className="min-h-screen">{children}</main>
-          <Analytics />
+          {analyticsAllowed(consent) && <Analytics />}
+          {needsConsentDecision(consent) && (
+            <CookieBanner policyLink={legalPagesAvailable()} />
+          )}
         </Providers>
       </body>
     </html>
