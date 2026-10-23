@@ -2,6 +2,7 @@
 
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { authorizeAction } from "@/lib/action-guard";
 import { UserFacingError, toActionResult } from "@/lib/action-result";
@@ -9,6 +10,8 @@ import type { ActionResult } from "@/lib/action-result";
 import { fetchCityPhoto } from "@/lib/unsplash";
 import { MAX_FAVORITE_CITIES } from "@/lib/profile";
 import { isAvatarKey } from "@/lib/avatars";
+import { bioSchema, firstIssueMessage, usernameSchema } from "@/lib/schemas";
+import { setUsername } from "@/lib/user";
 
 const RATE_LIMIT = 30;
 
@@ -123,5 +126,44 @@ export async function setAvatar(
 
     if (user.username) revalidatePath(`/u/${user.username}`);
     revalidatePath("/account");
+  });
+}
+
+export async function updateProfile(
+  _previousState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return toActionResult(async () => {
+    const user = await authorizeAction("profile", { limit: 10 });
+
+    const bio = bioSchema.safeParse(formData.get("bio") ?? "");
+    if (!bio.success) throw new UserFacingError(firstIssueMessage(bio.error));
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: { bio: bio.data },
+    });
+    if (updated.username) revalidatePath(`/u/${updated.username}`);
+    revalidatePath("/account");
+  });
+}
+
+export async function updateUsername(
+  _previousState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return toActionResult(async () => {
+    const user = await authorizeAction("username", { limit: 10 });
+
+    const parsed = usernameSchema.safeParse(formData.get("username") ?? "");
+    if (!parsed.success)
+      throw new UserFacingError(firstIssueMessage(parsed.error));
+    const username = parsed.data;
+
+    if ((await setUsername(user.id, username)) === "taken")
+      throw new UserFacingError("Bu kullanıcı adı zaten alınmış");
+    revalidatePath(`/u/${username}`);
+    revalidatePath("/account");
+    redirect(`/u/${username}`);
   });
 }

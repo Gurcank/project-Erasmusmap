@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import ProfileContent from "@/components/ui/ProfileContent";
 import type { ProfileTab } from "@/components/ui/ProfileContent";
 import { deleteReview } from "@/lib/actions";
@@ -25,6 +24,13 @@ import { isBlockedBetween } from "@/lib/social";
 import { MAX_FAVORITE_CITIES } from "@/lib/profile";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { getUserTrips } from "@/lib/trips";
+import {
+  countProfileTrips,
+  getFollowStats,
+  getProfileByUsername,
+  getProfileCounts,
+  getProfileMeta,
+} from "@/lib/queries/profile";
 
 const TABS: ProfileTab[] = [
   "visited",
@@ -41,10 +47,7 @@ export async function generateMetadata({
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
-  const user = await prisma.user.findUnique({
-    where: { usernameLower: username.toLowerCase() },
-    select: { username: true, bio: true },
-  });
+  const user = await getProfileMeta(username);
   // Runs before the shell is streamed, so this is the last point where a real
   // 404 status can still be set.
   if (!user) notFound();
@@ -74,44 +77,7 @@ export default async function ProfilePage({
     : "visited";
 
   const [user, viewer] = await Promise.all([
-    prisma.user.findUnique({
-      where: { usernameLower: username.toLowerCase() },
-      include: {
-        visits: {
-          orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
-          select: {
-            startDate: true,
-            endDate: true,
-            city: {
-              select: { id: true, name: true, slug: true, country: true },
-            },
-          },
-        },
-        wishlist: {
-          orderBy: { createdAt: "desc" },
-          select: {
-            city: {
-              select: { id: true, name: true, slug: true, country: true },
-            },
-          },
-        },
-        favoriteCities: {
-          orderBy: { position: "asc" },
-          select: {
-            position: true,
-            city: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-                country: true,
-                imageUrl: true,
-              },
-            },
-          },
-        },
-      },
-    }),
+    getProfileByUsername(username),
     requireActiveUser(),
   ]);
 
@@ -127,28 +93,14 @@ export default async function ProfilePage({
   }
 
   const viewerId = viewer.ok ? viewer.user.id : null;
-  const [followerCount, followingCount, viewerFollows] = await Promise.all([
-    prisma.follow.count({ where: { followingId: user.id } }),
-    prisma.follow.count({ where: { followerId: user.id } }),
-    viewerId && !isOwnProfile
-      ? prisma.follow.findUnique({
-          where: {
-            followerId_followingId: {
-              followerId: viewerId,
-              followingId: user.id,
-            },
-          },
-          select: { id: true },
-        })
-      : null,
-  ]);
+  const { followerCount, followingCount, isFollowing } = await getFollowStats(
+    user.id,
+    isOwnProfile ? null : viewerId,
+  );
 
   // Counts drive the tab badges, so both are always needed; the lists
   // themselves are heavy, so only the open tab's is actually loaded.
-  const [reviewCount, likedCount] = await Promise.all([
-    prisma.review.count({ where: { userId: user.id } }),
-    prisma.reviewLike.count({ where: { userId: user.id } }),
-  ]);
+  const { reviewCount, likedCount } = await getProfileCounts(user.id);
 
   const citiesThisYear = await countCitiesThisYear(user.id);
   const reviews =
@@ -160,12 +112,7 @@ export default async function ProfilePage({
   // A private plan is only ever listed on its owner's own profile.
   const [trips, tripCount] = await Promise.all([
     activeTab === "trips" ? getUserTrips(user.id, isOwnProfile) : [],
-    prisma.trip.count({
-      where: {
-        userId: user.id,
-        ...(isOwnProfile ? {} : { visibility: "PUBLIC" as const }),
-      },
-    }),
+    countProfileTrips(user.id, isOwnProfile),
   ]);
 
   return (
@@ -178,7 +125,7 @@ export default async function ProfilePage({
         isOwnProfile={isOwnProfile}
         isAdmin={isAdmin}
         viewerSignedIn={viewerId !== null}
-        isFollowing={Boolean(viewerFollows)}
+        isFollowing={isFollowing}
         followerCount={followerCount}
         followingCount={followingCount}
         toggleFollow={toggleFollow}
