@@ -5,6 +5,41 @@ export const de = {
   settings: "Einstellungen",
   logout: "Abmelden",
   menu: "Menü",
+  skipToContent: "Zum Inhalt springen",
+  siteNavLabel: "Seitennavigation",
+  loadingPage: "Wird geladen…",
+  mapRegionLabel: "Karte von Europa",
+  mapRegionHelp:
+    "Interaktive Karte von Europa. Mit den Pfeiltasten verschieben, mit Plus und Minus zoomen. Um direkt zu einer Stadt zu gelangen, nutze die Stadtsuche.",
+  mapSearchShortcut: "Stadt suchen",
+  loginDescription: "Melde dich mit deinem Google-Konto bei ErasmusMap an.",
+  loginContinueGoogle: "Weiter mit Google",
+  loginRedirecting: "Weiterleitung…",
+  loginSuspended: "Dein Konto wurde gesperrt. Du kannst dich nicht anmelden.",
+  loginNoAccountHint:
+    "Wenn du noch kein Konto hast, wird es bei der ersten Anmeldung automatisch erstellt.",
+  errorTitle: "Etwas ist schiefgelaufen",
+  errorDescription:
+    "Ein unerwarteter Fehler ist aufgetreten. Ein erneuter Versuch kann helfen.",
+  errorPageLoad:
+    "Die Seite konnte nicht geladen werden. Ein erneuter Versuch kann helfen.",
+  errorRetry: "Erneut versuchen",
+  notFoundTitle: "Seite nicht gefunden",
+  notFoundDescription:
+    "Die gesuchte Seite wurde möglicherweise verschoben oder hat nie existiert.",
+  backToMap: "Zurück zur Karte",
+  siteTagline: "Europa aus Sicht von Erasmus-Studierenden",
+  siteDescription:
+    "Eine Plattform für Erasmus-Studierende, um europäische Städte zu entdecken und zu bewerten.",
+  squareDescription:
+    "Die Städte, über die Erasmus-Studierende diesen Monat am meisten sprechen, und besonders gute Bewertungen.",
+  cityMetaDescription:
+    "Bewertungen, Punkte und Fotos von Erasmus-Studierenden für {name}, {country}.",
+  profileMetaDescription: "{name} — ErasmusMap-Profil",
+  accountTitle: "Konto",
+  experimentBadge: "Versuch",
+  experimentNotice:
+    "Diese Website ist ein Versuchsprojekt, das zu Lernzwecken entstanden ist.",
   noResults: "Keine Ergebnisse gefunden",
   mapNav: "Karte",
   square: "Der Platz",
@@ -129,16 +164,24 @@ export const de = {
   feedEmptyNoReviews: "Die Leute, denen du folgst, haben noch nichts bewertet.",
 
   settingsTitle: "Einstellungen",
-  accountTitle: "Konto",
   accountDesc: "Dein Foto, Name, Bio und Nutzername",
   backToProfile: "Profil",
-  backToMap: "Zurück zur Karte",
   termsTitle: "Nutzungsbedingungen",
   privacyTitle: "Datenschutzerklärung",
   termsLinkText: "Nutzungsbedingungen",
   privacyLinkText: "Datenschutzerklärung",
   loginLegalNotice:
     "Mit der Anmeldung akzeptierst du die {terms} und die {privacy}.",
+  cookieBannerLabel: "Cookie-Einstellungen",
+  cookieBannerText:
+    "Cookies für die Anmeldung werden immer verwendet. Optional können wir anonyme Besuchsstatistiken (Vercel Analytics) und Kartennutzungsereignisse (Mapbox) erheben, um die Seite zu verbessern.",
+  cookieAccept: "Akzeptieren",
+  cookieReject: "Ablehnen",
+  cookiePrefsTitle: "Deine Cookie- und Statistik-Auswahl",
+  cookieStatusGranted: "Du hast die optionalen Statistiken akzeptiert.",
+  cookieStatusDenied: "Du hast die optionalen Statistiken abgelehnt.",
+  cookieStatusUnset:
+    "Du hast noch nichts gewählt; die optionalen Statistiken sind aus.",
   accountSection: "Konto",
   profileSection: "Profil",
   blockedUsersSection: "Blockierte Nutzer",

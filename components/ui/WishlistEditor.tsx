@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import LocalizedError from "@/components/ui/LocalizedError";
 import { Loader2, Plus, Search, X } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import { useCitySearch } from "@/hooks/useCitySearch";
@@ -161,7 +162,7 @@ export default function WishlistEditor({
               role="alert"
               className="mt-2 text-xs text-danger-700 dark:text-danger-400"
             >
-              {addState.error}
+              <LocalizedError message={addState.error} />
             </p>
           )}
         </div>

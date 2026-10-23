@@ -4,6 +4,10 @@ import LoginPage from "@/app/login/page";
 import PrivacyPage from "@/app/privacy/page";
 import TermsPage from "@/app/terms/page";
 
+vi.mock("next/headers", () => ({
+  cookies: async () => ({ get: () => undefined }),
+}));
+
 afterEach(() => {
   vi.unstubAllEnvs();
 });
@@ -17,9 +21,9 @@ function isNotFound(error: unknown): boolean {
   );
 }
 
-function render(page: () => unknown): { notFound: boolean } {
+async function render(page: () => unknown): Promise<{ notFound: boolean }> {
   try {
-    page();
+    await page();
     return { notFound: false };
   } catch (error) {
     if (isNotFound(error)) return { notFound: true };
@@ -28,19 +32,19 @@ function render(page: () => unknown): { notFound: boolean } {
 }
 
 describe("the legal pages on production with placeholders left", () => {
-  it("answer 404 instead of printing the placeholders", () => {
+  it("answer 404 instead of printing the placeholders", async () => {
     vi.stubEnv("VERCEL_ENV", "production");
-    expect(render(PrivacyPage)).toEqual({ notFound: true });
-    expect(render(TermsPage)).toEqual({ notFound: true });
+    expect(await render(PrivacyPage)).toEqual({ notFound: true });
+    expect(await render(TermsPage)).toEqual({ notFound: true });
   });
 });
 
 describe("the legal pages anywhere else", () => {
-  it("render, so the text can be reviewed on a preview", () => {
+  it("render, so the text can be reviewed on a preview", async () => {
     for (const env of ["preview", "development", ""]) {
       vi.stubEnv("VERCEL_ENV", env);
-      expect(render(PrivacyPage)).toEqual({ notFound: false });
-      expect(render(TermsPage)).toEqual({ notFound: false });
+      expect(await render(PrivacyPage)).toEqual({ notFound: false });
+      expect(await render(TermsPage)).toEqual({ notFound: false });
     }
   });
 });

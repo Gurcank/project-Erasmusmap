@@ -1,13 +1,14 @@
-import type { Metadata } from "next";
+import { localizedMetadata } from "@/lib/page-meta";
 import { redirect } from "next/navigation";
 import TripForm from "@/components/trips/TripForm";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { createTrip } from "@/lib/trip-actions";
 
-export const metadata: Metadata = {
-  title: "Yeni seyahat planı",
-  robots: { index: false, follow: false },
-};
+export const generateMetadata = () =>
+  localizedMetadata((_t, tt) => ({
+    title: tt.newTripTitle,
+    robots: { index: false, follow: false },
+  }));
 
 export default async function NewTripPage() {
   const viewer = await requireActiveUser();

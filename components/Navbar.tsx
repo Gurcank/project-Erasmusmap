@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import {
+  ChevronRight,
   Globe,
   Landmark,
   Route,
@@ -17,15 +18,20 @@ import {
 } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import { useTripT } from "@/hooks/useTripT";
+import { MIN_QUERY_LENGTH, useCitySearch } from "@/hooks/useCitySearch";
+import { CITY_SEARCH_FOCUS_EVENT } from "@/lib/city-search";
 import UserAvatar from "@/components/ui/UserAvatar";
 import HamburgerIcon from "@/components/ui/HamburgerIcon";
 import GlassButton, { GlassLink } from "@/components/ui/GlassButton";
 import type { CitySuggestion } from "@/types";
 
-const MIN_QUERY_LENGTH = 2;
-// Long enough that typing a city name is one request, short enough to feel
-// immediate.
-const SEARCH_DEBOUNCE_MS = 220;
+// The mobile menu is two quiet lists rather than a stack of buttons: where to go,
+// then what concerns the account. A row is at least 48px tall, the touch target
+// that is comfortable with a thumb.
+const MOBILE_GROUP =
+  "divide-y divide-border overflow-hidden rounded-card border border-border";
+const MOBILE_ROW =
+  "flex min-h-12 items-center px-4 text-[0.95rem] transition-colors hover:bg-surface-raised focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus";
 
 export default function Navbar() {
   const router = useRouter();
@@ -36,52 +42,17 @@ export default function Navbar() {
   const [search, setSearch] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
+  // Closed by clicking away, Escape or navigating; reopened by typing or focus.
+  const [suggestionsDismissed, setSuggestionsDismissed] = useState(false);
+  const { results: suggestions, isSearching } = useCitySearch(search);
+  const showSuggestions =
+    !suggestionsDismissed && search.trim().length >= MIN_QUERY_LENGTH;
   const { data: session } = useSession();
   const pathname = usePathname();
 
   useEffect(() => {
     if (session?.user?.banned) signOut({ callbackUrl: "/" });
   }, [session]);
-
-  // The city list is ~1600 entries with translated aliases, so matching happens
-  // on the server rather than shipping it all to every visitor.
-  useEffect(() => {
-    const query = search.trim();
-    if (query.length < MIN_QUERY_LENGTH) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      setIsSearching(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    setIsSearching(true);
-
-    const timer = setTimeout(async () => {
-      try {
-        const response = await fetch(
-          `/api/cities/search?q=${encodeURIComponent(query)}`,
-          { signal: controller.signal },
-        );
-        if (!response.ok) throw new Error("search failed");
-        setSuggestions(await response.json());
-        setShowSuggestions(true);
-      } catch (error) {
-        if ((error as Error).name === "AbortError") return;
-        setSuggestions([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, SEARCH_DEBOUNCE_MS);
-
-    return () => {
-      controller.abort();
-      clearTimeout(timer);
-    };
-  }, [search]);
 
   useEffect(() => {
     function handleOutside(event: MouseEvent) {
@@ -94,7 +65,7 @@ export default function Navbar() {
         searchRef.current &&
         !searchRef.current.contains(event.target as Node)
       )
-        setShowSuggestions(false);
+        setSuggestionsDismissed(true);
     }
     document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
@@ -105,23 +76,52 @@ export default function Navbar() {
     function handleEscape(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
       setProfileOpen(false);
-      setShowSuggestions(false);
+      setSuggestionsDismissed(true);
       setMenuOpen(false);
     }
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
   }, []);
 
-  useEffect(() => {
+  // Everything that floated over the old page closes with it. Compared during
+  // render rather than in an effect, so there is no frame of the new page with
+  // the old page's menu still open.
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
     setProfileOpen(false);
-    setShowSuggestions(false);
+    setSuggestionsDismissed(true);
     setMenuOpen(false);
-  }, [pathname]);
+  }
+
+  // Something else on the page (the map) asks for the city search. On a narrow
+  // screen it lives inside the menu, so that opens first.
+  useEffect(() => {
+    function focusSearch() {
+      const isNarrow = !window.matchMedia("(min-width: 768px)").matches;
+      if (isNarrow) setMenuOpen(true);
+      // The menu's field only exists once the menu has rendered.
+      setTimeout(
+        () => {
+          const inputs = document.querySelectorAll<HTMLInputElement>(
+            'header input[type="search"]',
+          );
+          Array.from(inputs)
+            .find((input) => input.offsetParent !== null)
+            ?.focus();
+        },
+        isNarrow ? 50 : 0,
+      );
+    }
+    window.addEventListener(CITY_SEARCH_FOCUS_EVENT, focusSearch);
+    return () =>
+      window.removeEventListener(CITY_SEARCH_FOCUS_EVENT, focusSearch);
+  }, []);
 
   const goToCity = (city: CitySuggestion) => {
     router.push(`/c/${city.slug}`);
     setSearch("");
-    setShowSuggestions(false);
+    setSuggestionsDismissed(true);
   };
 
   const handleSearch = (event: React.FormEvent) => {
@@ -132,7 +132,7 @@ export default function Navbar() {
 
   const profileHref = session?.user?.username
     ? `/u/${session.user.username}`
-    : "/choose-username";
+    : "/account";
 
   // The map is the home page. It used to be reachable only through the
   // wordmark, which reads as "go to the start" rather than as a destination.
@@ -185,8 +185,11 @@ export default function Navbar() {
         aria-label={t.searchPlaceholder}
         placeholder={t.searchPlaceholder}
         value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+        onChange={(event) => {
+          setSearch(event.target.value);
+          setSuggestionsDismissed(false);
+        }}
+        onFocus={() => setSuggestionsDismissed(false)}
         className={`w-full border border-border-strong bg-surface pr-4 pl-10 text-text transition-colors placeholder:text-text-subtle focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus ${
           mobile ? "rounded-control py-3" : "rounded-full py-2.5 text-sm"
         }`}
@@ -198,15 +201,26 @@ export default function Navbar() {
     <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-6 md:pt-4">
       <div className="glass glass-edge glass-shimmer mx-auto max-w-6xl rounded-[1.75rem] bg-surface shadow-popover">
         <nav
-          aria-label="Site navigasyonu"
+          aria-label={t.siteNavLabel}
           className="flex items-center justify-between gap-4 px-4 py-2.5 md:px-5 md:py-3"
         >
-          <Link
-            href="/"
-            className="font-display text-xl font-bold tracking-tight text-text transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-          >
-            Erasmus<span className="text-accent-text">Map</span>
-          </Link>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <Link
+              href="/"
+              className="font-display text-xl font-bold tracking-tight text-text transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              Erasmus<span className="text-accent-text">Map</span>
+            </Link>
+            {/* On a phone the header has no room for it; the menu carries the
+                sentence there. */}
+            <span
+              title={t.experimentNotice}
+              className="hidden cursor-help rounded-full border border-border-strong px-2 py-0.5 text-[0.65rem] font-medium tracking-wide text-text-subtle uppercase sm:inline-flex"
+            >
+              {t.experimentBadge}
+              <span className="sr-only">: {t.experimentNotice}</span>
+            </span>
+          </div>
 
           <div className="hidden shrink-0 items-center gap-1 md:flex">
             {navLinks.map(({ href, label }) => (
@@ -301,6 +315,17 @@ export default function Navbar() {
               )}
             </div>
 
+            {!session && (
+              <GlassLink
+                href="/login"
+                variant="primary"
+                size="sm"
+                className="md:hidden"
+              >
+                {t.login}
+              </GlassLink>
+            )}
+
             <GlassButton
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label={t.menu}
@@ -316,52 +341,108 @@ export default function Navbar() {
       </div>
 
       {menuOpen && (
-        <div className="glass glass-edge mx-auto mt-2 max-w-6xl space-y-4 rounded-panel bg-surface p-5 shadow-popover md:hidden">
+        <div className="glass glass-edge mx-auto mt-2 max-w-6xl space-y-3 rounded-panel bg-surface p-4 shadow-popover md:hidden">
+          {session && (
+            <Link
+              href={profileHref}
+              className={`${MOBILE_ROW} gap-3 rounded-card border border-border py-2`}
+            >
+              <UserAvatar
+                avatar={session.user?.avatar ?? null}
+                seed={session.user?.id ?? ""}
+                size={40}
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium text-text">
+                  {session.user?.username ?? session.user?.name ?? t.profile}
+                </span>
+                <span className="block text-xs text-text-subtle">
+                  {t.profile}
+                </span>
+              </span>
+              <ChevronRight
+                size={16}
+                aria-hidden="true"
+                className="shrink-0 text-text-subtle"
+              />
+            </Link>
+          )}
+
           <div className="relative">
             {searchField(true)}
             {showSuggestions && suggestionList}
           </div>
 
-          <div className="space-y-2">
-            {navLinks.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                aria-current={pathname === href ? "page" : undefined}
-                className={`glass glass-edge flex items-center gap-2.5 rounded-full border px-4 py-3 text-text ${
-                  pathname === href
-                    ? "border-primary bg-surface-raised"
-                    : "border-border-strong"
-                }`}
-              >
-                <Icon size={16} aria-hidden="true" />
-                {label}
-              </Link>
-            ))}
-          </div>
+          <ul className={MOBILE_GROUP}>
+            {navLinks.map(({ href, label, icon: Icon }) => {
+              const current = pathname === href;
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    aria-current={current ? "page" : undefined}
+                    className={`${MOBILE_ROW} gap-3 ${
+                      current
+                        ? "bg-surface-raised font-medium text-text"
+                        : "text-text-muted"
+                    }`}
+                  >
+                    <Icon
+                      size={18}
+                      aria-hidden="true"
+                      className={current ? "text-accent-text" : undefined}
+                    />
+                    <span className="flex-1">{label}</span>
+                    {current && (
+                      <span
+                        aria-hidden="true"
+                        className="h-1.5 w-1.5 rounded-full bg-primary"
+                      />
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
 
-          {!session ? (
-            <GlassLink href="/login" variant="primary" size="lg" fullWidth>
-              {t.login}
-            </GlassLink>
-          ) : (
-            <div className="space-y-2">
-              <Link
-                href={profileHref}
-                className="glass glass-edge flex items-center gap-2.5 rounded-full border border-border-strong px-4 py-3 text-text"
-              >
-                <User size={16} aria-hidden="true" />
-                {t.profile}
-              </Link>
-              <Link
-                href="/settings"
-                className="glass glass-edge flex items-center gap-2.5 rounded-full border border-border-strong px-4 py-3 text-text"
-              >
-                <Settings size={16} aria-hidden="true" />
-                {t.settings}
-              </Link>
-            </div>
+          {session && (
+            <ul className={MOBILE_GROUP}>
+              <li>
+                <Link
+                  href="/settings"
+                  className={`${MOBILE_ROW} gap-3 text-text-muted`}
+                >
+                  <Settings size={18} aria-hidden="true" />
+                  {t.settings}
+                </Link>
+              </li>
+              {session.user?.role === "ADMIN" && (
+                <li>
+                  <Link
+                    href="/admin"
+                    className={`${MOBILE_ROW} gap-3 text-accent-text`}
+                  >
+                    <Shield size={18} aria-hidden="true" />
+                    {t.adminPanel}
+                  </Link>
+                </li>
+              )}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className={`${MOBILE_ROW} w-full cursor-pointer gap-3 text-left text-danger-700 dark:text-danger-400`}
+                >
+                  <LogOut size={18} aria-hidden="true" />
+                  {t.logout}
+                </button>
+              </li>
+            </ul>
           )}
+
+          <p className="px-1 text-center text-xs leading-relaxed text-text-subtle">
+            {t.experimentNotice}
+          </p>
         </div>
       )}
     </header>

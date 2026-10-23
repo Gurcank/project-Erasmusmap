@@ -1,7 +1,7 @@
 /**
- * Date formatting shared by the review surfaces. Dates render in Turkish
- * regardless of the interface language, matching the rest of the app, which
- * calls `toLocaleDateString("tr-TR", …)` directly.
+ * Date formatting shared by the review surfaces. The locale comes from the
+ * interface language (see localeFor in lib/lang.ts); Turkish is the default for
+ * a caller that has none.
  */
 
 const DAY_MONTH_YEAR: Intl.DateTimeFormatOptions = {
@@ -10,22 +10,25 @@ const DAY_MONTH_YEAR: Intl.DateTimeFormatOptions = {
   year: "numeric",
 };
 
-function day(value: Date): string {
-  return new Date(value).toLocaleDateString("tr-TR", DAY_MONTH_YEAR);
+function day(value: Date, locale: string): string {
+  return new Date(value).toLocaleDateString(locale, DAY_MONTH_YEAR);
 }
 
 /**
- * A stay as "12 Eyl 2024 – 3 Şub 2025". With only one end known it degrades to
+ * A stay as "12 Sep 2024 – 3 Feb 2025". With only one end known it degrades to
  * an open range; with neither it returns null so the caller can skip the row.
  */
 export function formatStayRange(
   start: Date | null | undefined,
   end: Date | null | undefined,
+  locale = "tr-TR",
 ): string | null {
   if (start && end) {
-    return day(start) === day(end) ? day(start) : `${day(start)} – ${day(end)}`;
+    const from = day(start, locale);
+    const to = day(end, locale);
+    return from === to ? from : `${from} – ${to}`;
   }
-  if (start) return `${day(start)} –`;
-  if (end) return `– ${day(end)}`;
+  if (start) return `${day(start, locale)} –`;
+  if (end) return `– ${day(end, locale)}`;
   return null;
 }

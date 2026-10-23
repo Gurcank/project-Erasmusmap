@@ -5,6 +5,41 @@ export const es = {
   settings: "Ajustes",
   logout: "Cerrar sesión",
   menu: "Menú",
+  skipToContent: "Saltar al contenido",
+  siteNavLabel: "Navegación del sitio",
+  loadingPage: "Cargando…",
+  mapRegionLabel: "Mapa de Europa",
+  mapRegionHelp:
+    "Mapa interactivo de Europa. Desplázalo con las flechas y haz zoom con más y menos. Para ir directamente a una ciudad, usa el buscador de ciudades.",
+  mapSearchShortcut: "Buscar una ciudad",
+  loginDescription: "Inicia sesión en ErasmusMap con tu cuenta de Google.",
+  loginContinueGoogle: "Continuar con Google",
+  loginRedirecting: "Redirigiendo…",
+  loginSuspended: "Tu cuenta ha sido suspendida. No puedes iniciar sesión.",
+  loginNoAccountHint:
+    "Si no tienes cuenta, se crea automáticamente la primera vez que inicias sesión.",
+  errorTitle: "Algo salió mal",
+  errorDescription:
+    "Se ha producido un error inesperado. Volver a intentarlo puede solucionarlo.",
+  errorPageLoad:
+    "No se pudo cargar la página. Volver a intentarlo puede solucionarlo.",
+  errorRetry: "Volver a intentar",
+  notFoundTitle: "Página no encontrada",
+  notFoundDescription:
+    "La página que buscas puede haberse movido o no haber existido nunca.",
+  backToMap: "Volver al mapa",
+  siteTagline: "Europa contada por estudiantes Erasmus",
+  siteDescription:
+    "Una plataforma para que los estudiantes Erasmus descubran y valoren ciudades europeas.",
+  squareDescription:
+    "Las ciudades de las que más hablan los estudiantes Erasmus este mes y las reseñas destacadas.",
+  cityMetaDescription:
+    "Reseñas, puntuaciones y fotos de estudiantes Erasmus sobre {name}, {country}.",
+  profileMetaDescription: "{name} — perfil de ErasmusMap",
+  accountTitle: "Cuenta",
+  experimentBadge: "prueba",
+  experimentNotice:
+    "Este sitio es un proyecto de prueba hecho con fines de aprendizaje.",
   noResults: "No se han encontrado resultados",
   mapNav: "Mapa",
   square: "La Plaza",
@@ -130,15 +165,23 @@ export const es = {
   feedEmptyNoReviews: "Las personas que sigues aún no han reseñado nada.",
 
   settingsTitle: "Ajustes",
-  accountTitle: "Cuenta",
   accountDesc: "Tu foto, nombre, biografía y nombre de usuario",
   backToProfile: "Perfil",
-  backToMap: "Volver al mapa",
   termsTitle: "Términos de uso",
   privacyTitle: "Política de privacidad",
   termsLinkText: "Términos de uso",
   privacyLinkText: "Política de privacidad",
   loginLegalNotice: "Al iniciar sesión aceptas los {terms} y la {privacy}.",
+  cookieBannerLabel: "Preferencias de cookies",
+  cookieBannerText:
+    "Las cookies necesarias para mantener tu sesión se usan siempre. Opcionalmente, podemos recoger estadísticas de visitas anónimas (Vercel Analytics) y eventos de uso del mapa (Mapbox) para mejorar el sitio.",
+  cookieAccept: "Aceptar",
+  cookieReject: "Rechazar",
+  cookiePrefsTitle: "Tu elección de cookies y estadísticas",
+  cookieStatusGranted: "Aceptaste las estadísticas opcionales.",
+  cookieStatusDenied: "Rechazaste las estadísticas opcionales.",
+  cookieStatusUnset:
+    "Aún no has elegido; las estadísticas opcionales están desactivadas.",
   accountSection: "Cuenta",
   profileSection: "Perfil",
   blockedUsersSection: "Usuarios bloqueados",

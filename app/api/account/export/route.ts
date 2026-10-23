@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildAccountExport } from "@/lib/account-export";
 import { requireActiveUser } from "@/lib/auth-guards";
+import { logError } from "@/lib/logger";
 import { rateLimit } from "@/lib/rate-limit";
 
 // Builds a dozen queries and the whole file in memory, and is only ever wanted
@@ -39,7 +40,10 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("Account export failed", error);
+    logError("Account export failed", error, {
+      route: "/api/account/export",
+      routeType: "route",
+    });
     return NextResponse.json({ error: "Bir hata oluştu" }, { status: 500 });
   }
 }

@@ -6,6 +6,7 @@ import { useT } from "@/hooks/useT";
 import GlassButton from "@/components/ui/GlassButton";
 import AvatarPicker from "@/components/ui/AvatarPicker";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { MODAL_BACKDROP_CLASSES, useModalDialog } from "@/hooks/useModalDialog";
 import { resolveAvatarKey } from "@/lib/avatars";
 
 type Props = {
@@ -33,30 +34,18 @@ export default function AvatarModal({
   const t = useT();
   const closeRef = useRef<HTMLButtonElement>(null);
 
+  const dialogRef = useModalDialog(onClose);
+
   useEffect(() => {
     closeRef.current?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKeyDown);
-
-    const { overflow } = document.body.style;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = overflow;
-    };
-  }, [onClose]);
+  }, []);
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={dialogRef}
       aria-label={label}
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/70 p-6 backdrop-blur-sm"
+      className={MODAL_BACKDROP_CLASSES}
     >
       <div
         onClick={(event) => event.stopPropagation()}
@@ -79,6 +68,6 @@ export default function AvatarModal({
           {isOwn && <AvatarPicker current={resolveAvatarKey(avatar, seed)} />}
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

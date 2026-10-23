@@ -16,9 +16,11 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
-import { tr } from "date-fns/locale";
+import { dateFnsLocale } from "@/lib/date-locale";
+import type { Lang } from "@/lib/i18n";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useT } from "@/hooks/useT";
+import { useLang } from "@/hooks/useLang";
 import GlassButton from "@/components/ui/GlassButton";
 import {
   formatStayDate,
@@ -48,14 +50,15 @@ const WEEK_OPTIONS = { weekStartsOn: 1 } as const;
 // Weekday initials for the grid header. Two letters, not one: the Turkish
 // single letters collide — Pazartesi and Perşembe are both P, Cuma and
 // Cumartesi both C.
-const WEEKDAYS = (() => {
+function weekdayLabels(lang: Lang): string[] {
   const first = startOfWeek(new Date(), WEEK_OPTIONS);
   return Array.from({ length: 7 }, (_, index) =>
-    format(addDays(first, index), "EEEEEE", { locale: tr }),
+    format(addDays(first, index), "EEEEEE", { locale: dateFnsLocale(lang) }),
   );
-})();
+}
 
-const formatDay = (date: Date, mask: string) => formatStayDate(date, mask);
+const formatDay = (date: Date, mask: string, lang: Lang) =>
+  formatStayDate(date, mask, lang);
 
 const inputClass = "field mt-1 w-full px-2.5 py-1.5 text-sm";
 
@@ -63,17 +66,17 @@ const inputClass = "field mt-1 w-full px-2.5 py-1.5 text-sm";
  * A range on one line, collapsing whatever the two ends share: a stay inside
  * one month reads "5 – 20 Eyl 2025" rather than repeating the month and year.
  */
-function formatDateRange(start: Date, end: Date): string {
-  if (isSameDay(start, end)) return formatDay(start, READABLE_MASK);
+function formatDateRange(start: Date, end: Date, lang: Lang): string {
+  if (isSameDay(start, end)) return formatDay(start, READABLE_MASK, lang);
 
   const sameYear = start.getFullYear() === end.getFullYear();
   if (sameYear && start.getMonth() === end.getMonth()) {
-    return `${formatDay(start, "d")} – ${formatDay(end, READABLE_MASK)}`;
+    return `${formatDay(start, "d", lang)} – ${formatDay(end, READABLE_MASK, lang)}`;
   }
   if (sameYear) {
-    return `${formatDay(start, "d MMM")} – ${formatDay(end, READABLE_MASK)}`;
+    return `${formatDay(start, "d MMM", lang)} – ${formatDay(end, READABLE_MASK, lang)}`;
   }
-  return `${formatDay(start, READABLE_MASK)} – ${formatDay(end, READABLE_MASK)}`;
+  return `${formatDay(start, READABLE_MASK, lang)} – ${formatDay(end, READABLE_MASK, lang)}`;
 }
 
 /**
@@ -95,11 +98,12 @@ function RangeFields({
   className: string;
 }) {
   const t = useT();
+  const lang = useLang();
   const [startText, setStartText] = useState(() =>
-    start ? formatDay(start, INPUT_MASK) : "",
+    start ? formatDay(start, INPUT_MASK, lang) : "",
   );
   const [endText, setEndText] = useState(() =>
-    end ? formatDay(end, INPUT_MASK) : "",
+    end ? formatDay(end, INPUT_MASK, lang) : "",
   );
   const [errors, setErrors] = useState<FieldErrors>({
     start: false,
@@ -146,7 +150,7 @@ function RangeFields({
                   apply();
                 }
               }}
-              placeholder={stayDatePlaceholder()}
+              placeholder={stayDatePlaceholder(lang)}
               aria-invalid={hasError}
               className={`${inputClass} ${hasError ? "border-danger-600" : ""}`}
             />
@@ -184,6 +188,7 @@ export default function Calendar({
   maxValue,
 }: Props) {
   const t = useT();
+  const lang = useLang();
   const [currentDate, setCurrentDate] = useState<Date>(
     () => value?.start ?? new Date(),
   );
@@ -223,7 +228,7 @@ export default function Calendar({
 
   const commitTyped = (startText: string, endText: string): FieldErrors => {
     const read = (text: string) =>
-      parseStayDate(text, { min: minValue, max: maxValue });
+      parseStayDate(text, { min: minValue, max: maxValue }, lang);
 
     const start = read(startText);
     const end = read(endText);
@@ -241,9 +246,9 @@ export default function Calendar({
 
   const summary =
     value?.start && value?.end
-      ? formatDateRange(value.start, value.end)
+      ? formatDateRange(value.start, value.end, lang)
       : value?.start
-        ? formatDay(value.start, READABLE_MASK)
+        ? formatDay(value.start, READABLE_MASK, lang)
         : t.pickDates;
 
   return (
@@ -269,7 +274,7 @@ export default function Calendar({
       <div>
         <div className="mb-3 flex items-center justify-between gap-4">
           <h2 className="text-sm font-medium text-text">
-            {formatDay(currentDate, "MMMM yyyy")}
+            {formatDay(currentDate, "MMMM yyyy", lang)}
           </h2>
           <div className="flex gap-0.5">
             <GlassButton
@@ -292,7 +297,7 @@ export default function Calendar({
         </div>
 
         <div className="mb-2 grid grid-cols-7 text-center text-xs text-text-subtle">
-          {WEEKDAYS.map((label) => (
+          {weekdayLabels(lang).map((label) => (
             <div key={label}>{label}</div>
           ))}
         </div>
@@ -340,7 +345,7 @@ export default function Calendar({
                     if (value?.start && !value.end) setHoverDate(day);
                   }}
                   onClick={() => handleDayClick(day)}
-                  aria-label={formatDay(day, READABLE_MASK)}
+                  aria-label={formatDay(day, READABLE_MASK, lang)}
                   aria-pressed={isStart || isEnd}
                   className={`flex h-8 w-8 items-center justify-center rounded-control text-sm tabular-nums transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus ${
                     isEdge
@@ -356,7 +361,7 @@ export default function Calendar({
                     isToday(day) && !isEdge ? "ring-1 ring-border-strong" : ""
                   }`}
                 >
-                  {formatDay(day, "d")}
+                  {formatDay(day, "d", lang)}
                 </button>
               </div>
             );

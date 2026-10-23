@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CalendarDays } from "lucide-react";
 import { useT } from "@/hooks/useT";
+import { useLang } from "@/hooks/useLang";
 import {
   EARLIEST_STAY,
   formatStayDate,
@@ -40,6 +41,7 @@ const FIELD_CLASS = "field w-full px-2.5 py-1.5 text-sm";
  */
 export default function StayDateFields({ start, end }: Props) {
   const t = useT();
+  const lang = useLang();
   const bounds = { min: EARLIEST_STAY, max: new Date() };
 
   const asText = (date: Date | null | undefined) => {
@@ -50,8 +52,8 @@ export default function StayDateFields({ start, end }: Props) {
   const [startText, setStartText] = useState(() => asText(start));
   const [endText, setEndText] = useState(() => asText(end));
 
-  const parsedStart = parseStayDate(startText, bounds);
-  const parsedEnd = parseStayDate(endText, bounds);
+  const parsedStart = parseStayDate(startText, bounds, lang);
+  const parsedEnd = parseStayDate(endText, bounds, lang);
   const invalid = parsedStart === "invalid" || parsedEnd === "invalid";
   // Only flag the ordering once both ends actually parse.
   const backwards =
@@ -100,7 +102,7 @@ export default function StayDateFields({ start, end }: Props) {
               id={`stay-${name}`}
               value={text}
               onChange={(event) => setText(event.target.value)}
-              placeholder={stayDatePlaceholder()}
+              placeholder={stayDatePlaceholder(lang)}
               inputMode="numeric"
               aria-invalid={hasError}
               className={`mt-1 ${FIELD_CLASS} ${hasError ? "border-danger-600" : ""}`}

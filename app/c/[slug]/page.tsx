@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
 import CityContent from "@/components/ui/CityContent";
-import { averageRating } from "@/lib/review";
-import type { CategoryRatings } from "@/types";
 import { deleteReview } from "@/lib/actions";
 import {
   addReviewComment,
@@ -23,12 +20,21 @@ import {
 } from "@/lib/city-actions";
 import { requireActiveUser } from "@/lib/auth-guards";
 import { getHiddenUserIds } from "@/lib/social";
+import { buildCommentTree, getLikedCommentIds } from "@/lib/review-shape";
+import { cacheCityPhotos } from "@/lib/city-photo";
+import { getRequestLang } from "@/lib/lang-server";
+import { getTranslations } from "@/lib/i18n";
+import { fillText } from "@/lib/page-meta";
+import { canonicalFor, socialMetadata } from "@/lib/seo";
 import {
-  buildCommentTree,
-  COMMENT_QUERY,
-  getLikedCommentIds,
-} from "@/lib/review-shape";
-import { fetchCityPhoto } from "@/lib/unsplash";
+  getAuthorStays,
+  getCityBySlug,
+  getCityMeta,
+  getCityRatingSummary,
+  getCityReviews,
+  getLikedReviewIds,
+  getViewerCityState,
+} from "@/lib/queries/city";
 
 // Reviews are loaded a page at a time; `?reviews=N` asks for the first N pages.
 const REVIEWS_PAGE_SIZE = 10;
@@ -40,21 +46,27 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const city = await prisma.city.findUnique({
-    where: { slug },
-    select: { name: true, country: true },
-  });
-  // Runs before the loading.tsx shell is streamed, so this is the last
-  // point where a real 404 status can still be set.
+  const city = await getCityMeta(slug);
+  // A real 404 status, which is why this route has no loading.tsx: a loading
+  // shell starts the response before the page can say the city does not exist.
   if (!city) notFound();
 
   const name = city.name;
-  const description = `${name}, ${city.country} için Erasmus öğrenci değerlendirmeleri, puanları ve fotoğrafları.`;
+  const lang = await getRequestLang();
+  const description = fillText(getTranslations(lang).cityMetaDescription, {
+    name,
+    country: city.country,
+  });
   return {
     title: name,
     description,
-    openGraph: { title: name, description },
-    twitter: { title: name, description },
+    ...canonicalFor(`/c/${slug}`),
+    ...socialMetadata({
+      lang,
+      title: name,
+      description,
+      path: `/c/${slug}`,
+    }),
   };
 }
 
@@ -73,7 +85,7 @@ export default async function CityPage({
   );
 
   const [city, viewer] = await Promise.all([
-    prisma.city.findUnique({ where: { slug } }),
+    getCityBySlug(slug),
     requireActiveUser(),
   ]);
 
@@ -86,57 +98,26 @@ export default async function CityPage({
   const hiddenList = [...hiddenUserIds];
 
   // One row more than shown, to know whether another page exists.
-  const fetchedReviews = await prisma.review.findMany({
-    where: {
-      cityId: city.id,
-      ...(hiddenList.length
-        ? { OR: [{ userId: null }, { userId: { notIn: hiddenList } }] }
-        : {}),
-    },
-    include: {
-      user: {
-        select: { id: true, name: true, avatar: true, username: true },
-      },
-      comments: COMMENT_QUERY,
-      _count: { select: { likes: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: pages * REVIEWS_PAGE_SIZE + 1,
-  });
+  const fetchedReviews = await getCityReviews(
+    city.id,
+    hiddenList,
+    pages * REVIEWS_PAGE_SIZE + 1,
+  );
   const hasMoreReviews = fetchedReviews.length > pages * REVIEWS_PAGE_SIZE;
   const visibleReviews = fetchedReviews.slice(0, pages * REVIEWS_PAGE_SIZE);
 
-  const identity = viewer.ok
-    ? { userId_cityId: { userId: viewer.user.id, cityId: city.id } }
-    : null;
-
-  const [visit, wishlistItem] = identity
-    ? await Promise.all([
-        prisma.visit.findUnique({
-          where: identity,
-          select: { startDate: true, endDate: true },
-        }),
-        prisma.wishlistItem.findUnique({
-          where: identity,
-          select: { id: true },
-        }),
-      ])
-    : [null, null];
+  const { visit, isWishlisted } = viewer.ok
+    ? await getViewerCityState(viewer.user.id, city.id)
+    : { visit: null, isWishlisted: false };
   const isAdmin = viewer.ok && viewer.user.role === "ADMIN";
   const submitReview = submitCityReview.bind(null, city.id);
 
   // One query for the viewer's likes across every review on the page, rather
   // than one per card.
-  const viewerLikes = viewer.ok
-    ? await prisma.reviewLike.findMany({
-        where: {
-          userId: viewer.user.id,
-          reviewId: { in: visibleReviews.map((review) => review.id) },
-        },
-        select: { reviewId: true },
-      })
-    : [];
-  const likedReviewIds = new Set(viewerLikes.map((like) => like.reviewId));
+  const likedReviewIds = await getLikedReviewIds(
+    viewer.ok ? viewer.user.id : null,
+    visibleReviews.map((review) => review.id),
+  );
   const likedCommentIds = await getLikedCommentIds(
     visibleReviews.flatMap((review) => review.comments.map((c) => c.id)),
     viewer.ok ? viewer.user.id : null,
@@ -151,23 +132,7 @@ export default async function CityPage({
         .filter((id): id is string => Boolean(id)),
     ),
   ];
-  const authorVisits = authorIds.length
-    ? await prisma.visit.findMany({
-        where: { cityId: city.id, userId: { in: authorIds } },
-        select: { userId: true, startDate: true, endDate: true },
-      })
-    : [];
-  // Keyed by a plain object, not a Map — `Map` is the map component here.
-  const stayByUser: Record<
-    string,
-    { startDate: Date | null; endDate: Date | null }
-  > = {};
-  for (const visit of authorVisits) {
-    stayByUser[visit.userId] = {
-      startDate: visit.startDate,
-      endDate: visit.endDate,
-    };
-  }
+  const stayByUser = await getAuthorStays(city.id, authorIds);
 
   const reviews: EngagedReview[] = visibleReviews.map((review) => {
     const stay = review.user?.id ? stayByUser[review.user.id] : undefined;
@@ -194,45 +159,17 @@ export default async function CityPage({
     };
   });
 
-  // The photo is cached on the City row so the trending lists and profile
-  // favourites have one without a per-request Unsplash call. Fetching it is
-  // deferred until the response has been sent, so the first visitor to a city
-  // does not wait on Unsplash; the photo shows from the next view on.
+  // Fetching the photo is deferred until the response has been sent; see
+  // cacheCityPhotos.
   const cityImage = city.imageUrl;
   if (!cityImage) {
     const { id, name } = city;
-    after(async () => {
-      const photo = await fetchCityPhoto(name);
-      if (photo) {
-        await prisma.city.update({ where: { id }, data: { imageUrl: photo } });
-      }
-    });
+    after(() => cacheCityPhotos([{ id, name }]));
   }
 
-  const ratingData = await prisma.review.aggregate({
-    where: { cityId: city.id },
-    _avg: {
-      culture: true,
-      gastronomy: true,
-      safety: true,
-      socialLife: true,
-      transport: true,
-      costOfLiving: true,
-    },
-    _count: { id: true },
-  });
-
-  const reviewCount = ratingData._count.id ?? 0;
-  const avg = ratingData._avg;
-  const ratings: CategoryRatings = {
-    culture: avg.culture ?? 0,
-    gastronomy: avg.gastronomy ?? 0,
-    safety: avg.safety ?? 0,
-    socialLife: avg.socialLife ?? 0,
-    transport: avg.transport ?? 0,
-    costOfLiving: avg.costOfLiving ?? 0,
-  };
-  const avgScore = reviewCount > 0 ? (averageRating(ratings) ?? 0) : 0;
+  const { reviewCount, ratings, avgScore } = await getCityRatingSummary(
+    city.id,
+  );
 
   return (
     <div className="min-h-screen pt-16">
@@ -241,7 +178,7 @@ export default async function CityPage({
         cityName={city.name}
         cityImage={cityImage}
         isVisited={visit !== null}
-        isWishlisted={wishlistItem !== null}
+        isWishlisted={isWishlisted}
         visitStartDate={visit?.startDate ?? null}
         visitEndDate={visit?.endDate ?? null}
         toggleVisit={toggleVisit}

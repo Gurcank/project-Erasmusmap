@@ -20,7 +20,6 @@ export default function LoginClient({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [error, setError] = useState("");
   // Google answers with a full-page redirect, which can take a moment on a slow
   // connection; without this the button looks like it did nothing.
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -29,25 +28,21 @@ export default function LoginClient({
     if (status === "authenticated") router.replace("/");
   }, [status, router]);
 
-  useEffect(() => {
-    if (searchParams.get("error") === "AccessDenied") {
-      setError("Hesabınız askıya alınmış. Giriş yapamazsınız.");
-    }
-  }, [searchParams]);
+  const error =
+    searchParams.get("error") === "AccessDenied" ? t.loginSuspended : "";
 
-  if (status === "loading") return null;
+  // The shell stays up while the session is checked, with the button held, so
+  // the page does not flash blank and then jump.
+  const isBusy = isRedirecting || status === "loading";
 
   return (
-    <AuthShell
-      title="Giriş Yap"
-      description="ErasmusMap'e Google hesabınla giriş yap."
-    >
+    <AuthShell title={t.login} description={t.loginDescription}>
       <GlassButton
         onClick={() => {
           setIsRedirecting(true);
           signIn("google", { callbackUrl: "/" });
         }}
-        disabled={isRedirecting}
+        disabled={isBusy}
         variant="contrast"
         size="lg"
         fullWidth
@@ -59,7 +54,7 @@ export default function LoginClient({
             className="animate-spin motion-reduce:animate-none"
           />
         )}
-        {isRedirecting ? "Yönlendiriliyor…" : "Google ile devam et"}
+        {isRedirecting ? t.loginRedirecting : t.loginContinueGoogle}
       </GlassButton>
 
       {error && (
@@ -69,7 +64,7 @@ export default function LoginClient({
       )}
 
       <p className="mt-6 text-center text-xs leading-relaxed text-ink-300">
-        Hesabın yoksa ilk girişinde otomatik olarak oluşturulur.
+        {t.loginNoAccountHint}
       </p>
 
       {showLegalNotice && (
@@ -89,6 +84,10 @@ export default function LoginClient({
           )}
         </p>
       )}
+
+      <p className="mt-3 text-center text-xs leading-relaxed text-ink-300">
+        {t.experimentNotice}
+      </p>
     </AuthShell>
   );
 }

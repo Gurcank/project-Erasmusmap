@@ -58,11 +58,11 @@ const tr = ({
         "Verilerini şu hizmet sağlayıcılar aracılığıyla işleriz. Hepsi, bizim adımıza veya kendi hizmetleri kapsamında, yalnızca ilgili işi yapmak için veri alır:",
       ],
       items: [
-        "Vercel Inc. (ABD): siteyi barındırır; sunucu tarafı kodu şu anda Vercel'in ABD Doğu (Washington D.C.) bölgesinde çalışır. Çerez kullanmayan, toplu ziyaret istatistikleri için Vercel Analytics'i kullanırız.",
+        "Vercel Inc. (ABD): siteyi barındırır; sunucu tarafı kodu şu anda Vercel'in ABD Doğu (Washington D.C.) bölgesinde çalışır. İsteğe bağlı istatistik tercihini kabul edersen, çerez kullanmayan, toplu ziyaret istatistikleri için Vercel Analytics'i yükleriz.",
         "Supabase (veritabanı): hesabın ve içeriklerin Dublin'de (İrlanda, AB) bulunan bir PostgreSQL veritabanında saklanır.",
         "Google (ABD): giriş için kimlik doğrular. Google, ErasmusMap'e giriş yaptığını bilir.",
         `Upstash (hız sınırı): kısa süreli sayaçlar tutar; veritabanı bölgesi: ${upstashRegion}. Sayaç anahtarlarında kullanıcı kimliğin veya (giriş yapmamışsan) IP adresin bulunabilir.`,
-        "Mapbox (ABD): harita ve uydu görüntülerini sunar. Haritayı gösterirken tarayıcın doğrudan Mapbox'a bağlanır; IP adresin ve cihaz bilgin Mapbox'a ulaşır ve Mapbox kullanım istatistikleri toplayabilir.",
+        "Mapbox (ABD): harita ve uydu görüntülerini sunar. Haritayı göstermek için tarayıcın harita karolarını ve stil dosyalarını doğrudan Mapbox'tan alır; bu yüzden IP adresin ve cihaz bilgin Mapbox'a ulaşır. Mapbox'ın harita kullanım olayları (haritanın yüklendiğini bildiren istekler) yalnızca isteğe bağlı istatistikleri kabul edersen gönderilir; performans ölçümlerini hiçbir durumda göndermeyiz.",
         "Unsplash (ABD): şehir fotoğraflarını sunar. Fotoğrafları tarayıcın doğrudan Unsplash'ten yükler; IP adresin Unsplash'e ulaşır.",
       ],
       after: [
@@ -82,8 +82,10 @@ const tr = ({
       heading: "7. Çerezler ve yerel depolama",
       items: [
         "Zorunlu çerezler: giriş yaptığında oturumunu tanıyan ve yetkisiz isteklere karşı koruyan next-auth çerezleri (oturum, CSRF ve yönlendirme). Oturum çerezi varsayılan olarak 30 gün geçerlidir. Bunlar olmadan giriş çalışmaz.",
-        "Tarayıcının yerel depolaması: seçtiğin tema ve arayüz dili; yalnızca senin cihazında kalır.",
-        "Vercel Analytics çerez kullanmaz ve seni takip etmez; yalnızca toplu sayımlar tutar.",
+        "Tercih çerezi (consent): isteğe bağlı istatistik tercihini 6 ay boyunca hatırlar ve yalnızca bu tercihi içerir.",
+        "Dil çerezi (lang): arayüz dilini seçtiğinde bir yıl boyunca hatırlar ve yalnızca dil kodunu içerir. Sayfanın doğru dille açılabilmesi için sunucu bunu okur. Dil seçmezsen yazılmaz; o zaman tarayıcının dili kullanılır.",
+        "Tarayıcının yerel depolaması: seçtiğin tema; yalnızca senin cihazında kalır.",
+        "İsteğe bağlı istatistikler: yalnızca kabul edersen Vercel Analytics yüklenir (çerez kullanmaz, seni takip etmez, yalnızca toplu sayımlar tutar) ve Mapbox harita kullanım olayları gönderilir. Reddedersen ikisi de çalışmaz. Tercihini bu sayfanın altındaki bölümden istediğin zaman değiştirebilirsin.",
       ],
     },
     {
@@ -165,11 +167,11 @@ const en = ({
         "We process your data through the following providers. Each receives data only to do its job, on our behalf or as part of its own service:",
       ],
       items: [
-        "Vercel Inc. (USA): hosts the site; the server-side code currently runs in Vercel's US East (Washington D.C.) region. We use Vercel Analytics for aggregate visit statistics; it uses no cookies.",
+        "Vercel Inc. (USA): hosts the site; the server-side code currently runs in Vercel's US East (Washington D.C.) region. If you accept the optional statistics choice, we load Vercel Analytics for aggregate visit statistics; it uses no cookies.",
         "Supabase (database): your account and content are stored in a PostgreSQL database in Dublin (Ireland, EU).",
         "Google (USA): verifies your identity when you sign in. Google knows you signed in to ErasmusMap.",
         `Upstash (rate limiting): keeps short-lived counters; database region: ${upstashRegion}. Counter keys can contain your user id or, if you are not signed in, your IP address.`,
-        "Mapbox (USA): serves the map and satellite imagery. When the map is shown, your browser connects to Mapbox directly; your IP address and device information reach Mapbox, which may collect usage statistics.",
+        "Mapbox (USA): serves the map and satellite imagery. To show the map, your browser fetches map tiles and styles directly from Mapbox, so your IP address and device information reach Mapbox. Mapbox's map usage events (the requests that report a map was loaded) are sent only if you accept the optional statistics; we never send its performance measurements.",
         "Unsplash (USA): serves city photos. Your browser loads them directly from Unsplash, so your IP address reaches Unsplash.",
       ],
       after: [
@@ -189,8 +191,10 @@ const en = ({
       heading: "7. Cookies and local storage",
       items: [
         "Essential cookies: the next-auth cookies that recognise your session when you are signed in and protect against forged requests (session, CSRF and redirect). The session cookie is valid for 30 days by default. Signing in does not work without them.",
-        "Your browser's local storage: the theme and interface language you chose; it stays on your device only.",
-        "Vercel Analytics uses no cookies and does not track you; it only keeps aggregate counts.",
+        "Choice cookie (consent): remembers your optional statistics choice for 6 months and holds nothing but that choice.",
+        "Language cookie (lang): remembers the interface language you pick for one year and holds nothing but the language code. The server reads it so the page opens in the right language. It is not written unless you pick a language; until then your browser's language is used.",
+        "Your browser's local storage: the theme you chose; it stays on your device only.",
+        "Optional statistics: only if you accept, Vercel Analytics is loaded (it uses no cookies, does not track you and only keeps aggregate counts) and Mapbox's map usage events are sent. If you refuse, neither runs. You can change your choice at any time in the section at the bottom of this page.",
       ],
     },
     {

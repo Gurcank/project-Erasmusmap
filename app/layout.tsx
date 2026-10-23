@@ -1,13 +1,25 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import Script from "next/script";
 import { Bricolage_Grotesque, Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import CookieBanner from "@/components/ui/CookieBanner";
 import GlobeBackground from "@/components/ui/GlobeBackground";
 import Providers from "./providers";
+import LangProvider from "@/components/LangProvider";
+import { getRequestLang } from "@/lib/lang-server";
+import { socialMetadata } from "@/lib/seo";
+import { getTranslations } from "@/lib/i18n";
 import { Analytics } from "@vercel/analytics/next";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import {
+  CONSENT_COOKIE,
+  analyticsAllowed,
+  needsConsentDecision,
+  parseConsent,
+} from "@/lib/consent";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { legalPagesAvailable } from "@/lib/legal/config";
 
 // Body face: neutral, high legibility at small sizes via its optical-size axis.
 const inter = Inter({
@@ -33,30 +45,26 @@ const bricolage = Bricolage_Grotesque({
 // raw inline <script> the way it does for one rendered as an element.
 const THEME_INIT_SCRIPT = `(function(){var c="system";try{var s=localStorage.getItem("theme");if(s==="light"||s==="dark")c=s}catch(e){}var d=c==="dark"||(c==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light"})()`;
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: `${SITE_NAME} — Avrupa'yı Erasmus öğrencilerinden dinle`,
-    template: `%s · ${SITE_NAME}`,
-  },
-  description: SITE_DESCRIPTION,
-  appleWebApp: {
-    title: SITE_NAME,
-  },
-  openGraph: {
-    title: SITE_NAME,
-    description: SITE_DESCRIPTION,
-    url: SITE_URL,
-    siteName: SITE_NAME,
-    locale: "tr_TR",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: SITE_NAME,
-    description: SITE_DESCRIPTION,
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getRequestLang();
+  const t = getTranslations(lang);
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: `${SITE_NAME} — ${t.siteTagline}`,
+      template: `%s · ${SITE_NAME}`,
+    },
+    description: t.siteDescription,
+    appleWebApp: {
+      title: SITE_NAME,
+    },
+    ...socialMetadata({
+      lang,
+      title: SITE_NAME,
+      description: t.siteDescription,
+    }),
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -69,9 +77,15 @@ export default async function RootLayout({
   // time that no later response header matches.
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
+  // Optional statistics are left out of the page itself until the visitor says
+  // yes; the script is not included and then switched off.
+  const consent = parseConsent((await cookies()).get(CONSENT_COOKIE)?.value);
+
+  const lang = await getRequestLang();
+
   return (
     <html
-      lang="tr"
+      lang={lang}
       className={`${inter.variable} ${bricolage.variable}`}
       suppressHydrationWarning
     >
@@ -79,11 +93,28 @@ export default async function RootLayout({
         <Script id="theme-init" strategy="beforeInteractive" nonce={nonce}>
           {THEME_INIT_SCRIPT}
         </Script>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-control focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-text focus:shadow-popover focus:outline-2 focus:outline-offset-2 focus:outline-focus"
+        >
+          {getTranslations(lang).skipToContent}
+        </a>
         <GlobeBackground />
         <Providers>
-          <Navbar />
-          <main className="min-h-screen">{children}</main>
-          <Analytics />
+          <LangProvider lang={lang}>
+            <Navbar />
+            <main
+              id="main-content"
+              tabIndex={-1}
+              className="min-h-screen focus:outline-none"
+            >
+              {children}
+            </main>
+            {analyticsAllowed(consent) && <Analytics />}
+            {needsConsentDecision(consent) && (
+              <CookieBanner policyLink={legalPagesAvailable()} />
+            )}
+          </LangProvider>
         </Providers>
       </body>
     </html>

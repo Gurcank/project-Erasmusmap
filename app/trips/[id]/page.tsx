@@ -4,10 +4,10 @@ import { notFound } from "next/navigation";
 import { after } from "next/server";
 import TripPlanner from "@/components/trips/TripPlanner";
 import { requireActiveUser } from "@/lib/auth-guards";
-import { prisma } from "@/lib/prisma";
+import { cacheCityPhotos } from "@/lib/city-photo";
 import { getHiddenUserIds } from "@/lib/social";
 import { getTripForViewer } from "@/lib/trips";
-import { fetchCityPhoto } from "@/lib/unsplash";
+import { canonicalFor } from "@/lib/seo";
 import {
   addTripCity,
   addTripTodo,
@@ -45,6 +45,7 @@ export async function generateMetadata({
   return {
     title: trip.title,
     description: trip.description ?? undefined,
+    ...canonicalFor(`/trips/${id}`),
     // Only a public plan is meant to be found; a private one is the owner's.
     robots:
       trip.visibility === "PUBLIC"
@@ -71,17 +72,7 @@ export default async function TripPage({
     .filter((entry) => !entry.city.imageUrl)
     .map((entry) => entry.city);
   if (missing.length > 0) {
-    after(async () => {
-      for (const city of missing) {
-        const photo = await fetchCityPhoto(city.name);
-        if (photo) {
-          await prisma.city.update({
-            where: { id: city.id },
-            data: { imageUrl: photo },
-          });
-        }
-      }
-    });
+    after(() => cacheCityPhotos(missing));
   }
 
   return (

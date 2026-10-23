@@ -6,6 +6,39 @@ export const tr = {
   settings: "Ayarlar",
   logout: "Çıkış Yap",
   menu: "Menü",
+  skipToContent: "İçeriğe geç",
+  siteNavLabel: "Site gezintisi",
+  loadingPage: "Yükleniyor…",
+  mapRegionLabel: "Avrupa haritası",
+  mapRegionHelp:
+    "Etkileşimli Avrupa haritası. Ok tuşlarıyla kaydırabilir, + ve - tuşlarıyla yakınlaştırabilirsin. Doğrudan bir şehre gitmek için şehir aramasını kullan.",
+  mapSearchShortcut: "Şehir ara",
+  loginDescription: "ErasmusMap'e Google hesabınla giriş yap.",
+  loginContinueGoogle: "Google ile devam et",
+  loginRedirecting: "Yönlendiriliyor…",
+  loginSuspended: "Hesabınız askıya alınmış. Giriş yapamazsınız.",
+  loginNoAccountHint:
+    "Hesabın yoksa ilk girişinde otomatik olarak oluşturulur.",
+  errorTitle: "Bir şeyler ters gitti",
+  errorDescription:
+    "Beklenmeyen bir hata oluştu. Tekrar denemek sorunu çözebilir.",
+  errorPageLoad: "Sayfa yüklenemedi. Tekrar denemek sorunu çözebilir.",
+  errorRetry: "Tekrar dene",
+  notFoundTitle: "Sayfa bulunamadı",
+  notFoundDescription:
+    "Aradığın sayfa taşınmış ya da hiç var olmamış olabilir.",
+  backToMap: "Haritaya dön",
+  siteTagline: "Avrupa'yı Erasmus öğrencilerinden dinle",
+  siteDescription:
+    "Erasmus öğrencileri için Avrupa şehirlerini keşfetme ve değerlendirme platformu.",
+  squareDescription:
+    "Erasmus öğrencilerinin bu ay en çok konuştuğu şehirler ve öne çıkan yorumlar.",
+  cityMetaDescription:
+    "{name}, {country} için Erasmus öğrenci değerlendirmeleri, puanları ve fotoğrafları.",
+  profileMetaDescription: "{name} — ErasmusMap profili",
+  accountTitle: "Hesap",
+  experimentBadge: "deneme",
+  experimentNotice: "Bu site öğrenme amaçlı yapılmış bir deneme projesidir.",
   noResults: "Sonuç bulunamadı",
   mapNav: "Harita",
   square: "Meydan",
@@ -133,15 +166,23 @@ export const tr = {
 
   // Settings
   settingsTitle: "Ayarlar",
-  accountTitle: "Hesap",
   accountDesc: "Fotoğraf, ad, bio ve kullanıcı adın",
   backToProfile: "Profil",
-  backToMap: "Haritaya dön",
   termsTitle: "Kullanım Şartları",
   privacyTitle: "Gizlilik Politikası",
   termsLinkText: "Kullanım Şartları'nı",
   privacyLinkText: "Gizlilik Politikası'nı",
   loginLegalNotice: "Giriş yaparak {terms} ve {privacy} kabul etmiş olursun.",
+  cookieBannerLabel: "Çerez tercihleri",
+  cookieBannerText:
+    "Oturum için zorunlu çerezler her zaman kullanılır. İsteğe bağlı olarak, siteyi iyileştirmek için anonim ziyaret istatistikleri (Vercel Analytics) ve harita kullanım olayları (Mapbox) toplayabiliriz.",
+  cookieAccept: "Kabul et",
+  cookieReject: "Reddet",
+  cookiePrefsTitle: "Çerez ve istatistik tercihin",
+  cookieStatusGranted: "İsteğe bağlı istatistikleri kabul ettin.",
+  cookieStatusDenied: "İsteğe bağlı istatistikleri reddettin.",
+  cookieStatusUnset:
+    "Henüz bir tercih yapmadın; isteğe bağlı istatistikler kapalı.",
   accountSection: "Hesap",
   profileSection: "Profil",
   blockedUsersSection: "Engellenen Kullanıcılar",

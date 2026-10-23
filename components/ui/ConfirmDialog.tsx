@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { TriangleAlert } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import GlassButton from "@/components/ui/GlassButton";
+import { MODAL_BACKDROP_CLASSES, useModalDialog } from "@/hooks/useModalDialog";
 
 type Props = {
   /** The question, already phrased for the action being confirmed. */
@@ -20,9 +21,9 @@ type Props = {
  * interface is not in the browser's, and gives every action the same "OK".
  *
  * Focus opens on Cancel: the dialog only appears in front of actions that
- * cannot be undone, so the safe answer is the one under the return key. Follows
- * AvatarModal for the rest of the modal behaviour, including its lack of a
- * focus trap.
+ * cannot be undone, so the safe answer is the one under the return key. The
+ * rest of the modal behaviour (focus trap, Escape, returning focus) comes from
+ * the native <dialog>, see useModalDialog.
  */
 export default function ConfirmDialog({
   message,
@@ -32,31 +33,18 @@ export default function ConfirmDialog({
 }: Props) {
   const t = useT();
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useModalDialog(onCancel);
 
   useEffect(() => {
     cancelRef.current?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCancel();
-    };
-    document.addEventListener("keydown", onKeyDown);
-
-    const { overflow } = document.body.style;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = overflow;
-    };
-  }, [onCancel]);
+  }, []);
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={dialogRef}
       aria-label={message}
       onClick={onCancel}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/70 p-6 backdrop-blur-sm"
+      className={MODAL_BACKDROP_CLASSES}
     >
       <div
         onClick={(event) => event.stopPropagation()}
@@ -81,6 +69,6 @@ export default function ConfirmDialog({
           </GlassButton>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

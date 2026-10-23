@@ -14,6 +14,7 @@ async function siteUrlWith(value: string | undefined): Promise<string> {
 }
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   if (originalValue === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
   else process.env.NEXT_PUBLIC_SITE_URL = originalValue;
   vi.resetModules();
@@ -52,5 +53,43 @@ describe("SITE_URL", () => {
   it("falls back on a value that is not a URL", async () => {
     expect(await siteUrlWith("erasmusmap.com")).toBe(FALLBACK);
     expect(await siteUrlWith("not a url")).toBe(FALLBACK);
+  });
+});
+
+describe("SITE_URL on Vercel", () => {
+  async function onVercel(
+    value: string | undefined,
+    productionUrl?: string,
+  ): Promise<string> {
+    vi.stubEnv("VERCEL_ENV", "production");
+    if (productionUrl !== undefined)
+      vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", productionUrl);
+    return siteUrlWith(value);
+  }
+
+  // Copied over from .env.example, it put localhost into every canonical URL.
+  it("ignores a loopback address and uses the production domain", async () => {
+    expect(await onVercel("http://localhost:3000", "erasmusmap.app")).toBe(
+      "https://erasmusmap.app",
+    );
+    expect(await onVercel("http://127.0.0.1:3000", "erasmusmap.app")).toBe(
+      "https://erasmusmap.app",
+    );
+  });
+
+  it("falls back when Vercel gives no domain either", async () => {
+    expect(await onVercel("http://localhost:3000")).toBe(FALLBACK);
+  });
+
+  it("still honours a real configured origin", async () => {
+    expect(await onVercel("https://erasmusmap.com", "other.app")).toBe(
+      "https://erasmusmap.com",
+    );
+  });
+
+  it("keeps a loopback address off Vercel, where it is the dev server", async () => {
+    expect(await siteUrlWith("http://localhost:3000")).toBe(
+      "http://localhost:3000",
+    );
   });
 });

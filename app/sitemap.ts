@@ -54,7 +54,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: SITE_URL, lastModified: new Date() },
     { url: `${SITE_URL}/meydan`, lastModified: new Date() },
-    { url: `${SITE_URL}/login`, lastModified: new Date() },
     // Listed only once they are published (see legalPagesAvailable).
     ...legalEntries,
     ...cityEntries,

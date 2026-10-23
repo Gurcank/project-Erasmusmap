@@ -31,8 +31,10 @@ const MAPBOX_TILE_HOSTS = [
   "https://api.mapbox.com",
   "https://*.tiles.mapbox.com",
 ];
-// Telemetry only, and never an image.
-const MAPBOX_CONNECT = [...MAPBOX_TILE_HOSTS, "https://events.mapbox.com"];
+// Usage events (a map load, a session), posted by the library itself. Never an
+// image, and only allowed for a visitor who accepted the optional statistics:
+// see the `mapboxEvents` option of contentSecurityPolicy.
+const MAPBOX_EVENTS_HOST = "https://events.mapbox.com";
 
 /**
  * Headers that are the same for every request, so they can stay in
@@ -72,10 +74,15 @@ export const STATIC_SECURITY_HEADERS = [
  * `'self'` does the allowlisting, and here that is a tight list rather than the
  * usual weak one: the application loads no script from any external origin, so
  * there is no third-party host on the list to smuggle a payload through.
+ *
+ * `mapboxEvents` adds Mapbox's usage-event host to connect-src. It is off unless
+ * the visitor accepted the optional statistics, so without that choice the
+ * browser itself refuses the requests, whatever the page's code tries.
  */
 export function contentSecurityPolicy(
   nonce: string,
   isDevelopment: boolean,
+  { mapboxEvents = false }: { mapboxEvents?: boolean } = {},
 ): string {
   const directives = [
     "default-src 'self'",
@@ -94,9 +101,10 @@ export function contentSecurityPolicy(
     // next/font self-hosts the Google fonts at build time, so no font host.
     "font-src 'self' data:",
     // Unsplash is absent: it is only ever called from the server.
-    `connect-src 'self' ${MAPBOX_CONNECT.join(" ")}${
-      isDevelopment ? ` ws: wss: ${VERCEL_ANALYTICS_DEV}` : ""
-    }`,
+    `connect-src 'self' ${[
+      ...MAPBOX_TILE_HOSTS,
+      ...(mapboxEvents ? [MAPBOX_EVENTS_HOST] : []),
+    ].join(" ")}${isDevelopment ? ` ws: wss: ${VERCEL_ANALYTICS_DEV}` : ""}`,
     // Mapbox GL runs its tile parser in a worker created from a blob URL.
     "worker-src 'self' blob:",
     "child-src 'self' blob:",

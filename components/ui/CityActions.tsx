@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import LocalizedError from "@/components/ui/LocalizedError";
 import { Bookmark, BookmarkCheck, Check, MapPin } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import SubmitButton from "@/components/ui/SubmitButton";
@@ -18,7 +19,7 @@ function ActionError({ state }: { state: ActionResult | null }) {
   if (!state || state.ok) return null;
   return (
     <p role="alert" className="text-xs text-danger-700 dark:text-danger-400">
-      {state.error}
+      <LocalizedError message={state.error} />
     </p>
   );
 }

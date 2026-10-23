@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import LocalizedError from "@/components/ui/LocalizedError";
 import { signOut } from "next-auth/react";
 import { Download, Trash2 } from "lucide-react";
 import { useT } from "@/hooks/useT";
@@ -109,7 +110,7 @@ export default function AccountDataSection({
             role="alert"
             className="text-xs text-danger-700 dark:text-danger-400"
           >
-            {error}
+            <LocalizedError message={error} />
           </p>
         )}
       </div>

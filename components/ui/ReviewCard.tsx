@@ -1,6 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
+import { useLocale } from "@/hooks/useLang";
+import LocalizedError from "@/components/ui/LocalizedError";
 import Link from "next/link";
 import {
   CalendarDays,
@@ -46,7 +48,7 @@ function ActionError({ state }: { state: ActionResult | null }) {
       role="alert"
       className="mt-1 text-xs text-danger-700 dark:text-danger-400"
     >
-      {state.error}
+      <LocalizedError message={state.error} />
     </p>
   );
 }
@@ -64,15 +66,18 @@ export default function ReviewCard({
   deleteOwnReview,
 }: Props) {
   const t = useT();
+  const locale = useLocale();
   const [likeState, likeAction] = useActionState(toggleReviewLike, null);
   const [editState, editAction] = useActionState(updateOwnReview, null);
   const [showReplies, setShowReplies] = useState(false);
   const [editing, setEditing] = useState(false);
 
   // A saved edit revalidates the page; collapse the form once it lands.
-  useEffect(() => {
+  const [handledEdit, setHandledEdit] = useState(editState);
+  if (editState !== handledEdit) {
+    setHandledEdit(editState);
     if (editState?.ok) setEditing(false);
-  }, [editState]);
+  }
 
   const author = review.user?.username ?? review.user?.name ?? "—";
   const isSignedIn = viewerId !== null;
@@ -81,7 +86,7 @@ export default function ReviewCard({
     (sum, comment) => sum + 1 + comment.replies.length,
     0,
   );
-  const stayRange = formatStayRange(review.stayStart, review.stayEnd);
+  const stayRange = formatStayRange(review.stayStart, review.stayEnd, locale);
   const avg = averageRating(review);
 
   const editFields = [
@@ -117,7 +122,7 @@ export default function ReviewCard({
               {author}
             </p>
             <p className="text-xs text-text-subtle">
-              {new Date(review.createdAt).toLocaleDateString("tr-TR")}
+              {new Date(review.createdAt).toLocaleDateString(locale)}
             </p>
           </div>
         </Link>

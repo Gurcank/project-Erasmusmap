@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale } from "@/hooks/useLang";
 import Link from "next/link";
 import { Heart, Send, Trash2, X } from "lucide-react";
 import { useT } from "@/hooks/useT";
@@ -64,6 +65,7 @@ function CommentRow({
   toggleCommentLike,
 }: RowProps) {
   const t = useT();
+  const locale = useLocale();
   const name = nameOf(comment);
   const isSignedIn = viewerId !== null;
   const canDelete = isAdmin || (isSignedIn && comment.user?.id === viewerId);
@@ -90,7 +92,7 @@ function CommentRow({
             <span className="text-sm font-semibold text-text">{name}</span>
           )}
           <span className="text-xs text-text-subtle">
-            {new Date(comment.createdAt).toLocaleDateString("tr-TR")}
+            {new Date(comment.createdAt).toLocaleDateString(locale)}
           </span>
         </p>
 

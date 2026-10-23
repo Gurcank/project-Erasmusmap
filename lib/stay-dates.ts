@@ -1,5 +1,7 @@
 import { format, isValid, parse, startOfDay } from "date-fns";
 import { tr } from "date-fns/locale";
+import { dateFnsLocale } from "@/lib/date-locale";
+import type { Lang } from "@/lib/i18n";
 
 /**
  * The shape of a typed stay date, shared by every surface that lets someone
@@ -38,12 +40,17 @@ const EXAMPLE = new Date(2025, 8, 5);
 // lib/schemas.ts. Nobody is recording an Erasmus term from before this.
 export const EARLIEST_STAY = new Date(2000, 0, 1);
 
-export function formatStayDate(date: Date, mask = INPUT_MASK): string {
-  return format(date, mask, { locale: tr });
+export function formatStayDate(
+  date: Date,
+  mask = INPUT_MASK,
+  lang: Lang = "tr",
+): string {
+  return format(date, mask, { locale: dateFnsLocale(lang) });
 }
 
 /** The example to put in a placeholder, in the language of the mask. */
-export const stayDatePlaceholder = () => formatStayDate(EXAMPLE);
+export const stayDatePlaceholder = (lang: Lang = "tr") =>
+  formatStayDate(EXAMPLE, INPUT_MASK, lang);
 
 /**
  * Reads one typed date. Returns null for an empty field and "invalid" for text
@@ -52,13 +59,20 @@ export const stayDatePlaceholder = () => formatStayDate(EXAMPLE);
 export function parseStayDate(
   text: string,
   bounds: { min?: Date; max?: Date } = {},
+  lang: Lang = "tr",
 ): Date | null | "invalid" {
   const trimmed = text.trim();
   if (!trimmed) return null;
 
+  // Month names are read in the interface language and in Turkish, so a date
+  // written before the language was switched still parses.
+  const locales = lang === "tr" ? [tr] : [dateFnsLocale(lang), tr];
+
   for (const mask of ACCEPTED_MASKS) {
-    const date = parse(trimmed, mask, new Date(), { locale: tr });
-    if (!isValid(date)) continue;
+    const date = locales
+      .map((locale) => parse(trimmed, mask, new Date(), { locale }))
+      .find((candidate) => isValid(candidate));
+    if (!date) continue;
     // date-fns reads "25" against a `yyyy` mask as the year 25. Two-digit years
     // are ambiguous, so a stay has to spell the year out.
     if (date.getFullYear() < 1000) continue;

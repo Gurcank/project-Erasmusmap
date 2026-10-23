@@ -22,7 +22,10 @@
 - ⭐ Şehir değerlendirme sistemi — 6 kategori: Kültür, Gastronomi, Güvenlik, Sosyal Hayat, Ulaşım, Yaşam Maliyeti
 - 👤 Kullanıcı profili, ziyaret edilen şehirler ve gitmek istenenler
 - 🔐 Google ile giriş — şifre saklanmaz
-- 🌐 Türkçe / İngilizce dil desteği
+- 🌐 6 dil (TR, EN, DE, FR, ES, IT) — tarayıcı diline göre açılır, sunucuda render edilir
+- 🧭 Seyahat planlayıcı — rota, program, bütçe ve harcamalar
+- 🧑‍🎤 Hazır avatarlar — sitede fotoğraf yüklenmez
+- 🍪 İsteğe bağlı çerez onayı; istatistik yalnızca izin verilirse yüklenir
 - 🌙 Koyu / Açık tema
 
 ## Teknolojiler
@@ -131,29 +134,31 @@ npx ts-node scripts/build-map-regions.ts
 
 ### Komutlar
 
-| Komut                | Açıklama                          |
-| -------------------- | --------------------------------- |
-| `npm run dev`        | Geliştirme sunucusu               |
-| `npm run build`      | Production build                  |
-| `npm run start`      | Production build'i çalıştır       |
-| `npm run lint`       | ESLint                            |
-| `npm run format`     | Prettier ile formatla             |
-| `npm run test`       | Vitest ile unit testleri çalıştır |
-| `npm run typecheck`  | TypeScript tip kontrolü           |
-| `npm run db:migrate` | Migration'ları uygula             |
-| `npm run db:seed`    | Şehirleri ekle                    |
+| Komut                | Açıklama                                                                                 |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| `npm run dev`        | Geliştirme sunucusu                                                                      |
+| `npm run build`      | Production build                                                                         |
+| `npm run start`      | Production build'i çalıştır                                                              |
+| `npm run lint`       | ESLint                                                                                   |
+| `npm run format`     | Prettier ile formatla                                                                    |
+| `npm run test`       | Vitest ile unit testleri çalıştır                                                        |
+| `npm run e2e`        | Playwright duman testi (önce `npm run build`; `npx playwright install chromium` bir kez) |
+| `npm run typecheck`  | TypeScript tip kontrolü                                                                  |
+| `npm run db:migrate` | Migration'ları uygula                                                                    |
+| `npm run db:seed`    | Şehirleri ekle                                                                           |
 
 ## CI/CD
 
 [`ci.yml`](.github/workflows/ci.yml) her push ve pull request'te şunları çalıştırır:
 
-| Job        | Ne yapar                                                                                                                                                    |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lint`     | ESLint, tip kontrolü, Prettier                                                                                                                              |
-| `test`     | Vitest                                                                                                                                                      |
-| `build`    | `next build`. **Secret kullanmaz**: yalnızca var olması gereken değişkenleri sahte değerlerle verir, bu yüzden fork'tan gelen PR'lar da geçer               |
-| `database` | Postgres 17 ile **boş bir veritabanına tüm migration'ları** uygular, `schema.prisma` ile migration'ların uyuştuğunu (drift) ve seed'in çalıştığını doğrular |
-| `audit`    | `npm audit` (üretim bağımlılıkları engelleyici)                                                                                                             |
+| Job        | Ne yapar                                                                                                                                                                |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lint`     | ESLint, tip kontrolü, Prettier                                                                                                                                          |
+| `test`     | Vitest                                                                                                                                                                  |
+| `build`    | `next build`. **Secret kullanmaz**: yalnızca var olması gereken değişkenleri sahte değerlerle verir, bu yüzden fork'tan gelen PR'lar da geçer                           |
+| `database` | Postgres 17 ile **boş bir veritabanına tüm migration'ları** uygular, `schema.prisma` ile migration'ların uyuştuğunu (drift) ve seed'in çalıştığını doğrular             |
+| `e2e`      | Boş veritabanına migration + seed, production build, ardından **Playwright** ile herkese açık sayfaların duman testi (`e2e/`). Giriş (Google) gerektirenler kapsam dışı |
+| `audit`    | `npm audit` (üretim bağımlılıkları engelleyici)                                                                                                                         |
 
 `database` job'u, bir şema düzenlemesinin migration'ı unutulduğunda (ya da tersi) PR'ı kırmızıya çevirir.
 Prisma `CHECK` kısıtlarını karşılaştırmaya katmaz; onlar yalnızca migration dosyalarında yaşar.
@@ -185,7 +190,7 @@ uygulanır; silen (contract) migration'lar ise onu kullanmayan kod yayına çık
 şema hem kod varsa bu sırayı yapmak imkânsızdır; PR'ı ikiye böl.
 
 > **Önerilen repo ayarları** (workflow bunları yapamaz): `main`'i koruma altına alıp `lint`, `test`, `build`,
-> `database` ve `audit` job'larını zorunlu kıl; `Production` ortamına "Required reviewers" ekle. Ortamların
+> `database`, `e2e` ve `audit` job'larını zorunlu kıl; `Production` ortamına "Required reviewers" ekle. Ortamların
 > şu an koruma kuralı yok, bu yüzden güvence workflow'un kendi kapılarından gelir.
 
 ## Deployment
@@ -193,6 +198,11 @@ uygulanır; silen (contract) migration'lar ise onu kullanmayan kod yayına çık
 Uygulama [Vercel](https://vercel.com)'e deploy ediliyor. Vercel proje ayarlarında yukarıdaki ortam
 değişkenlerinin tanımlı olduğundan emin ol. Migration'lar Vercel build'ine **bağlı değildir**
 (bkz. [Migration'lar](#migrationlar)).
+
+## Dokümantasyon
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — katmanlar, yetki, action'lar, güvenlik, dil ve çerezler.
+- [`docs/RUNBOOK.md`](docs/RUNBOOK.md) — deploy/geri alma, migration, yasal sayfaları yayına alma, admin atama, sır rotasyonu, yedek, hata ayıklama.
 
 ## Hata takibi ve loglar
 
