@@ -1,0 +1,100 @@
+name: Production database
+
+# Migrations are applied to the production database from here, by hand, and
+# never as a side effect of a deploy: a preview deployment, a rebuild or a
+# revert must not be able to change the schema.
+#
+#   Actions -> Production database -> Run workflow (on main)
+#
+# The GitHub environments of this repository have no protection rules, so the
+# guards are in the workflow itself: it runs only on main, only when "APPLY" is
+# typed, and refuses a migration that can destroy data unless that is ticked.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type APPLY to run prisma migrate deploy on the production database"
+        required: true
+        type: string
+      allow_destructive:
+        description: "Also apply a migration that can destroy data (drops, deletes)"
+        required: false
+        type: boolean
+        default: false
+  # A merged migration is easy to forget: this reports what is waiting.
+  push:
+    branches: [main]
+    paths:
+      - "prisma/migrations/**"
+
+permissions:
+  contents: read
+
+# One at a time, and a running migration is never cancelled halfway.
+concurrency:
+  group: production-database
+  cancel-in-progress: false
+
+jobs:
+  # Says why nothing happened, instead of a skipped job that looks like success.
+  refuse:
+    name: Refuse
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      (inputs.confirm != 'APPLY' || github.ref != 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::error::Not applied. Run this on main, and type APPLY in the confirm box."
+          exit 1
+
+  status:
+    name: Pending migrations
+    # Read only: prisma migrate status.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DIRECT_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+      - run: npm ci
+      - name: List what is pending
+        if: ${{ env.DIRECT_URL != '' }}
+        run: node scripts/ci/pending-migrations.mjs report
+      - name: The DIRECT_URL secret is missing
+        if: ${{ env.DIRECT_URL == '' }}
+        run: |
+          echo "::warning::The DIRECT_URL repository secret is not set, so the production database cannot be checked."
+
+  apply:
+    name: Apply migrations
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.confirm == 'APPLY'
+    runs-on: ubuntu-latest
+    env:
+      # prisma/schema.prisma reads both; migrations need the session connection
+      # (port 5432), which is what DIRECT_URL is.
+      DATABASE_URL: ${{ secrets.DIRECT_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      ALLOW_DESTRUCTIVE: ${{ inputs.allow_destructive }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+      - run: npm ci
+      - name: Check what is pending
+        run: node scripts/ci/pending-migrations.mjs gate
+      - name: Apply
+        run: npx prisma migrate deploy
+      - name: Confirm nothing is left
+        run: node scripts/ci/pending-migrations.mjs verify
