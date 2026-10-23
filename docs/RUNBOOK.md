@@ -133,6 +133,19 @@ hiçbir şey saklanmaz), bu yüzden bir veritabanı sızıntısı Google hesapla
 > yedek kurulu değildir. Gizlilik politikası da "düzenli yedek almıyoruz" der. Zamanlanmış
 > `pg_dump` kurulursa bu bölüm ve politika birlikte güncellenmelidir.
 
+> **Karar (23 Ekim 2026): şimdilik zamanlanmış yedek yok.** Değerlendirilen seçenekler:
+>
+> - _GitHub Actions artifact'ı:_ repo **public** olduğundan artifact'ları GitHub hesabı olan
+>   herkes indirebilir. Bu yüzden yalnızca **açık anahtarlı** şifreleme (ör. `age`; özel anahtar
+>   sadece sahibinde, çevrimdışı) kabul edilebilir; parolayı bir repo secret'ında tutmak yetmez,
+>   çünkü secret'a erişen bir workflow değişikliği hem parolayı hem herkese açık şifreli yedeği
+>   ele geçirtir. Kişisel veri, şifreli de olsa herkese açık bir yerde durur.
+> - _Özel bir S3/R2 bucket'ı:_ en güvenli seçenek; bucket ve erişim anahtarını sahibi
+>   oluşturur, gizlilik politikasına yeni bir alt işleyici eklenir.
+>
+> İkisi için de yedeğin silme isteklerine etkisi (yedekte kalan veri en fazla saklama süresi
+> kadar yaşar) gizlilik politikasının "Ne kadar saklıyoruz" bölümüne yazılmalıdır.
+
 Elle yedek (yerelde, `DIRECT_URL` ile):
 
 ```bash
