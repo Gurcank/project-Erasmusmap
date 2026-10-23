@@ -7,6 +7,11 @@ export const de = {
   menu: "Menü",
   skipToContent: "Zum Inhalt springen",
   siteNavLabel: "Seitennavigation",
+  loadingPage: "Wird geladen…",
+  mapRegionLabel: "Karte von Europa",
+  mapRegionHelp:
+    "Interaktive Karte von Europa. Mit den Pfeiltasten verschieben, mit Plus und Minus zoomen. Um direkt zu einer Stadt zu gelangen, nutze die Stadtsuche.",
+  mapSearchShortcut: "Stadt suchen",
   noResults: "Keine Ergebnisse gefunden",
   mapNav: "Karte",
   square: "Der Platz",

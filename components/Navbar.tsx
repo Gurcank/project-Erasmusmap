@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import { useTripT } from "@/hooks/useTripT";
+import { CITY_SEARCH_FOCUS_EVENT } from "@/lib/city-search";
 import UserAvatar from "@/components/ui/UserAvatar";
 import HamburgerIcon from "@/components/ui/HamburgerIcon";
 import GlassButton, { GlassLink } from "@/components/ui/GlassButton";
@@ -117,6 +118,30 @@ export default function Navbar() {
     setShowSuggestions(false);
     setMenuOpen(false);
   }, [pathname]);
+
+  // Something else on the page (the map) asks for the city search. On a narrow
+  // screen it lives inside the menu, so that opens first.
+  useEffect(() => {
+    function focusSearch() {
+      const isNarrow = !window.matchMedia("(min-width: 768px)").matches;
+      if (isNarrow) setMenuOpen(true);
+      // The menu's field only exists once the menu has rendered.
+      setTimeout(
+        () => {
+          const inputs = document.querySelectorAll<HTMLInputElement>(
+            'header input[type="search"]',
+          );
+          Array.from(inputs)
+            .find((input) => input.offsetParent !== null)
+            ?.focus();
+        },
+        isNarrow ? 50 : 0,
+      );
+    }
+    window.addEventListener(CITY_SEARCH_FOCUS_EVENT, focusSearch);
+    return () =>
+      window.removeEventListener(CITY_SEARCH_FOCUS_EVENT, focusSearch);
+  }, []);
 
   const goToCity = (city: CitySuggestion) => {
     router.push(`/c/${city.slug}`);

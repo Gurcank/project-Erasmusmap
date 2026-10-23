@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "@/lib/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useRouter } from "next/navigation";
+import { useT } from "@/hooks/useT";
+import { CITY_SEARCH_FOCUS_EVENT } from "@/lib/city-search";
 import MapControls from "@/components/map/MapControls";
 import SpaceParticles from "@/components/ui/SpaceParticles";
 import {
@@ -51,6 +53,7 @@ export default function Map() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const router = useRouter();
+  const t = useT();
   // Set once the style has loaded: the flag that shows the control and the
   // motorway layer ids it toggles (only knowable after parsing the style).
   const [controls, setControls] = useState<{
@@ -537,7 +540,21 @@ export default function Map() {
   }, []);
 
   return (
-    <div className="relative h-screen w-full bg-ink-950">
+    <section
+      aria-label={t.mapRegionLabel}
+      aria-describedby="map-help"
+      className="relative h-screen w-full bg-ink-950"
+    >
+      <p id="map-help" className="sr-only">
+        {t.mapRegionHelp}
+      </p>
+      <button
+        type="button"
+        onClick={() => window.dispatchEvent(new Event(CITY_SEARCH_FOCUS_EVENT))}
+        className="sr-only focus:not-sr-only focus:absolute focus:top-24 focus:left-4 focus:z-10 focus:cursor-pointer focus:rounded-control focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-text focus:shadow-popover focus:outline-2 focus:outline-offset-2 focus:outline-focus"
+      >
+        {t.mapSearchShortcut}
+      </button>
       <SpaceParticles />
       <div ref={containerRef} className="relative h-full w-full" />
       <MapControls
@@ -547,6 +564,6 @@ export default function Map() {
         onRailwaysToggle={setRailwaysOn}
         onAirportsToggle={setAirportsOn}
       />
-    </div>
+    </section>
   );
 }

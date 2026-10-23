@@ -8,6 +8,11 @@ export const tr = {
   menu: "Menü",
   skipToContent: "İçeriğe geç",
   siteNavLabel: "Site gezintisi",
+  loadingPage: "Yükleniyor…",
+  mapRegionLabel: "Avrupa haritası",
+  mapRegionHelp:
+    "Etkileşimli Avrupa haritası. Ok tuşlarıyla kaydırabilir, + ve - tuşlarıyla yakınlaştırabilirsin. Doğrudan bir şehre gitmek için şehir aramasını kullan.",
+  mapSearchShortcut: "Şehir ara",
   noResults: "Sonuç bulunamadı",
   mapNav: "Harita",
   square: "Meydan",
