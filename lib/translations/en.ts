@@ -141,6 +141,16 @@ export const en = {
   termsLinkText: "Terms of Use",
   privacyLinkText: "Privacy Policy",
   loginLegalNotice: "By signing in you accept the {terms} and the {privacy}.",
+  cookieBannerLabel: "Cookie preferences",
+  cookieBannerText:
+    "Cookies that keep you signed in are always used. Optionally, we can collect anonymous visit statistics (Vercel Analytics) to improve the site.",
+  cookieAccept: "Accept",
+  cookieReject: "Refuse",
+  cookiePrefsTitle: "Your cookie and statistics choice",
+  cookieStatusGranted: "You accepted the optional statistics.",
+  cookieStatusDenied: "You refused the optional statistics.",
+  cookieStatusUnset:
+    "You have not chosen yet; the optional statistics are off.",
   accountSection: "Account",
   profileSection: "Profile",
   blockedUsersSection: "Blocked Users",
