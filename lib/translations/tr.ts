@@ -37,6 +37,8 @@ export const tr = {
     "{name}, {country} için Erasmus öğrenci değerlendirmeleri, puanları ve fotoğrafları.",
   profileMetaDescription: "{name} — ErasmusMap profili",
   accountTitle: "Hesap",
+  experimentBadge: "deneme",
+  experimentNotice: "Bu site öğrenme amaçlı yapılmış bir deneme projesidir.",
   noResults: "Sonuç bulunamadı",
   mapNav: "Harita",
   square: "Meydan",
