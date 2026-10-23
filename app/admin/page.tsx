@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import AdminDashboard from "@/components/ui/AdminDashboard";
 import { banUser, deleteUser, deleteReview } from "@/lib/actions";
@@ -8,7 +7,11 @@ import { getAdminUsers, normalizeUserQuery } from "@/lib/admin-users";
 import { parsePage } from "@/lib/pagination";
 import { parseAdminTab } from "@/lib/admin-tabs";
 import { deleteReviewComment } from "@/lib/square-actions";
-import primarySlugList from "@/prisma/data/primary-city-slugs.json";
+import {
+  getAdminComments,
+  getAdminReviews,
+  getAdminStats,
+} from "@/lib/queries/admin";
 
 export const metadata: Metadata = {
   title: "Admin Paneli",
@@ -31,48 +34,12 @@ export default async function AdminPage({
   const page = parsePage(params.page);
   const initialTab = parseAdminTab(params.tab);
 
-  const [usersPage, reviews, comments, userCount, cityCount, reviewCount] =
-    await Promise.all([
-      getAdminUsers(query, page),
-      prisma.review.findMany({
-        take: 50,
-        orderBy: { createdAt: "desc" },
-        include: {
-          city: { select: { name: true, slug: true } },
-          user: {
-            select: { id: true, name: true, username: true, avatar: true },
-          },
-        },
-      }),
-      // Flagged first: those are the ones a moderator is here for.
-      prisma.reviewComment.findMany({
-        take: 100,
-        orderBy: [{ flagged: "desc" }, { createdAt: "desc" }],
-        select: {
-          id: true,
-          content: true,
-          createdAt: true,
-          flagged: true,
-          user: {
-            select: { id: true, name: true, username: true, avatar: true },
-          },
-          parent: {
-            select: { user: { select: { username: true, name: true } } },
-          },
-          review: {
-            select: { city: { select: { name: true, slug: true } } },
-          },
-        },
-      }),
-      prisma.user.count(),
-      // Only the cities the app can actually reach. The table also holds the
-      // rest of the GeoNames dump, which scripts/build-map-regions.ts needs but
-      // nothing in the product ever shows.
-      prisma.city.count({
-        where: { slug: { in: primarySlugList as string[] } },
-      }),
-      prisma.review.count(),
-    ]);
+  const [usersPage, reviews, comments, stats] = await Promise.all([
+    getAdminUsers(query, page),
+    getAdminReviews(),
+    getAdminComments(),
+    getAdminStats(),
+  ]);
 
   return (
     <div className="min-h-screen">
@@ -88,19 +55,8 @@ export default async function AdminPage({
           }}
           initialTab={initialTab}
           reviews={reviews}
-          comments={comments.map((comment) => ({
-            id: comment.id,
-            content: comment.content,
-            createdAt: comment.createdAt,
-            flagged: comment.flagged,
-            parentAuthor:
-              comment.parent?.user?.username ??
-              comment.parent?.user?.name ??
-              null,
-            city: comment.review.city,
-            user: comment.user,
-          }))}
-          stats={{ userCount, cityCount, reviewCount }}
+          comments={comments}
+          stats={stats}
           banUser={banUser}
           deleteUser={deleteUser}
           deleteReview={deleteReview}
