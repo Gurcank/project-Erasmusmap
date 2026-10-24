@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   Bed,
   Bus,
-  ChevronDown,
   Ellipsis,
   Footprints,
   ShoppingBag,
@@ -82,12 +81,9 @@ function moneyText(amount: number | null): string {
 /**
  * Adds or edits one timeline entry.
  *
- * What nearly every entry needs is on show: what kind, what it is, which day and
- * what it costs. A title and Enter is a complete entry. Everything else (an end
- * time, the place, notes) sits behind "Ayrıntılar" and stays in the form
- * while it is folded, so nothing typed there is lost. A journey is the exception
- * and opens the details itself, because where it goes from and to is what makes
- * it one.
+ * Title, kind, when it starts and ends, and the cost are all on show; a title and
+ * Enter is a complete entry. A meal or a purchase has no date to pick: it
+ * belongs to the day it was added under.
  */
 export default function TripItemForm({
   tripId,
@@ -107,14 +103,8 @@ export default function TripItemForm({
   const [to, setTo] = useState<CityChoice | null>(
     toChoice(item?.toCity ?? null),
   );
-  // An entry that already has details is opened with them showing.
-  const [moreOpen, setMoreOpen] = useState(
-    Boolean(item && (item.endAt || item.city || item.notes)),
-  );
-
   const kind = KINDS.find((entry) => entry.category === category) ?? KINDS[2];
   const isTransport = kind.type === "TRANSPORT";
-  const showMore = moreOpen || isTransport;
   // A meal or a purchase belongs to the day it was added under; no date to pick.
   const hasDay = category !== "FOOD" && category !== "SHOPPING";
 
@@ -131,7 +121,7 @@ export default function TripItemForm({
       {item && <input type="hidden" name="itemId" value={item.id} />}
       <input type="hidden" name="type" value={kind.type} />
       <input type="hidden" name="costCategory" value={category} />
-      {/* The day field edits this; its time of day is kept, never asked for. */}
+      {/* The day-and-time field edits this one value. */}
       <input type="hidden" name="startAt" value={startAt} />
 
       <div
@@ -177,7 +167,7 @@ export default function TripItemForm({
         />
       </div>
 
-      <div className={hasDay ? "grid grid-cols-2 gap-3" : ""}>
+      <div className={hasDay ? "grid gap-3 sm:grid-cols-2" : ""}>
         {hasDay && (
           <div>
             <label htmlFor="item-date" className={LABEL}>
@@ -185,53 +175,18 @@ export default function TripItemForm({
             </label>
             <input
               id="item-date"
-              type="date"
+              type="datetime-local"
               required
-              value={startAt.slice(0, 10)}
+              value={startAt}
               onChange={(event) =>
-                event.target.value &&
-                setStartAt(`${event.target.value}T${startAt.slice(11, 16)}`)
+                event.target.value && setStartAt(event.target.value)
               }
-              min={tripStart}
-              max={tripEnd}
+              min={`${tripStart}T00:00`}
+              max={`${tripEnd}T23:59`}
               className={FIELD}
             />
           </div>
         )}
-        <div>
-          <label htmlFor="item-cost" className={LABEL}>
-            {tt.cost}
-          </label>
-          <input
-            id="item-cost"
-            name="cost"
-            inputMode="decimal"
-            defaultValue={moneyText(item?.cost ?? null)}
-            placeholder="0"
-            className={`${FIELD} tabular-nums`}
-          />
-        </div>
-      </div>
-
-      {!isTransport && (
-        <button
-          type="button"
-          onClick={() => setMoreOpen(!moreOpen)}
-          aria-expanded={moreOpen}
-          aria-controls="item-more"
-          className="inline-flex w-fit cursor-pointer items-center gap-1 text-sm text-text-muted hover:text-text focus-visible:outline-2 focus-visible:outline-focus"
-        >
-          {tt.moreDetails}
-          <ChevronDown
-            size={15}
-            aria-hidden="true"
-            className={`transition-transform ${moreOpen ? "rotate-180" : ""}`}
-          />
-        </button>
-      )}
-
-      {/* Folded, not removed: what was typed here is still sent. */}
-      <div id="item-more" hidden={!showMore} className="flex flex-col gap-3.5">
         <div>
           <label htmlFor="item-end" className={LABEL}>
             {tt.endAt}
@@ -241,62 +196,76 @@ export default function TripItemForm({
             type="datetime-local"
             name="endAt"
             defaultValue={item?.endAt ?? ""}
-            min={`${tripStart}T00:00`}
+            min={startAt}
             max={`${addDays(tripEnd, 1)}T23:59`}
             className={FIELD}
           />
         </div>
+      </div>
 
-        <div className={isTransport ? "grid gap-3 sm:grid-cols-2" : ""}>
-          <CityField
-            label={isTransport ? tt.from : tt.city}
-            name="cityId"
-            value={from}
-            onChange={setFrom}
-          />
-          {isTransport && (
-            <CityField
-              label={tt.to}
-              name="toCityId"
-              value={to}
-              onChange={setTo}
-            />
-          )}
-        </div>
+      <div>
+        <label htmlFor="item-cost" className={LABEL}>
+          {tt.cost}
+        </label>
+        <input
+          id="item-cost"
+          name="cost"
+          inputMode="decimal"
+          defaultValue={moneyText(item?.cost ?? null)}
+          placeholder="0"
+          className={`${FIELD} tabular-nums`}
+        />
+      </div>
 
+      <div className={isTransport ? "grid gap-3 sm:grid-cols-2" : ""}>
+        <CityField
+          label={isTransport ? tt.from : tt.city}
+          name="cityId"
+          value={from}
+          onChange={setFrom}
+        />
         {isTransport && (
-          <div>
-            <label htmlFor="item-mode" className={LABEL}>
-              {tt.mode}
-            </label>
-            <select
-              id="item-mode"
-              name="mode"
-              defaultValue={item?.mode ?? "BUS"}
-              className={FIELD}
-            >
-              {TRANSPORT_MODES.map((mode) => (
-                <option key={mode} value={mode}>
-                  {tt[`mode${mode}`]}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div>
-          <label htmlFor="item-notes" className={LABEL}>
-            {tt.notes}
-          </label>
-          <textarea
-            id="item-notes"
-            name="notes"
-            rows={2}
-            maxLength={ITEM_NOTES_MAX}
-            defaultValue={item?.notes ?? ""}
-            className={`${FIELD} resize-y`}
+          <CityField
+            label={tt.to}
+            name="toCityId"
+            value={to}
+            onChange={setTo}
           />
+        )}
+      </div>
+
+      {isTransport && (
+        <div>
+          <label htmlFor="item-mode" className={LABEL}>
+            {tt.mode}
+          </label>
+          <select
+            id="item-mode"
+            name="mode"
+            defaultValue={item?.mode ?? "BUS"}
+            className={FIELD}
+          >
+            {TRANSPORT_MODES.map((mode) => (
+              <option key={mode} value={mode}>
+                {tt[`mode${mode}`]}
+              </option>
+            ))}
+          </select>
         </div>
+      )}
+
+      <div>
+        <label htmlFor="item-notes" className={LABEL}>
+          {tt.notes}
+        </label>
+        <textarea
+          id="item-notes"
+          name="notes"
+          rows={2}
+          maxLength={ITEM_NOTES_MAX}
+          defaultValue={item?.notes ?? ""}
+          className={`${FIELD} resize-y`}
+        />
       </div>
 
       <div className="flex justify-end gap-2">

@@ -115,18 +115,13 @@ test.describe("a signed-in person", () => {
       page.getByRole("heading", { name: "Lunch by the harbour" }),
     ).toBeVisible();
 
-    // The details are there, folded, until asked for.
+    // Everything is on show: no folded details.
     await page
       .getByRole("button", { name: /add item/i })
       .first()
       .click();
-    await expect(page.locator("#item-more")).toBeHidden();
-    await page
-      .locator("form")
-      .filter({ has: page.locator("#item-title") })
-      .getByRole("button", { name: /details/i })
-      .click();
-    await expect(page.locator("#item-more")).toBeVisible();
+    await expect(page.locator("#item-end")).toBeVisible();
+    await expect(page.locator("#item-notes")).toBeVisible();
     await page.getByRole("button", { name: /cancel/i }).click();
 
     // The spending form asks for an amount, a category and a note.

@@ -33,6 +33,7 @@ import {
   groupByDay,
   itemsOutside,
   spansNight,
+  tripDays,
 } from "@/lib/trip-timeline";
 import type { TransportMode, TripItemView, TripView } from "@/lib/trip-types";
 
@@ -65,6 +66,12 @@ function iconFor(item: TripItemView) {
   if (item.type === "STAY") return Bed;
   if (item.type === "NOTE") return StickyNote;
   return Footprints;
+}
+
+/** A stay or a meal is placed by day; only the rest has a clock time worth showing. */
+function showsStart(item: TripItemView): boolean {
+  if (item.type === "STAY") return false;
+  return item.costCategory !== "FOOD" && item.costCategory !== "SHOPPING";
 }
 
 function placeLabel(
@@ -167,6 +174,7 @@ export default function TripTimeline({
               className="block w-full text-left focus-visible:outline-2 focus-visible:outline-focus"
             >
               <p className="text-xs text-text-muted tabular-nums">
+                {showsStart(item) && `${formatTime(item.startAt)} · `}
                 {tt[`type${item.type}`]}
                 {item.mode && ` · ${tt[`mode${item.mode}`]}`}
                 {item.endAt && ` · → ${endLabel(item.endAt)}`}
@@ -337,27 +345,56 @@ export default function TripTimeline({
 
               {(open || newHere) && (
                 <div className="border-t border-border px-4 py-4">
-                  {carried.map((item) => (
-                    <button
-                      key={`carried-${item.id}`}
-                      type="button"
-                      onClick={() => onSelectItem(item.id)}
-                      className="mb-3 flex w-full items-center gap-2 rounded-card border border-dashed border-border-strong px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-raised"
-                    >
-                      <Moon size={14} aria-hidden="true" />
-                      <span className="font-medium text-text">
-                        {tt.carriedOver}:
-                      </span>
-                      <span className="truncate">{item.title}</span>
-                      {/* The clock time only means something on the last day:
-                          the checkout, the arrival. */}
-                      {item.endAt && item.endAt.slice(0, 10) === date && (
-                        <span className="ml-auto tabular-nums">
-                          → {formatTime(item.endAt)}
+                  {carried.map((item) => {
+                    const endAt = item.endAt;
+                    const endsToday = endAt?.slice(0, 10) === date;
+                    const total = tripDays(
+                      item.startAt.slice(0, 10),
+                      (endAt ?? item.startAt).slice(0, 10),
+                    ).length;
+                    const n = tripDays(item.startAt.slice(0, 10), date).length;
+                    return (
+                      <button
+                        key={`carried-${item.id}`}
+                        type="button"
+                        onClick={() => onSelectItem(item.id)}
+                        className="mb-3 flex w-full items-center gap-3 rounded-card border border-dashed border-border-strong px-3 py-2 text-left text-sm hover:bg-surface-raised"
+                      >
+                        <Moon
+                          size={16}
+                          aria-hidden="true"
+                          className="shrink-0 text-text-muted"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium text-text">
+                            {item.title}
+                          </span>
+                          <span className="block text-xs text-text-muted">
+                            {tt.carriedOver} ·{" "}
+                            {fill(tt.carriedDay, { n, total })}
+                          </span>
                         </span>
-                      )}
-                    </button>
-                  ))}
+                        {endAt && (
+                          <span
+                            className={`shrink-0 text-xs tabular-nums ${
+                              endsToday
+                                ? "font-semibold text-text"
+                                : "text-text-muted"
+                            }`}
+                          >
+                            {endsToday
+                              ? fill(tt.endsToday, { time: formatTime(endAt) })
+                              : fill(tt.endsOn, {
+                                  when: formatDay(endAt.slice(0, 10), locale, {
+                                    day: "numeric",
+                                    month: "short",
+                                  }),
+                                })}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
 
                   {newHere && <div className="mb-3">{form}</div>}
 
