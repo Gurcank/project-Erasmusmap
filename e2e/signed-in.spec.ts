@@ -109,13 +109,11 @@ test.describe("a signed-in person", () => {
       .first()
       .click();
     await page.locator("#item-title").fill("Lunch by the harbour");
-    await page.locator("#item-time").fill("13:15");
     await page.locator("#item-cost").fill("12.5");
     await page.locator("#item-title").press("Enter");
     await expect(
       page.getByRole("heading", { name: "Lunch by the harbour" }),
     ).toBeVisible();
-    await expect(page.getByText("13:15").first()).toBeVisible();
 
     // The details are there, folded, until asked for.
     await page

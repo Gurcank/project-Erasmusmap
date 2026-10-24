@@ -81,11 +81,13 @@ describe("summarizeBudget", () => {
     expect(summary.days.every((day) => day.total === 0)).toBe(true);
   });
 
-  it("treats any spending against a zero budget as over", () => {
+  it("never flags spending when the trip has no budget", () => {
     const summary = summarizeBudget(0, start, end, [
       { date: start, amount: 1, category: null, cityId: null },
     ]);
-    expect(summary.overBudget).toBe(true);
+    expect(summary.overBudget).toBe(false);
+    expect(summary.overBy).toBe(0);
     expect(summary.dailyAllowance).toBe(0);
+    expect(summary.days.every((day) => !day.overAllowance)).toBe(true);
   });
 });

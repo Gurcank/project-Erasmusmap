@@ -27,6 +27,15 @@ describe("parseTripForm", () => {
     expect(result.ok && result.data.budget).toBe(60000);
   });
 
+  it("accepts a trip without a budget and stores it as 0", () => {
+    const result = parseTripForm(form({ ...valid, budget: "" }));
+    expect(result.ok && result.data.budget).toBe(0);
+  });
+
+  it("rejects a budget that is not an amount", () => {
+    expect(parseTripForm(form({ ...valid, budget: "abc" })).ok).toBe(false);
+  });
+
   it("rejects a reversed range", () => {
     const result = parseTripForm(form({ ...valid, endDate: "2026-12-01" }));
     expect(result.ok).toBe(false);

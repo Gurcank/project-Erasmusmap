@@ -95,7 +95,7 @@ export function summarizeBudget(
   for (const day of days) {
     running += day.total;
     day.cumulative = running;
-    day.overAllowance = day.total > dailyAllowance;
+    day.overAllowance = budget > 0 && day.total > dailyAllowance;
   }
 
   const remaining = budget - total;
@@ -103,8 +103,8 @@ export function summarizeBudget(
     budget,
     total,
     remaining,
-    overBudget: remaining < 0,
-    overBy: Math.max(0, -remaining),
+    overBudget: budget > 0 && remaining < 0,
+    overBy: budget > 0 ? Math.max(0, -remaining) : 0,
     dailyAllowance,
     byCategory,
     byCity,

@@ -68,7 +68,8 @@ export default function CumulativeLine({
     .join(" ");
   const area = `${line} L${x(points.length - 1)},${y(0)} L${x(0)},${y(0)} Z`;
   const last = points[points.length - 1];
-  const over = last.value > budget;
+  const hasBudget = budget > 0;
+  const over = hasBudget && last.value > budget;
   const labelEvery = Math.ceil(
     points.length / Math.max(1, Math.floor(innerWidth / 44)),
   );
@@ -120,22 +121,26 @@ export default function CumulativeLine({
           strokeLinecap="round"
         />
 
-        <line
-          x1={MARGIN.left}
-          x2={width - MARGIN.right}
-          y1={y(budget)}
-          y2={y(budget)}
-          className={over ? "stroke-danger-500" : "stroke-text"}
-          strokeWidth={1.5}
-          strokeDasharray="5 4"
-        />
-        <text
-          x={MARGIN.left + 4}
-          y={y(budget) - 6}
-          className="fill-text text-[11px] font-semibold"
-        >
-          {budgetLabel}: {formatValue(budget)}
-        </text>
+        {hasBudget && (
+          <>
+            <line
+              x1={MARGIN.left}
+              x2={width - MARGIN.right}
+              y1={y(budget)}
+              y2={y(budget)}
+              className={over ? "stroke-danger-500" : "stroke-text"}
+              strokeWidth={1.5}
+              strokeDasharray="5 4"
+            />
+            <text
+              x={MARGIN.left + 4}
+              y={y(budget) - 6}
+              className="fill-text text-[11px] font-semibold"
+            >
+              {budgetLabel}: {formatValue(budget)}
+            </text>
+          </>
+        )}
 
         {/* End label: the final total. */}
         <circle
@@ -209,12 +214,14 @@ export default function CumulativeLine({
               {formatValue(hovered.value)}
             </span>
           </p>
-          <p className="text-text-muted">
-            {remainingLabel}:{" "}
-            <span className="tabular-nums">
-              {formatValue(budget - hovered.value)}
-            </span>
-          </p>
+          {hasBudget && (
+            <p className="text-text-muted">
+              {remainingLabel}:{" "}
+              <span className="tabular-nums">
+                {formatValue(budget - hovered.value)}
+              </span>
+            </p>
+          )}
         </div>
       )}
 
