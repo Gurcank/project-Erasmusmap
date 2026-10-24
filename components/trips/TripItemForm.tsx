@@ -82,9 +82,9 @@ function moneyText(amount: number | null): string {
 /**
  * Adds or edits one timeline entry.
  *
- * What nearly every entry needs is on show: what kind, what it is, when and what
- * it costs. A title and Enter is a complete entry. Everything else (the date, an
- * end time, the place, notes) sits behind "Ayrıntılar" and stays in the form
+ * What nearly every entry needs is on show: what kind, what it is, which day and
+ * what it costs. A title and Enter is a complete entry. Everything else (an end
+ * time, the place, notes) sits behind "Ayrıntılar" and stays in the form
  * while it is folded, so nothing typed there is lost. A journey is the exception
  * and opens the details itself, because where it goes from and to is what makes
  * it one.
@@ -115,6 +115,8 @@ export default function TripItemForm({
   const kind = KINDS.find((entry) => entry.category === category) ?? KINDS[2];
   const isTransport = kind.type === "TRANSPORT";
   const showMore = moreOpen || isTransport;
+  // A meal or a purchase belongs to the day it was added under; no date to pick.
+  const hasDay = category !== "FOOD" && category !== "SHOPPING";
 
   return (
     <ActionForm
@@ -129,7 +131,7 @@ export default function TripItemForm({
       {item && <input type="hidden" name="itemId" value={item.id} />}
       <input type="hidden" name="type" value={kind.type} />
       <input type="hidden" name="costCategory" value={category} />
-      {/* The time above and the date below both edit this one value. */}
+      {/* The day field edits this; its time of day is kept, never asked for. */}
       <input type="hidden" name="startAt" value={startAt} />
 
       <div
@@ -175,23 +177,27 @@ export default function TripItemForm({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="item-time" className={LABEL}>
-            {tt.itemTime}
-          </label>
-          <input
-            id="item-time"
-            type="time"
-            required
-            value={startAt.slice(11, 16)}
-            onChange={(event) =>
-              event.target.value &&
-              setStartAt(`${startAt.slice(0, 10)}T${event.target.value}`)
-            }
-            className={`${FIELD} tabular-nums`}
-          />
-        </div>
+      <div className={hasDay ? "grid grid-cols-2 gap-3" : ""}>
+        {hasDay && (
+          <div>
+            <label htmlFor="item-date" className={LABEL}>
+              {tt.expenseDate}
+            </label>
+            <input
+              id="item-date"
+              type="date"
+              required
+              value={startAt.slice(0, 10)}
+              onChange={(event) =>
+                event.target.value &&
+                setStartAt(`${event.target.value}T${startAt.slice(11, 16)}`)
+              }
+              min={tripStart}
+              max={tripEnd}
+              className={FIELD}
+            />
+          </div>
+        )}
         <div>
           <label htmlFor="item-cost" className={LABEL}>
             {tt.cost}
@@ -226,38 +232,19 @@ export default function TripItemForm({
 
       {/* Folded, not removed: what was typed here is still sent. */}
       <div id="item-more" hidden={!showMore} className="flex flex-col gap-3.5">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <label htmlFor="item-date" className={LABEL}>
-              {tt.expenseDate}
-            </label>
-            <input
-              id="item-date"
-              type="date"
-              value={startAt.slice(0, 10)}
-              onChange={(event) =>
-                event.target.value &&
-                setStartAt(`${event.target.value}T${startAt.slice(11, 16)}`)
-              }
-              min={tripStart}
-              max={tripEnd}
-              className={FIELD}
-            />
-          </div>
-          <div>
-            <label htmlFor="item-end" className={LABEL}>
-              {tt.endAt}
-            </label>
-            <input
-              id="item-end"
-              type="datetime-local"
-              name="endAt"
-              defaultValue={item?.endAt ?? ""}
-              min={`${tripStart}T00:00`}
-              max={`${addDays(tripEnd, 1)}T23:59`}
-              className={FIELD}
-            />
-          </div>
+        <div>
+          <label htmlFor="item-end" className={LABEL}>
+            {tt.endAt}
+          </label>
+          <input
+            id="item-end"
+            type="datetime-local"
+            name="endAt"
+            defaultValue={item?.endAt ?? ""}
+            min={`${tripStart}T00:00`}
+            max={`${addDays(tripEnd, 1)}T23:59`}
+            className={FIELD}
+          />
         </div>
 
         <div className={isTransport ? "grid gap-3 sm:grid-cols-2" : ""}>

@@ -127,6 +127,18 @@ export default function TripTimeline({
     const selected = item.id === selectedItemId;
     const fromLabel = placeLabel(item.city, item.placeName);
     const toLabel = placeLabel(item.toCity, item.toPlaceName);
+    // Entries are placed by day, not by clock. A stay that runs on shows only
+    // the day it ends; the checkout time appears on that last day itself.
+    const endLabel = (endAt: string) => {
+      const dayText = formatDay(endAt.slice(0, 10), locale, {
+        day: "numeric",
+        month: "short",
+      });
+      if (item.type === "STAY") return dayText;
+      return spansNight(item)
+        ? `${dayText} ${formatTime(endAt)}`
+        : formatTime(endAt);
+    };
 
     return (
       <li key={item.id}>
@@ -155,16 +167,9 @@ export default function TripTimeline({
               className="block w-full text-left focus-visible:outline-2 focus-visible:outline-focus"
             >
               <p className="text-xs text-text-muted tabular-nums">
-                {formatTime(item.startAt)}
-                {item.endAt &&
-                  ` – ${
-                    spansNight(item)
-                      ? `${formatDay(item.endAt.slice(0, 10), locale, { day: "numeric", month: "short" })} `
-                      : ""
-                  }${formatTime(item.endAt)}`}
-                {" · "}
                 {tt[`type${item.type}`]}
                 {item.mode && ` · ${tt[`mode${item.mode}`]}`}
+                {item.endAt && ` · → ${endLabel(item.endAt)}`}
               </p>
               <h4 className="font-semibold text-text">{item.title}</h4>
               {(fromLabel || toLabel) && (
@@ -344,7 +349,9 @@ export default function TripTimeline({
                         {tt.carriedOver}:
                       </span>
                       <span className="truncate">{item.title}</span>
-                      {item.endAt && (
+                      {/* The clock time only means something on the last day:
+                          the checkout, the arrival. */}
+                      {item.endAt && item.endAt.slice(0, 10) === date && (
                         <span className="ml-auto tabular-nums">
                           → {formatTime(item.endAt)}
                         </span>

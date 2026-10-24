@@ -38,6 +38,7 @@ const FIELD = "field w-full px-3.5 py-2.5";
 
 /** Minor units back to the plain number the field shows. */
 function budgetText(amount: number): string {
+  if (amount === 0) return "";
   return amount % 100 === 0 ? String(amount / 100) : (amount / 100).toFixed(2);
 }
 
@@ -133,7 +134,6 @@ export default function TripForm({ action, initial, onCancel }: Props) {
           <input
             id="trip-budget"
             name="budget"
-            required
             inputMode="decimal"
             defaultValue={initial ? budgetText(initial.budget) : ""}
             placeholder="600"

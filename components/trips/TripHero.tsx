@@ -141,34 +141,42 @@ export default function TripHero({
             </div>
 
             <div className="glass flex items-center gap-5 rounded-panel border border-border bg-surface p-4 pr-6">
-              <BudgetRing
-                budget={budget.budget}
-                total={budget.total}
-                currency={trip.currency}
-                locale={locale}
-                label={tt.budgetLabel}
-              />
+              {budget.budget > 0 && (
+                <BudgetRing
+                  budget={budget.budget}
+                  total={budget.total}
+                  currency={trip.currency}
+                  locale={locale}
+                  label={tt.budgetLabel}
+                />
+              )}
               <dl className="space-y-2 text-sm">
-                <div>
-                  <dt className="text-text-muted">{tt.budgetLabel}</dt>
-                  <dd className="text-lg font-semibold text-text tabular-nums">
-                    {formatMoney(budget.budget, trip.currency, locale)}
-                  </dd>
-                </div>
+                {budget.budget > 0 && (
+                  <div>
+                    <dt className="text-text-muted">{tt.budgetLabel}</dt>
+                    <dd className="text-lg font-semibold text-text tabular-nums">
+                      {formatMoney(budget.budget, trip.currency, locale)}
+                    </dd>
+                  </div>
+                )}
                 <div>
                   <dt className="text-text-muted">{tt.spent}</dt>
-                  <dd className="font-semibold text-text tabular-nums">
+                  <dd
+                    className={`tabular-nums ${budget.budget > 0 ? "font-semibold" : "text-lg font-semibold"} text-text`}
+                  >
                     {formatMoney(budget.total, trip.currency, locale)}
                   </dd>
                 </div>
-                <div>
-                  <dt className="text-text-muted">{tt.remaining}</dt>
-                  <dd
-                    className={`font-semibold tabular-nums ${budget.overBudget ? "text-danger-700 dark:text-danger-400" : "text-accent-text"}`}
-                  >
-                    {formatMoney(budget.remaining, trip.currency, locale)}
-                  </dd>
-                </div>
+                {budget.budget > 0 && (
+                  <div>
+                    <dt className="text-text-muted">{tt.remaining}</dt>
+                    <dd
+                      className={`font-semibold tabular-nums ${budget.overBudget ? "text-danger-700 dark:text-danger-400" : "text-accent-text"}`}
+                    >
+                      {formatMoney(budget.remaining, trip.currency, locale)}
+                    </dd>
+                  </div>
+                )}
               </dl>
             </div>
           </div>

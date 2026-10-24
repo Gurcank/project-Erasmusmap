@@ -15,7 +15,8 @@ export default function TripCard({ trip }: { trip: TripSummary }) {
   const days = tripDays(trip.startDate, trip.endDate).length;
   const ratio =
     trip.budget > 0 ? trip.spent / trip.budget : trip.spent > 0 ? 2 : 0;
-  const over = trip.spent > trip.budget;
+  const hasBudget = trip.budget > 0;
+  const over = hasBudget && trip.spent > trip.budget;
 
   return (
     <Link
@@ -79,25 +80,29 @@ export default function TripCard({ trip }: { trip: TripSummary }) {
 
         <div className="mt-auto pt-2">
           <div className="mb-1 flex justify-between text-xs text-text-muted">
-            <span>{tt.budgetLabel}</span>
+            <span>{hasBudget ? tt.budgetLabel : tt.spent}</span>
             <span
               className={`tabular-nums ${over ? "font-semibold text-danger-700 dark:text-danger-400" : ""}`}
             >
-              {fill(tt.budgetOf, {
-                spent: formatMoney(trip.spent, trip.currency, locale),
-                budget: formatMoney(trip.budget, trip.currency, locale),
-              })}
+              {hasBudget
+                ? fill(tt.budgetOf, {
+                    spent: formatMoney(trip.spent, trip.currency, locale),
+                    budget: formatMoney(trip.budget, trip.currency, locale),
+                  })
+                : formatMoney(trip.spent, trip.currency, locale)}
             </span>
           </div>
-          <div
-            className="h-1.5 overflow-hidden rounded-full bg-ink-500/25"
-            role="presentation"
-          >
+          {hasBudget && (
             <div
-              className={`h-full rounded-full ${over ? "bg-danger-500" : "bg-primary"}`}
-              style={{ width: `${Math.min(100, ratio * 100)}%` }}
-            />
-          </div>
+              className="h-1.5 overflow-hidden rounded-full bg-ink-500/25"
+              role="presentation"
+            >
+              <div
+                className={`h-full rounded-full ${over ? "bg-danger-500" : "bg-primary"}`}
+                style={{ width: `${Math.min(100, ratio * 100)}%` }}
+              />
+            </div>
+          )}
         </div>
       </div>
     </Link>

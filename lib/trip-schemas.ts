@@ -120,10 +120,10 @@ const tripSchema = z
   );
 
 export function parseTripForm(formData: FormData): Parsed<TripInput> {
-  const budget = money(read(formData, "budget"), true);
-  if (budget === "invalid" || budget === null) {
-    return { ok: false, error: "Geçerli bir bütçe gir" };
-  }
+  // Optional: no budget is stored as 0 and the planner then hides the meter.
+  const raw = money(read(formData, "budget"), false);
+  if (raw === "invalid") return { ok: false, error: "Geçerli bir bütçe gir" };
+  const budget = raw ?? 0;
   const result = tripSchema.safeParse({
     title: read(formData, "title"),
     description: optional(read(formData, "description")),
