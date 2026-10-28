@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   CalendarDays,
   Globe2,
+  Link2,
   Lock,
   MapPin,
   Pencil,
@@ -17,6 +18,7 @@ import ActionForm from "@/components/ui/ActionForm";
 import GlassButton from "@/components/ui/GlassButton";
 import SubmitButton from "@/components/ui/SubmitButton";
 import BudgetRing from "@/components/trips/BudgetRing";
+import ShareLink from "@/components/trips/ShareLink";
 import TripForm from "@/components/trips/TripForm";
 import {
   withSuccess,
@@ -229,6 +231,7 @@ export default function TripHero({
               {(
                 [
                   ["PRIVATE", Lock, tt.private],
+                  ["LINK", Link2, tt.linkOnly],
                   ["PUBLIC", Globe2, tt.public],
                 ] as const
               ).map(([value, Icon, label]) => {
@@ -254,6 +257,19 @@ export default function TripHero({
               })}
             </div>
           </ActionForm>
+
+          {trip.visibility === "LINK" && trip.shareToken && (
+            <>
+              <p className="w-full text-xs text-text-muted">
+                {tt.visibilityLinkHint}
+              </p>
+              <ShareLink
+                tripId={trip.id}
+                token={trip.shareToken}
+                actions={actions}
+              />
+            </>
+          )}
 
           <ActionForm
             action={actions.deleteTrip}

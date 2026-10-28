@@ -132,6 +132,80 @@ test.describe("a signed-in person", () => {
   });
 });
 
+test.describe("sharing a plan by link", () => {
+  let owner: TestUser;
+
+  test.beforeAll(async () => {
+    owner = await createUser("USER");
+  });
+  test.afterAll(async () => {
+    await deleteUser(owner);
+  });
+
+  test("the link opens it for a stranger, read-only, until it is replaced", async ({
+    browser,
+    context,
+    baseURL,
+    page,
+  }) => {
+    await signIn(context, owner, baseURL!);
+    await page.goto("/trips/new");
+    await page.locator("input[name=title]").fill("Shared trip");
+    await page.locator("input[name=startDate]").fill("2027-03-01");
+    await page.locator("input[name=endDate]").fill("2027-03-02");
+    await page.getByRole("button", { name: /create/i }).click();
+    await page.waitForURL(
+      (url) =>
+        url.pathname.startsWith("/trips/") && url.pathname !== "/trips/new",
+    );
+    const tripPath = new URL(page.url()).pathname;
+
+    await page.getByRole("button", { name: /link only/i }).click();
+    const field = page.locator("#trip-share-link");
+    await expect(field).toHaveValue(/\/t\/[A-Za-z0-9_-]{43}$/);
+    const link = await field.inputValue();
+
+    // Someone with no account and no session.
+    const stranger = await browser.newContext();
+    await stranger.addCookies([
+      { name: "consent", value: "denied", url: baseURL! },
+    ]);
+    const visitor = await stranger.newPage();
+    // The plan list streams in behind a loading shell, so a closed page still
+    // answers 200: what matters is that the plan never shows up.
+    const expectClosed = async (url: string) => {
+      await visitor.goto(url);
+      await visitor.waitForLoadState("networkidle");
+      await expect(
+        visitor.getByRole("heading", { name: "Shared trip" }),
+      ).toHaveCount(0);
+    };
+    const opened = await visitor.goto(link);
+    expect(opened?.status()).toBe(200);
+    await expect(
+      visitor.getByRole("heading", { name: "Shared trip" }).first(),
+    ).toBeVisible();
+    await expect(
+      visitor.getByRole("button", { name: /add item/i }),
+    ).toHaveCount(0);
+    // The plan's own address stays closed to them.
+    await expectClosed(tripPath);
+
+    // A new link kills the old one.
+    await page.getByRole("button", { name: /new link/i }).click();
+    await page.getByRole("button", { name: /create new link/i }).click();
+    await expect(field).not.toHaveValue(link);
+    await expectClosed(link);
+
+    // Leaving link mode ends it altogether.
+    const fresh = await field.inputValue();
+    await page.getByRole("button", { name: /^private$/i }).click();
+    await expect(field).toHaveCount(0);
+    await expectClosed(fresh);
+    await stranger.close();
+  });
+});
+
 test.describe("an admin", () => {
   let admin: TestUser;
 

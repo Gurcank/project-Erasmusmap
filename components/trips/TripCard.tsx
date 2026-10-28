@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { CalendarDays, Globe2, Lock, MapPin } from "lucide-react";
+import { CalendarDays, Globe2, Link2, Lock, MapPin } from "lucide-react";
 import { fill, useTripT } from "@/hooks/useTripT";
 import { formatMoney } from "@/lib/trip-budget";
 import { formatRange } from "@/lib/trip-format";
@@ -56,10 +56,16 @@ export default function TripCard({ trip }: { trip: TripSummary }) {
         <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-ink-950/70 px-2.5 py-1 text-xs font-medium text-ink-50">
           {trip.visibility === "PUBLIC" ? (
             <Globe2 size={12} aria-hidden="true" />
+          ) : trip.visibility === "LINK" ? (
+            <Link2 size={12} aria-hidden="true" />
           ) : (
             <Lock size={12} aria-hidden="true" />
           )}
-          {trip.visibility === "PUBLIC" ? tt.public : tt.private}
+          {trip.visibility === "PUBLIC"
+            ? tt.public
+            : trip.visibility === "LINK"
+              ? tt.linkOnly
+              : tt.private}
         </span>
       </div>
 

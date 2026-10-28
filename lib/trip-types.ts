@@ -127,6 +127,8 @@ export type TripView = {
   budget: number;
   currency: string;
   visibility: TripVisibility;
+  /** Set only for the owner, who hands the link out. */
+  shareToken: string | null;
   owner: { id: string; username: string | null; name: string | null };
   items: TripItemView[];
   expenses: TripExpenseView[];

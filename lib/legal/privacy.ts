@@ -48,7 +48,7 @@ const tr = ({
     {
       heading: "4. Kimlerin görebildiği",
       paragraphs: [
-        "Kullanıcı adın, avatarın, biyografin, konumun, yorumların, yanıtların, ziyaret ettiğin şehirler ve tarihleri, favorilerin ve herkese açık olarak işaretlediğin seyahat planların siteyi ziyaret eden herkes tarafından görülebilir. Özel seyahat planlarını yalnızca sen görürsün. E-posta adresini diğer kullanıcılar görmez; siteyi yöneten yöneticiler moderasyon için görebilir.",
+        "Kullanıcı adın, avatarın, biyografin, konumun, yorumların, yanıtların, ziyaret ettiğin şehirler ve tarihleri, favorilerin ve herkese açık olarak işaretlediğin seyahat planların siteyi ziyaret eden herkes tarafından görülebilir. Özel seyahat planlarını yalnızca sen görürsün. “Linki olan” olarak işaretlediğin bir planı, bağlantıyı bilen herkes okuyabilir; bu plan profilinde ve aramada listelenmez ve bağlantıyı istediğin an yenileyerek eskisini geçersiz kılabilirsin. E-posta adresini diğer kullanıcılar görmez; siteyi yöneten yöneticiler moderasyon için görebilir.",
         "Birini engellediğinde ikiniz de birbirinizin içeriğini görmezsiniz.",
       ],
     },
@@ -157,7 +157,7 @@ const en = ({
     {
       heading: "4. Who can see it",
       paragraphs: [
-        "Your username, avatar, bio, location, reviews, replies, the cities you visited and their dates, your favourites and the trip plans you mark public can be seen by anyone visiting the site. Private trip plans are visible only to you. Other users cannot see your email address; the administrators who run the site can see it for moderation.",
+        "Your username, avatar, bio, location, reviews, replies, the cities you visited and their dates, your favourites and the trip plans you mark public can be seen by anyone visiting the site. Private trip plans are visible only to you. A plan you mark “link only” can be read by anyone who has its link; it is not listed on your profile or in search, and you can replace the link at any time to cancel the old one. Other users cannot see your email address; the administrators who run the site can see it for moderation.",
         "When you block someone, neither of you sees the other's content.",
       ],
     },
