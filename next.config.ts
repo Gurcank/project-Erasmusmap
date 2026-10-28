@@ -36,6 +36,17 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: STATIC_SECURITY_HEADERS,
       },
+      {
+        // A share link is a secret in the address: it must not be cached by
+        // anything on the way, nor sent on to another site as a referrer. Later
+        // rules override earlier ones for the same header.
+        source: "/t/:path*",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "Cache-Control", value: "private, no-store" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
     ];
   },
 };

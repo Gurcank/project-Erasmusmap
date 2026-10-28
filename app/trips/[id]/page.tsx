@@ -16,6 +16,7 @@ import {
   deleteTripItem,
   deleteTripTodo,
   removeTripCity,
+  rotateShareLink,
   saveTripCityNotes,
   saveTripExpense,
   saveTripItem,
@@ -63,7 +64,7 @@ export default async function TripPage({
   const result = await loadTrip(id);
   if (!result) notFound();
 
-  const { trip, isOwner } = result;
+  const { trip, access } = result;
 
   // City photos are cached on the City row. Fill any that are missing once the
   // response is out, the same way the city page does, so the next view of the
@@ -78,11 +79,12 @@ export default async function TripPage({
   return (
     <TripPlanner
       trip={trip}
-      isOwner={isOwner}
+      isOwner={access === "owner"}
       actions={{
         updateTrip,
         deleteTrip,
         setTripVisibility,
+        rotateShareLink,
         saveTripItem,
         deleteTripItem,
         saveTripExpense,

@@ -1,6 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isBlockedBetween } from "@/lib/social";
+import {
+  memberAccess,
+  SHARE_TOKEN_PATTERN,
+  type TripAccess,
+} from "@/lib/trip-access";
 import { dateToDay, dateToTime } from "@/lib/trip-schemas";
 import type {
   TripCityInspiration,
@@ -122,12 +127,29 @@ async function getInspiration(
   });
 }
 
-export type ViewerTrip = { trip: TripView; isOwner: boolean };
+export type ViewerTrip = { trip: TripView; access: TripAccess };
+
+const TRIP_INCLUDE = {
+  user: { select: { id: true, username: true, name: true } },
+  items: { include: ITEM_INCLUDE, orderBy: { startAt: "asc" } },
+  expenses: { orderBy: [{ date: "asc" }, { createdAt: "asc" }] },
+  cities: {
+    orderBy: { position: "asc" },
+    include: {
+      city: { select: { ...CITY_REF.select, imageUrl: true } },
+      todos: { orderBy: [{ position: "asc" }, { createdAt: "asc" }] },
+    },
+  },
+} satisfies Prisma.TripInclude;
+
+type TripRow = Prisma.TripGetPayload<{ include: typeof TRIP_INCLUDE }>;
 
 /**
- * The trip as the viewer may see it, or null. The owner always sees it; a
- * public trip is visible to everyone except across a block, which answers the
- * same as a missing trip so it does not confirm the block.
+ * The trip as the viewer may see it, or null. The owner and accepted members
+ * see it; a public trip is visible to everyone. A block in either direction
+ * answers the same as a missing trip so it does not confirm the block. A trip
+ * shared by link is NOT readable here by strangers — the link is the key, and
+ * it only opens getTripByShareToken.
  */
 export async function getTripForViewer(
   id: string,
@@ -136,34 +158,53 @@ export async function getTripForViewer(
 ): Promise<ViewerTrip | null> {
   const row = await prisma.trip.findUnique({
     where: { id },
-    include: {
-      user: { select: { id: true, username: true, name: true } },
-      items: { include: ITEM_INCLUDE, orderBy: { startAt: "asc" } },
-      expenses: { orderBy: [{ date: "asc" }, { createdAt: "asc" }] },
-      cities: {
-        orderBy: { position: "asc" },
-        include: {
-          city: { select: { ...CITY_REF.select, imageUrl: true } },
-          todos: { orderBy: [{ position: "asc" }, { createdAt: "asc" }] },
-        },
-      },
-    },
+    include: TRIP_INCLUDE,
   });
   if (!row) return null;
 
-  const isOwner = viewerId === row.userId;
-  if (!isOwner) {
+  let access: TripAccess | null = viewerId
+    ? await memberAccess(row, viewerId)
+    : null;
+  if (!access) {
     if (row.visibility !== "PUBLIC") return null;
     if (viewerId && (await isBlockedBetween(viewerId, row.userId))) return null;
+    access = "viewer";
   }
+  return buildViewerTrip(row, access, hiddenUserIds);
+}
 
+/**
+ * The trip behind a share link, read-only, or null. The token is checked for
+ * its shape before it reaches the database, and the plan must still be in link
+ * mode: leaving link mode clears the token, so an old link stops working.
+ */
+export async function getTripByShareToken(
+  token: string,
+  viewerId: string | null,
+  hiddenUserIds: string[],
+): Promise<ViewerTrip | null> {
+  if (!SHARE_TOKEN_PATTERN.test(token)) return null;
+  const row = await prisma.trip.findUnique({
+    where: { shareToken: token },
+    include: TRIP_INCLUDE,
+  });
+  if (!row || row.visibility !== "LINK") return null;
+  if (viewerId && (await isBlockedBetween(viewerId, row.userId))) return null;
+  return buildViewerTrip(row, "viewer", hiddenUserIds);
+}
+
+async function buildViewerTrip(
+  row: TripRow,
+  access: TripAccess,
+  hiddenUserIds: string[],
+): Promise<ViewerTrip> {
   const inspiration = await getInspiration(
     row.cities.map((entry) => entry.cityId),
     hiddenUserIds,
   );
 
   return {
-    isOwner,
+    access,
     trip: {
       id: row.id,
       title: row.title,
@@ -173,6 +214,8 @@ export async function getTripForViewer(
       budget: row.budget,
       currency: row.currency,
       visibility: row.visibility,
+      // The link is a secret for the owner to hand out; nobody else is sent it.
+      shareToken: access === "owner" ? row.shareToken : null,
       owner: row.user,
       items: row.items.map(toItemView),
       expenses: row.expenses.map((expense) => ({

@@ -8,10 +8,10 @@ import { authorizeAction } from "@/lib/action-guard";
 import type { ActiveUser } from "@/lib/auth-guards";
 import { UserFacingError, toActionResult } from "@/lib/action-result";
 import type { ActionResult } from "@/lib/action-result";
+import { newShareToken, requireTripRole } from "@/lib/trip-access";
 import { dayOf } from "@/lib/trip-timeline";
 import {
   cityNotesSchema,
-  dateToDay,
   dayToDate,
   itemWithinTrip,
   MAX_EXPENSES_PER_TRIP,
@@ -30,7 +30,6 @@ import type { ExpenseCategory, TripItemType } from "@/lib/trip-types";
 // Editing a plan is many small saves in a row, so the limit is generous: it is
 // there to stop a script, not a person filling in their trip.
 const RATE_LIMIT = 120;
-const NOT_FOUND = "Plan bulunamadı";
 
 function authorize(key: string): Promise<ActiveUser> {
   return authorizeAction(`trip-${key}`, { limit: RATE_LIMIT });
@@ -38,24 +37,6 @@ function authorize(key: string): Promise<ActiveUser> {
 
 const field = (formData: FormData, name: string) =>
   String(formData.get(name) ?? "").trim();
-
-/**
- * The trip, if the user owns it. A trip that exists but belongs to someone
- * else answers exactly like one that does not.
- */
-async function ownedTrip(tripId: string, userId: string) {
-  if (!tripId) throw new UserFacingError(NOT_FOUND);
-  const trip = await prisma.trip.findFirst({
-    where: { id: tripId, userId },
-    select: { id: true, startDate: true, endDate: true },
-  });
-  if (!trip) throw new UserFacingError(NOT_FOUND);
-  return {
-    id: trip.id,
-    startDate: dateToDay(trip.startDate),
-    endDate: dateToDay(trip.endDate),
-  };
-}
 
 function revalidateTrip(tripId: string, username: string | null) {
   revalidatePath(`/trips/${tripId}`);
@@ -156,7 +137,11 @@ export async function updateTrip(
 
   return toActionResult(async () => {
     const user = await authorize("update");
-    const trip = await ownedTrip(field(formData, "tripId"), user.id);
+    const trip = await requireTripRole(
+      field(formData, "tripId"),
+      user.id,
+      "owner",
+    );
     const { startDate, endDate, ...rest } = parsed.data;
 
     await prisma.trip.update({
@@ -177,10 +162,51 @@ export async function setTripVisibility(
 ): Promise<ActionResult> {
   return toActionResult(async () => {
     const user = await authorize("visibility");
-    const trip = await ownedTrip(field(formData, "tripId"), user.id);
+    const trip = await requireTripRole(
+      field(formData, "tripId"),
+      user.id,
+      "owner",
+    );
+    const wanted = field(formData, "visibility");
     const visibility =
-      field(formData, "visibility") === "PUBLIC" ? "PUBLIC" : "PRIVATE";
-    await prisma.trip.update({ where: { id: trip.id }, data: { visibility } });
+      wanted === "PUBLIC" || wanted === "LINK" ? wanted : "PRIVATE";
+
+    // The link exists only while the plan is shared by link. Keeping the token
+    // when it is set again means a repeated click does not break links already
+    // handed out; leaving link mode always discards it.
+    const current = await prisma.trip.findUnique({
+      where: { id: trip.id },
+      select: { shareToken: true },
+    });
+    const shareToken =
+      visibility === "LINK" ? (current?.shareToken ?? newShareToken()) : null;
+
+    await prisma.trip.update({
+      where: { id: trip.id },
+      data: { visibility, shareToken },
+    });
+    revalidateTrip(trip.id, user.username);
+  });
+}
+
+/** A new link: every link handed out before stops working at once. */
+export async function rotateShareLink(
+  _previousState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return toActionResult(async () => {
+    const user = await authorize("visibility");
+    const trip = await requireTripRole(
+      field(formData, "tripId"),
+      user.id,
+      "owner",
+    );
+    // Only a plan shared by link has one; this never turns sharing on.
+    const { count } = await prisma.trip.updateMany({
+      where: { id: trip.id, visibility: "LINK" },
+      data: { shareToken: newShareToken() },
+    });
+    if (count === 0) throw new UserFacingError("Plan bulunamadı");
     revalidateTrip(trip.id, user.username);
   });
 }
@@ -191,7 +217,11 @@ export async function deleteTrip(
 ): Promise<ActionResult> {
   const result = await toActionResult(async () => {
     const user = await authorize("delete");
-    const trip = await ownedTrip(field(formData, "tripId"), user.id);
+    const trip = await requireTripRole(
+      field(formData, "tripId"),
+      user.id,
+      "owner",
+    );
     await prisma.trip.delete({ where: { id: trip.id } });
     revalidateTrip(trip.id, user.username);
   });
@@ -210,7 +240,11 @@ export async function saveTripItem(
 
   return toActionResult(async () => {
     const user = await authorize("item");
-    const trip = await ownedTrip(field(formData, "tripId"), user.id);
+    const trip = await requireTripRole(
+      field(formData, "tripId"),
+      user.id,
+      "editor",
+    );
     const itemId = field(formData, "itemId") || null;
     const { cost, costCategory, startAt, endAt, ...rest } = parsed.data;
 
@@ -284,7 +318,11 @@ export async function deleteTripItem(
 ): Promise<ActionResult> {
   return toActionResult(async () => {
     const user = await authorize("item");
-    const trip = await ownedTrip(field(formData, "tripId"), user.id);
+    const trip = await requireTripRole(
+      field(formData, "tripId"),
+      user.id,
+      "editor",
+    );
     // The linked expense goes with it (onDelete: Cascade).
     await prisma.tripItem.deleteMany({
       where: { id: field(formData, "itemId"), tripId: trip.id },
@@ -304,7 +342,11 @@ export async function saveTripExpense(
 
   return toActionResult(async () => {
     const user = await authorize("expense");
-    const trip = await ownedTrip(field(formData, "tripId"), user.id);
+    const trip = await requireTripRole(
+      field(formData, "tripId"),
+      user.id,
+      "editor",
+    );
     const expenseId = field(formData, "expenseId") || null;
     const { date, ...rest } = parsed.data;
     if (date < trip.startDate || date > trip.endDate) {
@@ -343,7 +385,11 @@ export async function deleteTripExpense(
 ): Promise<ActionResult> {
   return toActionResult(async () => {
     const user = await authorize("expense");
-    const trip = await ownedTrip(field(formData, "tripId"), user.id);
+    const trip = await requireTripRole(
+      field(formData, "tripId"),
+      user.id,
+      "editor",
+    );
     await prisma.tripExpense.deleteMany({
       where: {
         id: field(formData, "expenseId"),
@@ -363,7 +409,11 @@ export async function addTripCity(
 ): Promise<ActionResult> {
   return toActionResult(async () => {
     const user = await authorize("city");
-    const trip = await ownedTrip(field(formData, "tripId"), user.id);
+    const trip = await requireTripRole(
+      field(formData, "tripId"),
+      user.id,
+      "editor",
+    );
     try {
       await prisma.$transaction((tx) =>
         ensureTripCities(tx, trip.id, [field(formData, "cityId")]),
@@ -381,7 +431,11 @@ export async function removeTripCity(
 ): Promise<ActionResult> {
   return toActionResult(async () => {
     const user = await authorize("city");
-    const trip = await ownedTrip(field(formData, "tripId"), user.id);
+    const trip = await requireTripRole(
+      field(formData, "tripId"),
+      user.id,
+      "editor",
+    );
     await prisma.tripCity.deleteMany({
       where: { id: field(formData, "tripCityId"), tripId: trip.id },
     });
@@ -399,7 +453,11 @@ export async function saveTripCityNotes(
 
   return toActionResult(async () => {
     const user = await authorize("notes");
-    const trip = await ownedTrip(field(formData, "tripId"), user.id);
+    const trip = await requireTripRole(
+      field(formData, "tripId"),
+      user.id,
+      "editor",
+    );
     const updated = await prisma.tripCity.updateMany({
       where: { id: field(formData, "tripCityId"), tripId: trip.id },
       data: { notes: notes.data || null },
@@ -410,7 +468,11 @@ export async function saveTripCityNotes(
 }
 
 async function ownedTripCity(formData: FormData, userId: string) {
-  const trip = await ownedTrip(field(formData, "tripId"), userId);
+  const trip = await requireTripRole(
+    field(formData, "tripId"),
+    userId,
+    "editor",
+  );
   const tripCity = await prisma.tripCity.findFirst({
     where: { id: field(formData, "tripCityId"), tripId: trip.id },
     select: { id: true },
