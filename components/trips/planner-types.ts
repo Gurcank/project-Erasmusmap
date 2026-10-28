@@ -5,6 +5,10 @@ export type TripActions = {
   deleteTrip: FormAction;
   setTripVisibility: FormAction;
   rotateShareLink: FormAction;
+  inviteToTrip: FormAction;
+  removeTripMember: FormAction;
+  setTripMemberRole: FormAction;
+  leaveTrip: FormAction;
   saveTripItem: FormAction;
   deleteTripItem: FormAction;
   saveTripExpense: FormAction;

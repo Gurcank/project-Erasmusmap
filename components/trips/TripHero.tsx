@@ -20,6 +20,7 @@ import SubmitButton from "@/components/ui/SubmitButton";
 import BudgetRing from "@/components/trips/BudgetRing";
 import ShareLink from "@/components/trips/ShareLink";
 import TripForm from "@/components/trips/TripForm";
+import TripMembers from "@/components/trips/TripMembers";
 import {
   withSuccess,
   type TripActions,
@@ -32,6 +33,8 @@ import type { TripView } from "@/lib/trip-types";
 type Props = {
   trip: TripView;
   isOwner: boolean;
+  /** Added by the owner, so it can leave; a visitor of a public plan cannot. */
+  isMember: boolean;
   budget: BudgetSummary;
   dayCount: number;
   distanceKm: number;
@@ -43,6 +46,7 @@ const MAX_COVER = 5;
 export default function TripHero({
   trip,
   isOwner,
+  isMember,
   budget,
   dayCount,
   distanceKm,
@@ -84,10 +88,16 @@ export default function TripHero({
             <span className="inline-flex items-center gap-1 rounded-full bg-ink-950/60 px-2.5 py-1">
               {trip.visibility === "PUBLIC" ? (
                 <Globe2 size={12} aria-hidden="true" />
+              ) : trip.visibility === "LINK" ? (
+                <Link2 size={12} aria-hidden="true" />
               ) : (
                 <Lock size={12} aria-hidden="true" />
               )}
-              {trip.visibility === "PUBLIC" ? tt.public : tt.private}
+              {trip.visibility === "PUBLIC"
+                ? tt.public
+                : trip.visibility === "LINK"
+                  ? tt.linkOnly
+                  : tt.private}
             </span>
             {!isOwner && (
               <span className="rounded-full bg-ink-950/60 px-2.5 py-1">
@@ -281,6 +291,24 @@ export default function TripHero({
             <SubmitButton size="sm" variant="danger">
               <Trash2 size={14} aria-hidden="true" />
               {tt.deleteTrip}
+            </SubmitButton>
+          </ActionForm>
+        </div>
+      )}
+
+      {isOwner && <TripMembers trip={trip} actions={actions} />}
+
+      {isMember && (
+        <div className="glass mt-4 flex flex-wrap items-center justify-between gap-3 rounded-panel border border-border bg-surface px-4 py-3">
+          <p className="text-sm text-text-muted">{tt.memberOfPlan}</p>
+          <ActionForm
+            action={actions.leaveTrip}
+            confirmMessage={tt.confirmLeaveTrip}
+            confirmLabel={tt.leaveTrip}
+          >
+            <input type="hidden" name="tripId" value={trip.id} />
+            <SubmitButton size="sm" variant="ghost">
+              {tt.leaveTrip}
             </SubmitButton>
           </ActionForm>
         </div>

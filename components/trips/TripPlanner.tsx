@@ -15,6 +15,7 @@ import {
   totalDistanceKm,
   tripDays,
 } from "@/lib/trip-timeline";
+import type { TripAccess } from "@/lib/trip-access";
 import type { TripItemView, TripView } from "@/lib/trip-types";
 
 // Mapbox touches window at import time, so the map only ever loads in the
@@ -28,7 +29,9 @@ const TripMap = dynamic(() => import("@/components/trips/TripMap"), {
 
 type Props = {
   trip: TripView;
-  isOwner: boolean;
+  access: TripAccess;
+  /** Added to the plan by its owner, as opposed to a visitor of a public one. */
+  isMember?: boolean;
   actions: TripActions;
 };
 
@@ -40,8 +43,16 @@ const SECTIONS = [
   ["cities", "sectionCities"],
 ] as const;
 
-export default function TripPlanner({ trip, isOwner, actions }: Props) {
+export default function TripPlanner({
+  trip,
+  access,
+  isMember = false,
+  actions,
+}: Props) {
   const { tt } = useTripT();
+  // The owner runs the plan; an editor changes what is in it; a viewer reads.
+  const isOwner = access === "owner";
+  const canEdit = access !== "viewer";
   const days = useMemo(
     () => tripDays(trip.startDate, trip.endDate),
     [trip.startDate, trip.endDate],
@@ -80,6 +91,7 @@ export default function TripPlanner({ trip, isOwner, actions }: Props) {
       <TripHero
         trip={trip}
         isOwner={isOwner}
+        isMember={isMember}
         budget={budget}
         dayCount={days.length}
         distanceKm={totalDistanceKm(steps)}
@@ -120,7 +132,7 @@ export default function TripPlanner({ trip, isOwner, actions }: Props) {
         <TripTimeline
           trip={trip}
           days={days}
-          isOwner={isOwner}
+          canEdit={canEdit}
           budget={budget}
           openDay={openDay}
           onOpenDay={setOpenDay}
@@ -137,7 +149,7 @@ export default function TripPlanner({ trip, isOwner, actions }: Props) {
           trip={trip}
           days={days}
           budget={budget}
-          isOwner={isOwner}
+          canEdit={canEdit}
           cityIndex={cityIndex}
           dayCities={dayCities}
           actions={actions}
@@ -147,7 +159,7 @@ export default function TripPlanner({ trip, isOwner, actions }: Props) {
       <section id="cities" className="scroll-mt-36">
         <TripCities
           trip={trip}
-          isOwner={isOwner}
+          canEdit={canEdit}
           cityIndex={cityIndex}
           actions={actions}
         />

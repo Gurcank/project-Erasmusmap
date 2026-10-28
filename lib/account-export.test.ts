@@ -19,6 +19,7 @@ const models = vi.hoisted(() => {
     follow: make(),
     block: make(),
     trip: make(),
+    tripMember: make(),
   };
 });
 const requireActiveUser = vi.hoisted(() => vi.fn());
@@ -37,6 +38,7 @@ vi.mock("@/lib/prisma", () => ({
     follow: { findMany: models.follow },
     block: { findMany: models.block },
     trip: { findMany: models.trip },
+    tripMember: { findMany: models.tripMember },
   },
 }));
 vi.mock("@/lib/auth-guards", () => ({ requireActiveUser }));
@@ -55,6 +57,7 @@ const scopedQueries = () =>
     models.wishlist,
     models.favorite,
     models.trip,
+    models.tripMember,
   ].map((fn) => fn.mock.calls[0][0] as Call);
 
 beforeEach(() => {
@@ -101,6 +104,7 @@ describe("buildAccountExport", () => {
       "following",
       "blockedUsers",
       "trips",
+      "sharedTrips",
     ]);
   });
 });

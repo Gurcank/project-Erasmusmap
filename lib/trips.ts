@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { isBlockedBetween } from "@/lib/social";
+import { getHiddenUserIds, isBlockedBetween } from "@/lib/social";
 import {
   memberAccess,
   SHARE_TOKEN_PATTERN,
@@ -10,6 +10,7 @@ import { dateToDay, dateToTime } from "@/lib/trip-schemas";
 import type {
   TripCityInspiration,
   TripCityRef,
+  TripInviteView,
   TripItemView,
   TripSummary,
   TripView,
@@ -127,10 +128,24 @@ async function getInspiration(
   });
 }
 
-export type ViewerTrip = { trip: TripView; access: TripAccess };
+export type ViewerTrip = {
+  trip: TripView;
+  access: TripAccess;
+  /** Added to the plan by its owner, as opposed to a visitor of a public one. */
+  isMember: boolean;
+};
 
 const TRIP_INCLUDE = {
   user: { select: { id: true, username: true, name: true } },
+  members: {
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      role: true,
+      status: true,
+      user: { select: { id: true, username: true, name: true } },
+    },
+  },
   items: { include: ITEM_INCLUDE, orderBy: { startAt: "asc" } },
   expenses: { orderBy: [{ date: "asc" }, { createdAt: "asc" }] },
   cities: {
@@ -165,12 +180,13 @@ export async function getTripForViewer(
   let access: TripAccess | null = viewerId
     ? await memberAccess(row, viewerId)
     : null;
+  const isMember = access !== null && access !== "owner";
   if (!access) {
     if (row.visibility !== "PUBLIC") return null;
     if (viewerId && (await isBlockedBetween(viewerId, row.userId))) return null;
     access = "viewer";
   }
-  return buildViewerTrip(row, access, hiddenUserIds);
+  return buildViewerTrip(row, access, isMember, hiddenUserIds);
 }
 
 /**
@@ -190,12 +206,13 @@ export async function getTripByShareToken(
   });
   if (!row || row.visibility !== "LINK") return null;
   if (viewerId && (await isBlockedBetween(viewerId, row.userId))) return null;
-  return buildViewerTrip(row, "viewer", hiddenUserIds);
+  return buildViewerTrip(row, "viewer", false, hiddenUserIds);
 }
 
 async function buildViewerTrip(
   row: TripRow,
   access: TripAccess,
+  isMember: boolean,
   hiddenUserIds: string[],
 ): Promise<ViewerTrip> {
   const inspiration = await getInspiration(
@@ -205,6 +222,7 @@ async function buildViewerTrip(
 
   return {
     access,
+    isMember,
     trip: {
       id: row.id,
       title: row.title,
@@ -217,6 +235,8 @@ async function buildViewerTrip(
       // The link is a secret for the owner to hand out; nobody else is sent it.
       shareToken: access === "owner" ? row.shareToken : null,
       owner: row.user,
+      // Who was invited is the owner's business, not a visitor's or a member's.
+      members: access === "owner" ? row.members : [],
       items: row.items.map(toItemView),
       expenses: row.expenses.map((expense) => ({
         id: expense.id,
@@ -252,13 +272,21 @@ export async function getUserTrips(
   const rows = await prisma.trip.findMany({
     where: { userId, ...(includePrivate ? {} : { visibility: "PUBLIC" }) },
     orderBy: { startDate: "desc" },
-    include: {
-      cities: {
-        orderBy: { position: "asc" },
-        select: { city: { select: { name: true, imageUrl: true } } },
-      },
-    },
+    include: SUMMARY_INCLUDE,
   });
+  return summarize(rows);
+}
+
+const SUMMARY_INCLUDE = {
+  cities: {
+    orderBy: { position: "asc" },
+    select: { city: { select: { name: true, imageUrl: true } } },
+  },
+} satisfies Prisma.TripInclude;
+
+type SummaryRow = Prisma.TripGetPayload<{ include: typeof SUMMARY_INCLUDE }>;
+
+async function summarize(rows: SummaryRow[]): Promise<TripSummary[]> {
   if (rows.length === 0) return [];
 
   const spent = await prisma.tripExpense.groupBy({
@@ -285,4 +313,44 @@ export async function getUserTrips(
       .filter((url): url is string => Boolean(url))
       .slice(0, COVER_IMAGES),
   }));
+}
+
+/** Invitations waiting for the user. Only who invited and to what: no contents. */
+export async function getTripInvites(
+  userId: string,
+): Promise<TripInviteView[]> {
+  const rows = await prisma.tripMember.findMany({
+    where: { userId, status: "PENDING" },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      role: true,
+      trip: {
+        select: {
+          title: true,
+          user: { select: { id: true, username: true, name: true } },
+        },
+      },
+    },
+  });
+  const hidden = new Set(await getHiddenUserIds(userId));
+  return rows
+    .filter((row) => !hidden.has(row.trip.user.id))
+    .map((row) => ({
+      id: row.id,
+      role: row.role,
+      tripTitle: row.trip.title,
+      owner: { username: row.trip.user.username, name: row.trip.user.name },
+    }));
+}
+
+/** Plans other people added the user to, as cards. */
+export async function getSharedTrips(userId: string): Promise<TripSummary[]> {
+  const rows = await prisma.trip.findMany({
+    where: { members: { some: { userId, status: "ACCEPTED" } } },
+    orderBy: { startDate: "desc" },
+    include: SUMMARY_INCLUDE,
+  });
+  const hidden = new Set(await getHiddenUserIds(userId));
+  return summarize(rows.filter((row) => !hidden.has(row.userId)));
 }

@@ -24,6 +24,12 @@ import {
 } from "@/lib/trip-actions";
 import { memberAccess } from "@/lib/trip-access";
 import { getTripByShareToken } from "@/lib/trips";
+import {
+  inviteToTrip,
+  leaveTrip,
+  removeTripMember,
+  setTripMemberRole,
+} from "@/lib/trip-member-actions";
 
 // A link opens a plan for reading only, and the link itself is a secret: the
 // page is never indexed, never cached, and never passes the address on.
@@ -63,12 +69,16 @@ export default async function SharedTripPage({
   return (
     <TripPlanner
       trip={result.trip}
-      isOwner={false}
+      access="viewer"
       actions={{
         updateTrip,
         deleteTrip,
         setTripVisibility,
         rotateShareLink,
+        inviteToTrip,
+        removeTripMember,
+        setTripMemberRole,
+        leaveTrip,
         saveTripItem,
         deleteTripItem,
         saveTripExpense,

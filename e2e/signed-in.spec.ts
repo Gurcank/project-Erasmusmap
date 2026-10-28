@@ -206,6 +206,87 @@ test.describe("sharing a plan by link", () => {
   });
 });
 
+test.describe("planning together", () => {
+  let owner: TestUser;
+  let friend: TestUser;
+
+  test.beforeAll(async () => {
+    owner = await createUser("USER");
+    friend = await createUser("USER");
+  });
+  test.afterAll(async () => {
+    await deleteUser(owner);
+    await deleteUser(friend);
+  });
+
+  test("an invited friend sees nothing until they accept, then edits", async ({
+    browser,
+    context,
+    baseURL,
+    page,
+  }) => {
+    await signIn(context, owner, baseURL!);
+    await page.goto("/trips/new");
+    await page.locator("input[name=title]").fill("Together trip");
+    await page.locator("input[name=startDate]").fill("2027-04-01");
+    await page.locator("input[name=endDate]").fill("2027-04-02");
+    await page.getByRole("button", { name: /create/i }).click();
+    await page.waitForURL(
+      (url) =>
+        url.pathname.startsWith("/trips/") && url.pathname !== "/trips/new",
+    );
+    const tripPath = new URL(page.url()).pathname;
+
+    await page.locator("#invite-username").fill(friend.username);
+    await page.getByRole("button", { name: /^invite$/i }).click();
+    await expect(page.getByText(/pending/i).first()).toBeVisible();
+
+    // The friend has an invitation, and no access to the plan itself yet.
+    const other = await browser.newContext();
+    await signIn(other, friend, baseURL!);
+    const mine = await other.newPage();
+    await mine.goto(tripPath);
+    await mine.waitForLoadState("networkidle");
+    await expect(
+      mine.getByRole("heading", { name: "Together trip" }),
+    ).toHaveCount(0);
+
+    await mine.goto("/trips");
+    await expect(
+      mine
+        .getByRole("region", { name: /invitations/i })
+        .getByText(/Together trip/),
+    ).toBeVisible();
+    await mine.getByRole("button", { name: /^accept$/i }).click();
+
+    // Accepted: the plan opens, and an editor can add to it.
+    await mine.goto(tripPath);
+    await expect(
+      mine.getByRole("heading", { name: "Together trip" }).first(),
+    ).toBeVisible();
+    await mine
+      .getByRole("button", { name: /add item/i })
+      .first()
+      .click();
+    await mine.locator("#item-title").fill("Dinner for two");
+    await mine.locator("#item-title").press("Enter");
+    await expect(
+      mine.getByRole("heading", { name: "Dinner for two" }),
+    ).toBeVisible();
+
+    // The owner sees it, and the friend cannot run the owner's controls.
+    await page.reload();
+    await expect(
+      page.getByRole("heading", { name: "Dinner for two" }),
+    ).toBeVisible();
+    await expect(mine.locator("#invite-username")).toHaveCount(0);
+    await expect(
+      mine.getByRole("button", { name: /delete plan/i }),
+    ).toHaveCount(0);
+    await other.close();
+  });
+});
+
 test.describe("an admin", () => {
   let admin: TestUser;
 
