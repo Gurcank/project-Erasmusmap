@@ -252,7 +252,11 @@ test.describe("planning together", () => {
     ).toHaveCount(0);
 
     await mine.goto("/trips");
-    await expect(mine.getByText(/Together trip/)).toBeVisible();
+    await expect(
+      mine
+        .getByRole("region", { name: /invitations/i })
+        .getByText(/Together trip/),
+    ).toBeVisible();
     await mine.getByRole("button", { name: /^accept$/i }).click();
 
     // Accepted: the plan opens, and an editor can add to it.
