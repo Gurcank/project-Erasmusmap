@@ -35,7 +35,7 @@ import type {
 
 type Props = {
   trip: TripView;
-  isOwner: boolean;
+  canEdit: boolean;
   cityIndex: Map<string, number>;
   actions: TripActions;
 };
@@ -52,7 +52,7 @@ const RATING_KEYS = [
 /** One card per city: photo, the traveller's notes and to-dos, and ideas. */
 export default function TripCities({
   trip,
-  isOwner,
+  canEdit,
   cityIndex,
   actions,
 }: Props) {
@@ -68,7 +68,7 @@ export default function TripCities({
         <h2 className="font-display text-2xl font-bold text-on-backdrop">
           {tt.sectionCities}
         </h2>
-        {isOwner && (
+        {canEdit && (
           <GlassButton size="sm" onClick={() => setAdding((open) => !open)}>
             {adding ? (
               <X size={14} aria-hidden="true" />
@@ -100,7 +100,7 @@ export default function TripCities({
               entry={entry}
               color={cityColor(cityIndex.get(entry.city.id) ?? 0)}
               inspiration={inspiration.get(entry.city.id) ?? null}
-              isOwner={isOwner}
+              canEdit={canEdit}
               actions={actions}
             />
           ))}
@@ -146,14 +146,14 @@ function CityCard({
   entry,
   color,
   inspiration,
-  isOwner,
+  canEdit,
   actions,
 }: {
   tripId: string;
   entry: TripCityView;
   color: string;
   inspiration: TripCityInspiration | null;
-  isOwner: boolean;
+  canEdit: boolean;
   actions: TripActions;
 }) {
   const { tt } = useTripT();
@@ -204,7 +204,7 @@ function CityCard({
               {tt.goToCity}
               <ArrowUpRight size={12} aria-hidden="true" />
             </Link>
-            {isOwner && (
+            {canEdit && (
               <ActionForm
                 action={actions.removeTripCity}
                 confirmMessage={tt.confirmRemoveCity}
@@ -231,7 +231,7 @@ function CityCard({
           <h4 className="mb-2 text-sm font-semibold text-text">
             {tt.cityNotes}
           </h4>
-          {isOwner ? (
+          {canEdit ? (
             <ActionForm
               action={actions.saveTripCityNotes}
               className="flex flex-col gap-2"
@@ -275,7 +275,7 @@ function CityCard({
           <ul className="space-y-1.5">
             {entry.todos.map((todo) => (
               <li key={todo.id} className="group flex items-center gap-2">
-                {isOwner ? (
+                {canEdit ? (
                   <ActionForm action={actions.toggleTripTodo}>
                     {hidden}
                     <input type="hidden" name="todoId" value={todo.id} />
@@ -310,7 +310,7 @@ function CityCard({
                 >
                   {todo.title}
                 </span>
-                {isOwner && (
+                {canEdit && (
                   <ActionForm action={actions.deleteTripTodo}>
                     {hidden}
                     <input type="hidden" name="todoId" value={todo.id} />
@@ -326,7 +326,7 @@ function CityCard({
               </li>
             ))}
           </ul>
-          {isOwner && (
+          {canEdit && (
             <ActionForm
               key={todoKey}
               action={withSuccess(actions.addTripTodo, () =>

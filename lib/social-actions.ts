@@ -121,6 +121,15 @@ export async function toggleBlock(
             ],
           },
         }),
+        // Nobody stays on, or pending on, the other's plans across a block.
+        prisma.tripMember.deleteMany({
+          where: {
+            OR: [
+              { userId: targetId, trip: { userId: user.id } },
+              { userId: user.id, trip: { userId: targetId } },
+            ],
+          },
+        }),
       ]);
     }
 

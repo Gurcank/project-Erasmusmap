@@ -23,6 +23,7 @@ export async function buildAccountExport(userId: string) {
     favoriteCities,
     following,
     blocking,
+    tripMemberships,
     trips,
   ] = await Promise.all([
     prisma.user.findUnique({
@@ -100,6 +101,17 @@ export async function buildAccountExport(userId: string) {
       where: { blockerId: userId },
       select: { createdAt: true, blocked: { select: { username: true } } },
     }),
+    prisma.tripMember.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        role: true,
+        status: true,
+        createdAt: true,
+        acceptedAt: true,
+        trip: { select: { title: true, startDate: true, endDate: true } },
+      },
+    }),
     prisma.trip.findMany({
       where: { userId },
       orderBy: { startDate: "asc" },
@@ -160,5 +172,6 @@ export async function buildAccountExport(userId: string) {
     following,
     blockedUsers: blocking,
     trips,
+    sharedTrips: tripMemberships,
   };
 }

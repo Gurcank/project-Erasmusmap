@@ -118,6 +118,21 @@ export type TripCityInspiration = {
   }[];
 };
 
+export type TripMemberView = {
+  id: string;
+  role: "EDITOR" | "VIEWER";
+  status: "PENDING" | "ACCEPTED";
+  user: { id: string; username: string | null; name: string | null };
+};
+
+/** An invitation waiting for the invitee; shows no more than who and what. */
+export type TripInviteView = {
+  id: string;
+  role: "EDITOR" | "VIEWER";
+  tripTitle: string;
+  owner: { username: string | null; name: string | null };
+};
+
 export type TripView = {
   id: string;
   title: string;
@@ -133,6 +148,8 @@ export type TripView = {
   items: TripItemView[];
   expenses: TripExpenseView[];
   cities: TripCityView[];
+  /** Everyone invited, for the owner; empty for anyone else. */
+  members: TripMemberView[];
   inspiration: TripCityInspiration[];
 };
 

@@ -7,6 +7,12 @@ import { requireActiveUser } from "@/lib/auth-guards";
 import { cacheCityPhotos } from "@/lib/city-photo";
 import { getHiddenUserIds } from "@/lib/social";
 import { getTripForViewer } from "@/lib/trips";
+import {
+  inviteToTrip,
+  leaveTrip,
+  removeTripMember,
+  setTripMemberRole,
+} from "@/lib/trip-member-actions";
 import { canonicalFor } from "@/lib/seo";
 import {
   addTripCity,
@@ -64,7 +70,7 @@ export default async function TripPage({
   const result = await loadTrip(id);
   if (!result) notFound();
 
-  const { trip, access } = result;
+  const { trip, access, isMember } = result;
 
   // City photos are cached on the City row. Fill any that are missing once the
   // response is out, the same way the city page does, so the next view of the
@@ -79,12 +85,17 @@ export default async function TripPage({
   return (
     <TripPlanner
       trip={trip}
-      isOwner={access === "owner"}
+      access={access}
+      isMember={isMember}
       actions={{
         updateTrip,
         deleteTrip,
         setTripVisibility,
         rotateShareLink,
+        inviteToTrip,
+        removeTripMember,
+        setTripMemberRole,
+        leaveTrip,
         saveTripItem,
         deleteTripItem,
         saveTripExpense,

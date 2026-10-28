@@ -26,7 +26,7 @@ type Props = {
   trip: TripView;
   days: string[];
   budget: BudgetSummary;
-  isOwner: boolean;
+  canEdit: boolean;
   cityIndex: Map<string, number>;
   dayCities: Record<string, string[]>;
   actions: TripActions;
@@ -39,7 +39,7 @@ export default function TripBudget({
   trip,
   days,
   budget,
-  isOwner,
+  canEdit,
   cityIndex,
   dayCities,
   actions,
@@ -203,8 +203,8 @@ export default function TripBudget({
         </div>
       )}
 
-      <Panel title={isOwner ? tt.addExpense : tt.perDay}>
-        {isOwner && (
+      <Panel title={canEdit ? tt.addExpense : tt.perDay}>
+        {canEdit && (
           <ActionForm
             key={formKey}
             action={withSuccess(actions.saveTripExpense, () =>
@@ -385,7 +385,7 @@ export default function TripBudget({
                                 <Link2 size={14} aria-label={tt.fromItem} />
                               </span>
                             ) : (
-                              isOwner && (
+                              canEdit && (
                                 <ActionForm
                                   action={actions.deleteTripExpense}
                                   confirmMessage={tt.confirmDeleteExpense}

@@ -40,7 +40,7 @@ import type { TransportMode, TripItemView, TripView } from "@/lib/trip-types";
 type Props = {
   trip: TripView;
   days: string[];
-  isOwner: boolean;
+  canEdit: boolean;
   budget: BudgetSummary;
   openDay: string | null;
   onOpenDay: (day: string | null) => void;
@@ -85,7 +85,7 @@ function placeLabel(
 export default function TripTimeline({
   trip,
   days,
-  isOwner,
+  canEdit,
   budget,
   openDay,
   onOpenDay,
@@ -225,7 +225,7 @@ export default function TripTimeline({
             </div>
           </div>
 
-          {isOwner && (
+          {canEdit && (
             <div className="flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
               <GlassButton
                 size="iconSm"
@@ -270,7 +270,7 @@ export default function TripTimeline({
         </h2>
       </div>
 
-      {!isOwner && (
+      {!canEdit && (
         <p className="text-sm text-on-backdrop-muted">{tt.readOnly}</p>
       )}
 
@@ -408,7 +408,7 @@ export default function TripTimeline({
                     </ol>
                   )}
 
-                  {isOwner && !newHere && (
+                  {canEdit && !newHere && (
                     <GlassButton
                       size="sm"
                       variant="ghost"
