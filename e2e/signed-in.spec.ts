@@ -171,6 +171,15 @@ test.describe("sharing a plan by link", () => {
       { name: "consent", value: "denied", url: baseURL! },
     ]);
     const visitor = await stranger.newPage();
+    // The plan list streams in behind a loading shell, so a closed page still
+    // answers 200: what matters is that the plan never shows up.
+    const expectClosed = async (url: string) => {
+      await visitor.goto(url);
+      await visitor.waitForLoadState("networkidle");
+      await expect(
+        visitor.getByRole("heading", { name: "Shared trip" }),
+      ).toHaveCount(0);
+    };
     const opened = await visitor.goto(link);
     expect(opened?.status()).toBe(200);
     await expect(
@@ -180,19 +189,19 @@ test.describe("sharing a plan by link", () => {
       visitor.getByRole("button", { name: /add item/i }),
     ).toHaveCount(0);
     // The plan's own address stays closed to them.
-    expect((await visitor.goto(tripPath))?.status()).toBe(404);
+    await expectClosed(tripPath);
 
     // A new link kills the old one.
     await page.getByRole("button", { name: /new link/i }).click();
     await page.getByRole("button", { name: /create new link/i }).click();
     await expect(field).not.toHaveValue(link);
-    expect((await visitor.goto(link))?.status()).toBe(404);
+    await expectClosed(link);
 
     // Leaving link mode ends it altogether.
     const fresh = await field.inputValue();
     await page.getByRole("button", { name: /^private$/i }).click();
     await expect(field).toHaveCount(0);
-    expect((await visitor.goto(fresh))?.status()).toBe(404);
+    await expectClosed(fresh);
     await stranger.close();
   });
 });
