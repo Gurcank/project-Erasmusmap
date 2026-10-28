@@ -51,7 +51,7 @@ export const TRIP_CURRENCIES = [
 ] as const;
 export type TripCurrency = (typeof TRIP_CURRENCIES)[number];
 
-export type TripVisibility = "PRIVATE" | "PUBLIC";
+export type TripVisibility = "PRIVATE" | "PUBLIC" | "LINK";
 
 export type TripCityRef = {
   id: string;

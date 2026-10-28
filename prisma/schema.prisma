@@ -252,7 +252,10 @@ model User {
   blocking  Block[]  @relation("blocker")
   blockedBy Block[]  @relation("blocked")
 
-  trips Trip[]
+  trips           Trip[]
+  /// Trips shared with this user, and the invites this user sent.
+  tripMemberships TripMember[] @relation("tripMember")
+  tripInvitesSent TripMember[] @relation("tripInviter")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -333,9 +336,25 @@ enum Role {
 // UTC and never converted, so "Hamburg 08:00" shows as 08:00 wherever the page
 // is opened. Money is stored in minor units (cents) as Int, never as a float.
 
+/// LINK: anyone holding the trip's `shareToken` can read it; it is never
+/// listed (no profile tab, no sitemap) and the page is noindex.
 enum TripVisibility {
   PRIVATE
   PUBLIC
+  LINK
+}
+
+/// What a member other than the owner may do. Deleting the trip, changing its
+/// visibility or link and managing members stay with the owner.
+enum TripRole {
+  EDITOR
+  VIEWER
+}
+
+/// A PENDING invite grants nothing; access starts once it is ACCEPTED.
+enum TripMemberStatus {
+  PENDING
+  ACCEPTED
 }
 
 enum TripItemType {
@@ -379,15 +398,40 @@ model Trip {
   /// ISO 4217 code. One currency per trip; there is no conversion.
   currency   String         @db.VarChar(3)
   visibility TripVisibility @default(PRIVATE)
+  /// 256-bit random secret behind /t/<token>. Set only while visibility is
+  /// LINK; rotating it kills every link handed out before.
+  shareToken String?        @unique
 
   items    TripItem[]
   expenses TripExpense[]
   cities   TripCity[]
+  members  TripMember[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+/// Someone other than the owner invited to a trip. One row per person and
+/// trip; it goes with either the trip or the user.
+model TripMember {
+  id     String           @id @default(uuid())
+  tripId String
+  trip   Trip             @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  userId String
+  user   User             @relation("tripMember", fields: [userId], references: [id], onDelete: Cascade)
+  role   TripRole         @default(VIEWER)
+  status TripMemberStatus @default(PENDING)
+
+  invitedById String?
+  invitedBy   User?   @relation("tripInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  createdAt  DateTime  @default(now())
+  acceptedAt DateTime?
+
+  @@unique([tripId, userId])
+  @@index([userId, status])
 }
 
 /// One entry on the timeline. For TRANSPORT the city/place/lat/lng fields are
